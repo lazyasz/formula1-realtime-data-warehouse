@@ -1,0 +1,112 @@
+erDiagram
+    DIM_DRIVER {
+        INT driver_id PK
+        VARCHAR driver_ref
+        VARCHAR driver_code
+        VARCHAR driver_name
+        DATE driver_dob
+        VARCHAR driver_nationality
+    }
+
+    DIM_CONSTRUCTOR {
+        INT constructor_id PK
+        VARCHAR constructor_ref
+        VARCHAR constructor_name
+        VARCHAR constructor_nationality
+    }
+
+    DIM_CIRCUIT {
+        INT circuit_id PK
+        VARCHAR circuit_name
+        VARCHAR circuit_location
+        VARCHAR circuit_country
+        DECIMAL circuit_latitude
+        DECIMAL circuit_longitude
+        INT circuit_altitude_m
+    }
+
+    DIM_RACE {
+        INT race_id PK
+        INT season_year
+        INT round
+        VARCHAR race_name
+        INT circuit_id FK
+        DATE race_date
+        TIME race_start_time
+    }
+
+    DIM_STATUS {
+        INT status_id PK
+        VARCHAR status_description
+    }
+
+    DIM_DATE {
+        INT date_id PK
+        DATE full_date
+        INT year
+        INT quarter
+        INT month
+        VARCHAR month_name
+        INT day_of_week
+        VARCHAR day_name
+    }
+
+    FACT_RACE_RESULTS {
+        INT result_id PK
+        INT race_id FK
+        INT driver_id FK
+        INT constructor_id FK
+        INT date_id FK
+        INT status_id FK
+        INT car_number
+        INT grid_position
+        INT qualifying_position
+        DECIMAL qualifying_best_time_sec
+        INT finish_position
+        VARCHAR finish_position_text
+        DECIMAL race_points
+        INT race_laps
+        VARCHAR race_time
+        BIGINT race_milliseconds
+        INT fastest_lap_number
+        INT fastest_lap_rank
+        VARCHAR fastest_lap_time
+        DECIMAL fastest_lap_speed
+        INT pit_stop_count
+        DECIMAL total_pit_duration_sec
+        DECIMAL avg_pit_duration_sec
+        DECIMAL fastest_pit_duration_sec
+        INT last_pit_lap
+        INT laps_recorded
+        INT fastest_recorded_lap_ms
+        INT average_lap_ms
+        INT sprint_position
+        DECIMAL sprint_points
+        DECIMAL driver_standing_points
+        INT driver_championship_position
+        INT driver_championship_wins
+        DECIMAL constructor_standing_points
+        INT constructor_championship_position
+        INT constructor_championship_wins
+        DECIMAL constructor_race_points
+        INT position_gain
+        INT qualifying_to_finish_delta
+        INT is_pole
+        INT is_podium
+        INT is_win
+        INT is_top_10
+        INT is_dnf
+        DECIMAL points_per_lap
+        DECIMAL race_completion_pct
+        DECIMAL driver_age_years
+        DECIMAL driver_standing_gap_to_leader
+        DECIMAL constructor_standing_gap_to_leader
+    }
+
+    DIM_DRIVER ||--o{ FACT_RACE_RESULTS : "competes"
+    DIM_CONSTRUCTOR ||--o{ FACT_RACE_RESULTS : "supplies"
+    DIM_RACE ||--o{ FACT_RACE_RESULTS : "contains"
+    DIM_STATUS ||--o{ FACT_RACE_RESULTS : "categorizes"
+    DIM_DATE ||--o{ FACT_RACE_RESULTS : "occurs_on"
+
+    DIM_CIRCUIT ||--o{ DIM_RACE : "hosts"

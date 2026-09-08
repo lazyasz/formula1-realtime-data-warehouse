@@ -1,0 +1,1950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Race Performance Data Warehouse Showcase</title>
+    <!-- Tailwind CSS for modern responsive styles -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Space Grotesk -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Prism.js for SQL Syntax Highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <!-- Apache ECharts for Dynamic Data Visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <!-- Mermaid.js for rendering ER diagram -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose',
+            themeVariables: {
+                primaryColor: '#ef4444',
+                primaryTextColor: '#f3f4f6',
+                primaryBorderColor: '#7f1d1d',
+                lineColor: '#ef4444',
+                secondaryColor: '#1f2937',
+                tertiaryColor: '#111827'
+            }
+        });
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #090d16 0%, #111827 100%);
+            color: #f3f4f6;
+        }
+        .font-f1 {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ef4444;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #dc2626;
+        }
+        /* Glassmorphism */
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glass-tab-active {
+            background: rgba(239, 68, 68, 0.2);
+            border-bottom: 2px solid #ef4444 !important;
+            color: #ffffff !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased">
+
+    <!-- Header Section -->
+    <header class="relative glass-card border-b border-gray-800 shadow-2xl py-6 px-8 z-10">
+        <!-- F1 Accent Line -->
+        <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-600 via-red-500 to-amber-500"></div>
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="bg-red-600 text-white rounded-lg p-3 shadow-lg shadow-red-600/30 flex items-center justify-center transform hover:rotate-12 transition-transform duration-300">
+                    <i class="fa-solid fa-flag-checkered text-2xl animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold font-f1 tracking-tight text-white flex items-center gap-2">
+                        F1 Race Performance <span class="text-red-500">Data Warehouse</span>
+                    </h1>
+                    <p class="text-gray-400 text-xs md:text-sm mt-0.5">Step 1 Deliverables Showcase — Schema Comparison & Mapping</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="/" class="text-xs bg-red-600 hover:bg-red-700 text-white font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-2 shadow-md shadow-red-900/40 transition-all hover:scale-105">
+                    <i class="fa-solid fa-flag-checkered animate-pulse"></i>
+                    <span>🏎️ Live Telemetry Dashboard</span>
+                </a>
+                <span class="text-xs bg-red-950/60 text-red-400 border border-red-900/50 px-3 py-1 rounded-full font-mono flex items-center gap-1.5 shadow-sm">
+                    <span class="h-2 w-2 bg-red-500 rounded-full animate-ping"></span>
+                    PostgreSQL / SQLite Model
+                </span>
+                <span class="text-xs bg-gray-800/80 text-gray-300 border border-gray-700/50 px-3 py-1 rounded-full font-mono">
+                    CSV: 68 columns (2004 - 2024)
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Navigation & Schema Switcher Bar -->
+    <div class="glass-card shadow-md sticky top-0 z-20 py-2 border-b border-gray-800/40">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <nav class="flex flex-wrap gap-2 justify-center md:justify-start">
+                <button onclick="switchTab('tab-overview')" id="btn-tab-overview" class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800/50 transition duration-200 flex items-center gap-1.5">
+                    <i class="fa-solid fa-gauge-high"></i> Overview
+                </button>
+                <button onclick="switchTab('tab-sql')" id="btn-tab-sql" class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800/50 transition duration-200 flex items-center gap-1.5 text-red-400 font-bold">
+                    <i class="fa-solid fa-terminal text-red-500"></i> Interactive SQL Console
+                </button>
+                <button onclick="switchTab('tab-pivot')" id="btn-tab-pivot" class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800/50 transition duration-200 flex items-center gap-1.5 text-cyan-400 font-bold">
+                    <i class="fa-solid fa-chart-pie text-cyan-400"></i> OLAP & Strategy Simulator
+                </button>
+                <button onclick="switchTab('tab-er')" id="btn-tab-er" class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800/50 transition duration-200 flex items-center gap-1.5">
+                    <i class="fa-solid fa-diagram-project"></i> Schema ERD
+                </button>
+                <button onclick="switchTab('tab-dict')" id="btn-tab-dict" class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800/50 transition duration-200 flex items-center gap-1.5">
+                    <i class="fa-solid fa-book-open"></i> Data Dictionary
+                </button>
+                <button onclick="switchTab('tab-mapping')" id="btn-tab-mapping" class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800/50 transition duration-200 flex items-center gap-1.5">
+                    <i class="fa-solid fa-map-location-dot"></i> Source to Target
+                </button>
+                <button onclick="switchTab('tab-ddl')" id="btn-tab-ddl" class="px-3.5 py-2 rounded-lg text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800/50 transition duration-200 flex items-center gap-1.5">
+                    <i class="fa-solid fa-database"></i> DDL Scripts
+                </button>
+            </nav>
+            
+            <!-- Schema Switcher Pill -->
+            <div class="flex bg-gray-950 p-1 rounded-xl border border-gray-800 shadow-inner">
+                <button id="schema-star-btn" onclick="setSchema('star')" class="px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition duration-150 flex items-center gap-1.5 bg-red-600 text-white shadow">
+                    <i class="fa-solid fa-star"></i> Star Schema
+                </button>
+                <button id="schema-snowflake-btn" onclick="setSchema('snowflake')" class="px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition duration-150 flex items-center gap-1.5 text-gray-400 hover:text-white">
+                    <i class="fa-solid fa-snowflake"></i> Snowflake Schema
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-6 md:p-8">
+
+        <!-- TAB: OVERVIEW -->
+        <section id="tab-overview" class="tab-content space-y-8">
+            <!-- Hero Stats Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-card rounded-xl p-5 border-l-4 border-red-500 hover:scale-[1.02] transition-transform duration-200 shadow-lg">
+                    <span class="text-gray-400 text-xs uppercase tracking-wider font-semibold">Active Schema Variant</span>
+                    <h3 class="text-2xl font-bold font-f1 mt-2 text-white" id="stat-schema-name">Star Schema</h3>
+                    <p class="text-xs text-gray-500 mt-1" id="stat-schema-desc">Flat denormalized dimensions</p>
+                </div>
+                <div class="glass-card rounded-xl p-5 border-l-4 border-amber-500 hover:scale-[1.02] transition-transform duration-200 shadow-lg">
+                    <span class="text-gray-400 text-xs uppercase tracking-wider font-semibold">Total Tables</span>
+                    <h3 class="text-3xl font-bold font-f1 mt-2 text-white" id="stat-table-count">6</h3>
+                    <p class="text-xs text-gray-500 mt-1" id="stat-table-details">1 Fact + 5 Dimensions</p>
+                </div>
+                <div class="glass-card rounded-xl p-5 border-l-4 border-emerald-500 hover:scale-[1.02] transition-transform duration-200 shadow-lg">
+                    <span class="text-gray-400 text-xs uppercase tracking-wider font-semibold">Mapped Columns</span>
+                    <h3 class="text-3xl font-bold font-f1 mt-2 text-white">68</h3>
+                    <p class="text-xs text-gray-500 mt-1">100% of source columns mapped</p>
+                </div>
+                <div class="glass-card rounded-xl p-5 border-l-4 border-blue-500 hover:scale-[1.02] transition-transform duration-200 shadow-lg">
+                    <span class="text-gray-400 text-xs uppercase tracking-wider font-semibold">Dataset Range</span>
+                    <h3 class="text-3xl font-bold font-f1 mt-2 text-white">2004 - 2024</h3>
+                    <p class="text-xs text-gray-500 mt-1">20 years of historical statistics</p>
+                </div>
+            </div>
+
+            <!-- Conceptual Card Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Summary Card -->
+                <div class="glass-card rounded-2xl p-6 shadow-xl lg:col-span-2 space-y-6">
+                    <h3 class="text-xl font-bold font-f1 text-white flex items-center gap-2 border-b border-gray-800 pb-3">
+                        <i class="fa-solid fa-circle-info text-red-500"></i> Project Description & Goals
+                    </h3>
+                    <div class="text-gray-300 space-y-4 text-sm leading-relaxed">
+                        <p>
+                            Formula 1 represents the pinnacle of motorsports engineering and analytics, generating immense volumes of performance statistics. This data warehouse isolates and organizes complex F1 variables into structured multi-dimensional components to optimize queries for race performance, championship trajectories, pit efficiency, and qualifying outcomes.
+                        </p>
+                        <p>
+                            We have implemented and documented both **Star Schema** and **Snowflake Schema** configurations to demonstrate trade-offs in relational database design:
+                        </p>
+                        <ul class="list-disc pl-5 space-y-2 text-gray-400">
+                            <li><strong>Star Schema (Denormalized)</strong>: Combines circuit attributes directly into the <code>DIM_RACE</code> table. This is preferred for performance as it reduces the number of SQL joins required to analyze race details at specific tracks.</li>
+                            <li><strong>Snowflake Schema (Normalized)</strong>: Moves circuit attributes into an independent <code>DIM_CIRCUIT</code> sub-dimension referenced by <code>DIM_RACE</code>. This reduces data redundancy at the cost of requiring an additional join during querying.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Warehouse Structure -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div class="p-4 bg-gray-900/60 border border-gray-800 rounded-xl space-y-2">
+                            <h4 class="font-f1 font-semibold text-white text-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-asterisk text-red-500"></i> Fact Table Grain
+                            </h4>
+                            <p class="text-xs text-gray-400 leading-relaxed">
+                                The grain of <strong>FACT_RACE_RESULTS</strong> represents <strong>one driver's result in one race</strong>. It acts as the central hub containing all quantitative measurements (points, lap times, pit counts, durations, standings, and outcome flags).
+                            </p>
+                        </div>
+                        <div class="p-4 bg-gray-900/60 border border-gray-800 rounded-xl space-y-2">
+                            <h4 class="font-f1 font-semibold text-white text-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-cube text-red-500"></i> Dimension Tables
+                            </h4>
+                            <p class="text-xs text-gray-400 leading-relaxed" id="dimension-desc-panel">
+                                Star Schema dimensions represent entities providing business context: <strong>DIM_DRIVER</strong>, <strong>DIM_CONSTRUCTOR</strong>, <strong>DIM_RACE</strong> (incorporating circuits), <strong>DIM_STATUS</strong>, and <strong>DIM_DATE</strong>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- F1 Quick Links & Quick Actions -->
+                <div class="glass-card rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-bold font-f1 text-white flex items-center gap-2 border-b border-gray-800 pb-3">
+                            <i class="fa-solid fa-folder-tree text-red-500"></i> Files Created
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-gray-900/40 hover:bg-gray-900/80 border border-gray-850 rounded-xl transition duration-150">
+                                <div class="flex items-center gap-2.5">
+                                    <i class="fa-solid fa-code text-red-500 text-base"></i>
+                                    <span class="text-xs font-semibold">create_star_schema.sql</span>
+                                </div>
+                                <span class="text-[10px] bg-red-950 text-red-400 px-2 py-0.5 rounded border border-red-900/50">Star SQL DDL</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-900/40 hover:bg-gray-900/80 border border-gray-850 rounded-xl transition duration-150">
+                                <div class="flex items-center gap-2.5">
+                                    <i class="fa-solid fa-code text-indigo-500 text-base"></i>
+                                    <span class="text-xs font-semibold">create_snowflake_schema.sql</span>
+                                </div>
+                                <span class="text-[10px] bg-indigo-950 text-indigo-400 px-2 py-0.5 rounded border border-indigo-900/50">Snowflake SQL DDL</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-900/40 hover:bg-gray-900/80 border border-gray-850 rounded-xl transition duration-150">
+                                <div class="flex items-center gap-2.5">
+                                    <i class="fa-solid fa-table text-amber-500 text-base"></i>
+                                    <span class="text-xs font-semibold">data_dictionary.md</span>
+                                </div>
+                                <span class="text-[10px] bg-amber-950 text-amber-400 px-2 py-0.5 rounded border border-amber-900/50">Document</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-900/40 hover:bg-gray-900/80 border border-gray-850 rounded-xl transition duration-150">
+                                <div class="flex items-center gap-2.5">
+                                    <i class="fa-solid fa-file-csv text-emerald-500 text-base"></i>
+                                    <span class="text-xs font-semibold">source_to_target_mapping.csv</span>
+                                </div>
+                                <span class="text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-900/50">CSV Table</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-gray-800 mt-6 space-y-3">
+                        <button onclick="switchTab('tab-er')" class="w-full bg-red-600 hover:bg-red-500 active:bg-red-700 text-white font-medium py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 transition duration-150">
+                            <i class="fa-solid fa-play"></i> Start Visual Walkthrough
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: ER DIAGRAM -->
+        <section id="tab-er" class="tab-content hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+                    <div>
+                        <h3 class="text-xl font-bold font-f1 text-white flex items-center gap-2">
+                            <i class="fa-solid fa-diagram-project text-red-500"></i> <span id="er-title-name">Star Schema</span> Entity-Relationship Diagram
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-0.5" id="er-desc-name">Centralizing measures around race results linked directly to contextual dimensions.</p>
+                    </div>
+                    <button onclick="copyToClipboard('er-code')" class="bg-gray-800 hover:bg-gray-700 text-xs text-gray-300 px-3 py-1.5 rounded-lg border border-gray-700 transition duration-150 flex items-center gap-1.5">
+                        <i class="fa-solid fa-copy"></i> Copy Mermaid Syntax
+                    </button>
+                </div>
+
+                <div class="flex justify-center p-4 bg-slate-950/80 rounded-xl border border-gray-800 overflow-x-auto min-h-[500px]" id="erd-wrapper">
+                    <!-- Rendered by Mermaid -->
+                </div>
+            </div>
+            <textarea id="er-code" class="hidden"></textarea>
+        </section>
+
+        <!-- TAB: DATA DICTIONARY -->
+        <section id="tab-dict" class="tab-content hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6 shadow-xl space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+                    <div>
+                        <h3 class="text-xl font-bold font-f1 text-white flex items-center gap-2">
+                            <i class="fa-solid fa-book-open text-red-500"></i> Interactive Data Dictionary
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Explore structures, data types, and primary/foreign key definitions across all tables.</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                        <input type="text" id="dict-search" oninput="filterDict()" placeholder="Search column or description..." class="bg-gray-900 border border-gray-700 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-red-500 w-full sm:w-64" />
+                        <select id="dict-table-filter" onchange="filterDict()" class="bg-gray-900 border border-gray-700 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-red-500 w-full sm:w-48">
+                            <option value="ALL">All Tables</option>
+                            <option value="DIM_DRIVER">DIM_DRIVER</option>
+                            <option value="DIM_CONSTRUCTOR">DIM_CONSTRUCTOR</option>
+                            <option value="DIM_CIRCUIT" id="filter-opt-circuit">DIM_CIRCUIT</option>
+                            <option value="DIM_RACE">DIM_RACE</option>
+                            <option value="DIM_STATUS">DIM_STATUS</option>
+                            <option value="DIM_DATE">DIM_DATE</option>
+                            <option value="FACT_RACE_RESULTS">FACT_RACE_RESULTS</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Dictionary Table Container -->
+                <div class="overflow-x-auto border border-gray-800 rounded-xl">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-gray-900/80 border-b border-gray-800 text-gray-400 font-f1 text-xs uppercase">
+                                <th class="py-3.5 px-4">Table</th>
+                                <th class="py-3.5 px-4">Column Name</th>
+                                <th class="py-3.5 px-4">Data Type</th>
+                                <th class="py-3.5 px-4 text-center">Key Type</th>
+                                <th class="py-3.5 px-4">Description</th>
+                                <th class="py-3.5 px-4">CSV Source</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dict-tbody" class="divide-y divide-gray-800/60 bg-gray-950/20">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: SOURCE TO TARGET MAPPING -->
+        <section id="tab-mapping" class="tab-content hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6 shadow-xl space-y-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-800 pb-4">
+                    <div>
+                        <h3 class="text-xl font-bold font-f1 text-white flex items-center gap-2">
+                            <i class="fa-solid fa-map-location-dot text-red-500"></i> Source-to-Target Column Mapping
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Defines the transformation rules applied when extracting data from the flat master CSV into dimensions and facts.</p>
+                    </div>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <input type="text" id="mapping-search" oninput="filterMapping()" placeholder="Search CSV column or target column..." class="bg-gray-900 border border-gray-700 text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-red-500 w-full sm:w-72" />
+                    </div>
+                </div>
+
+                <!-- Mapping Table Container -->
+                <div class="overflow-x-auto border border-gray-800 rounded-xl">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-gray-900/80 border-b border-gray-800 text-gray-400 font-f1 text-xs uppercase">
+                                <th class="py-3.5 px-4">CSV Source Column</th>
+                                <th class="py-3.5 px-4 text-center">
+                                    <i class="fa-solid fa-arrow-right text-red-500"></i>
+                                </th>
+                                <th class="py-3.5 px-4">Target Table</th>
+                                <th class="py-3.5 px-4">Target Column</th>
+                                <th class="py-3.5 px-4">Transformation / Loading Rule</th>
+                                <th class="py-3.5 px-4">Data Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mapping-tbody" class="divide-y divide-gray-800/60 bg-gray-950/20">
+                            <!-- Populated dynamically by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: INTERACTIVE LIVE SQL CONSOLE -->
+        <section id="tab-sql" class="tab-content hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-gray-800 pb-4">
+                    <div>
+                        <h3 class="text-xl font-bold font-f1 text-white flex items-center gap-2">
+                            <i class="fa-solid fa-terminal text-red-500"></i> Interactive Live SQL & OLAP Query Console
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Execute real-time analytical queries directly against the live Data Warehouse (<code class="text-red-400">f1_warehouse.db</code>).</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="sql-exec-time" class="text-xs font-mono bg-gray-900 border border-gray-800 px-3 py-1.5 rounded-lg text-emerald-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-bolt text-yellow-400"></i> Ready
+                        </span>
+                        <button onclick="runUserSQL()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-red-900/50 transition duration-150">
+                            <i class="fa-solid fa-play"></i> Execute Query
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Query Presets -->
+                <div class="flex flex-wrap items-center gap-2 pt-1">
+                    <span class="text-xs text-gray-400 font-semibold mr-1">Quick Templates:</span>
+                    <button onclick="loadSqlTemplate(1)" class="text-xs bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 px-2.5 py-1 rounded-lg transition duration-150">🏆 Top 10 Drivers by Wins</button>
+                    <button onclick="loadSqlTemplate(2)" class="text-xs bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 px-2.5 py-1 rounded-lg transition duration-150">🚀 Top 10 Speed Traps (km/h)</button>
+                    <button onclick="loadSqlTemplate(3)" class="text-xs bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 px-2.5 py-1 rounded-lg transition duration-150">⏱️ Fastest Pit Stop Crews</button>
+                    <button onclick="loadSqlTemplate(4)" class="text-xs bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 px-2.5 py-1 rounded-lg transition duration-150">🥇 Hamilton vs Verstappen Head-to-Head</button>
+                    <button onclick="loadSqlTemplate(5)" class="text-xs bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 px-2.5 py-1 rounded-lg transition duration-150">🏁 Constructor Points (2008-2024)</button>
+                </div>
+
+                <!-- SQL Input Area -->
+                <div class="relative">
+                    <textarea id="sql-input" rows="5" class="w-full bg-gray-950/90 border border-gray-800 rounded-xl p-4 font-mono text-sm text-green-400 focus:outline-none focus:border-red-500 shadow-inner" placeholder="Enter your SQL query here (e.g. SELECT * FROM FACT_RACE_RESULTS LIMIT 10)...">SELECT d.driver_name, c.constructor_name, SUM(f.race_points) AS total_points, SUM(f.is_win) AS total_wins, COUNT(f.result_id) AS races_entered
+FROM FACT_RACE_RESULTS f
+JOIN DIM_DRIVER d ON f.driver_id = d.driver_id
+JOIN DIM_CONSTRUCTOR c ON f.constructor_id = c.constructor_id
+GROUP BY d.driver_name
+ORDER BY total_points DESC
+LIMIT 10;</textarea>
+                </div>
+
+                <!-- SQL Chart & Results Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
+                    <!-- Dynamic Result Chart -->
+                    <div class="lg:col-span-1 bg-gray-950/60 border border-gray-800/80 rounded-xl p-4 flex flex-col">
+                        <h4 class="text-xs font-bold font-f1 uppercase tracking-wider text-gray-400 mb-2 flex items-center justify-between">
+                            <span>Visual Insight</span>
+                            <span class="text-[10px] text-red-400 font-mono">Dynamic Chart</span>
+                        </h4>
+                        <div id="sql-chart-container" class="w-full flex-1 min-h-[260px]"></div>
+                    </div>
+
+                    <!-- Dynamic Result Table -->
+                    <div class="lg:col-span-2 bg-gray-950/60 border border-gray-800/80 rounded-xl p-4 flex flex-col">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-xs font-bold font-f1 uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                                <i class="fa-solid fa-table text-red-500"></i> Query Results Data Grid
+                            </h4>
+                            <span id="sql-row-badge" class="text-[11px] font-mono text-gray-400">0 rows</span>
+                        </div>
+                        <div class="overflow-x-auto max-h-[300px] overflow-y-auto rounded-lg border border-gray-800">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead id="sql-thead" class="bg-gray-900 text-gray-300 uppercase sticky top-0">
+                                    <tr><th class="p-3">Run query to inspect live records</th></tr>
+                                </thead>
+                                <tbody id="sql-tbody" class="divide-y divide-gray-800/60 bg-gray-950/40 text-gray-300">
+                                    <tr><td class="p-4 text-center text-gray-500">Click 'Execute Query' or select a template above.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: DYNAMIC OLAP & WHAT-IF SIMULATOR -->
+        <section id="tab-pivot" class="tab-content hidden space-y-6">
+            <!-- OLAP Pivot Matrix -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-gray-800 pb-4">
+                    <div>
+                        <h3 class="text-xl font-bold font-f1 text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-cyan-400"></i> Dynamic OLAP Multi-Dimensional Analytics
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Slice and aggregate across dimensions, metrics, and era boundaries dynamically.</p>
+                    </div>
+                </div>
+
+                <!-- OLAP Input Controls -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-950/60 border border-gray-800 rounded-xl text-xs">
+                    <div>
+                        <label class="block text-gray-400 font-semibold mb-1">Aggregation Dimension:</label>
+                        <select id="olap-dim" onchange="runOlapPivot()" class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-white font-bold focus:outline-none focus:border-cyan-500">
+                            <option value="driver">Driver Dimension</option>
+                            <option value="constructor">Constructor Dimension</option>
+                            <option value="season">Season Dimension (Yearly Trends)</option>
+                            <option value="circuit">Circuit Dimension</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-semibold mb-1">Target Analytical Metric:</label>
+                        <select id="olap-metric" onchange="runOlapPivot()" class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-white font-bold focus:outline-none focus:border-cyan-500">
+                            <option value="points">Total Championship Points</option>
+                            <option value="wins">Total Grand Prix Wins</option>
+                            <option value="podiums">Podium Finishes (Top 3)</option>
+                            <option value="poles">Pole Positions</option>
+                            <option value="fastest_laps">Fastest Laps</option>
+                            <option value="avg_position">Average Finish Position</option>
+                            <option value="avg_pit">Average Pit Stop Duration (s)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-semibold mb-1">Season Range (Min - Max):</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" id="olap-min-year" value="2008" min="2004" max="2024" onchange="runOlapPivot()" class="w-1/2 bg-gray-900 border border-gray-800 rounded-lg p-2 text-center text-white font-mono font-bold focus:outline-none focus:border-cyan-500">
+                            <span class="text-gray-500">-</span>
+                            <input type="number" id="olap-max-year" value="2024" min="2004" max="2024" onchange="runOlapPivot()" class="w-1/2 bg-gray-900 border border-gray-800 rounded-lg p-2 text-center text-white font-mono font-bold focus:outline-none focus:border-cyan-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 font-semibold mb-1">Top Records Limit:</label>
+                        <select id="olap-limit" onchange="runOlapPivot()" class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-white font-bold focus:outline-none focus:border-cyan-500">
+                            <option value="5">Top 5 Records</option>
+                            <option value="10" selected>Top 10 Records</option>
+                            <option value="15">Top 15 Records</option>
+                            <option value="25">Top 25 Records</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- OLAP Chart & Data Display -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+                    <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-4">
+                        <h4 class="text-xs font-bold font-f1 uppercase tracking-wider text-gray-400 mb-3 flex items-center justify-between">
+                            <span>Interactive OLAP Pareto Chart</span>
+                            <span class="text-[10px] text-cyan-400 font-mono">Live API Result</span>
+                        </h4>
+                        <div id="olap-chart-container" class="w-full h-[320px]"></div>
+                    </div>
+                    <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-4 flex flex-col">
+                        <h4 class="text-xs font-bold font-f1 uppercase tracking-wider text-gray-400 mb-3">
+                            OLAP Summary Metrics
+                        </h4>
+                        <div class="overflow-x-auto max-h-[320px] overflow-y-auto rounded-lg border border-gray-800">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead class="bg-gray-900 text-gray-300 sticky top-0">
+                                    <tr>
+                                        <th class="p-2.5">Dimension Entity</th>
+                                        <th class="p-2.5 text-right">Aggregated Metric</th>
+                                        <th class="p-2.5 text-center">Races Sampled</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="olap-tbody" class="divide-y divide-gray-800/60 text-gray-300">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive What-If Race Strategy Simulator -->
+            <div class="glass-card rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 border-b border-gray-800 pb-4">
+                    <div>
+                        <h3 class="text-xl font-bold font-f1 text-white flex items-center gap-2">
+                            <i class="fa-solid fa-sliders text-amber-400"></i> Interactive What-If Race Strategy Simulator
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Adjust pit stop laps, degradation percentages, and undercut gains to simulate projected race completion times.</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-gray-400 block font-mono">Simulated Race Time:</span>
+                        <span id="whatif-total-time" class="text-lg font-bold font-mono text-amber-400">1:27:14.280</span>
+                    </div>
+                </div>
+
+                <!-- Simulator Input Sliders -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-950/60 border border-gray-800 rounded-xl text-xs">
+                    <div>
+                        <div class="flex justify-between font-semibold mb-1">
+                            <span class="text-gray-400">Pit Stop 1 Lap:</span>
+                            <span id="val-pit1" class="text-amber-400 font-mono">Lap 18</span>
+                        </div>
+                        <input type="range" id="input-pit1" min="10" max="30" value="18" oninput="runWhatIfSimulation()" class="w-full accent-amber-500">
+                    </div>
+                    <div>
+                        <div class="flex justify-between font-semibold mb-1">
+                            <span class="text-gray-400">Pit Stop 2 Lap:</span>
+                            <span id="val-pit2" class="text-amber-400 font-mono">Lap 38</span>
+                        </div>
+                        <input type="range" id="input-pit2" min="32" max="48" value="38" oninput="runWhatIfSimulation()" class="w-full accent-amber-500">
+                    </div>
+                    <div>
+                        <div class="flex justify-between font-semibold mb-1">
+                            <span class="text-gray-400">Tyre Degradation Rate:</span>
+                            <span id="val-deg" class="text-red-400 font-mono">3.5% / lap</span>
+                        </div>
+                        <input type="range" id="input-deg" min="1.0" max="8.0" step="0.5" value="3.5" oninput="runWhatIfSimulation()" class="w-full accent-red-500">
+                    </div>
+                    <div>
+                        <div class="flex justify-between font-semibold mb-1">
+                            <span class="text-gray-400">Undercut Advantage:</span>
+                            <span id="val-undercut" class="text-green-400 font-mono">1.8s gain</span>
+                        </div>
+                        <input type="range" id="input-undercut" min="0.0" max="4.0" step="0.2" value="1.8" oninput="runWhatIfSimulation()" class="w-full accent-green-500">
+                    </div>
+                </div>
+
+                <!-- Simulation Result Chart -->
+                <div class="bg-gray-950/60 border border-gray-800 rounded-xl p-4">
+                    <h4 class="text-xs font-bold font-f1 uppercase tracking-wider text-gray-400 mb-2 flex items-center justify-between">
+                        <span>Projected Lap Time Degradation & Pit Window Profile</span>
+                        <span class="text-[10px] text-amber-400 font-mono">Live Recalculation</span>
+                    </h4>
+                    <div id="whatif-chart-container" class="w-full h-[280px]"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: DDL SCHEMA SCRIPT -->
+        <section id="tab-ddl" class="tab-content hidden space-y-6">
+            <div class="glass-card rounded-2xl p-6 shadow-xl space-y-4">
+                <div class="flex items-center justify-between border-b border-gray-800 pb-4">
+                    <div>
+                        <h3 class="text-xl font-bold font-f1 text-white flex items-center gap-2">
+                            <i class="fa-solid fa-database text-red-500"></i> PostgreSQL Schema script (<span id="sql-filename">create_star_schema.sql</span>)
+                        </h3>
+                        <p class="text-xs text-gray-400 mt-0.5">Execution order: drops facts first, creates dimensions, then creates fact tables with FKs and indexes.</p>
+                    </div>
+                    <button onclick="copyToClipboard('sql-code-block')" class="bg-gray-850 hover:bg-gray-700 text-xs text-gray-300 px-3 py-2 border border-gray-700 rounded-lg flex items-center gap-1.5 transition duration-150">
+                        <i class="fa-solid fa-copy"></i> Copy SQL DDL
+                    </button>
+                </div>
+
+                <div class="rounded-xl overflow-hidden border border-gray-800 max-h-[600px] overflow-y-auto">
+                    <pre class="m-0"><code id="sql-code-block" class="language-sql">-- Populated dynamically --></code></pre>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-card border-t border-gray-800/80 text-center py-6 px-4 mt-8 text-xs text-gray-500">
+        <p class="font-f1">F1 Data Warehouse Step 1 Design Showcase • Interactive Web Dashboard</p>
+    </footer>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 glass-card bg-emerald-950/90 border-emerald-500/50 text-emerald-300 rounded-xl px-4 py-3 shadow-2xl flex items-center gap-3 transform translate-y-24 opacity-0 transition duration-300 pointer-events-none z-50">
+        <i class="fa-solid fa-circle-check text-base text-emerald-400"></i>
+        <span class="text-xs font-semibold" id="toast-message">Copied to clipboard successfully!</span>
+    </div>
+
+    <!-- Script for interactive client-side operations -->
+    <script>
+        // Active schema variable
+        let activeSchema = 'star';
+
+        // SQL DDL Scripts inlined for offline functionality
+        const starSql = `-- PostgreSQL DDL script for F1 Race Performance Data Warehouse (Pure Star Schema)
+-- Creates dimension tables first (with circuit attributes denormalized into DIM_RACE),
+-- then the central FACT_RACE_RESULTS table.
+
+BEGIN;
+
+--------------------------------------------------------------------------------
+-- 1. DROP EXISTING TABLES (FOR IDEMPOTENT EXECUTION)
+--------------------------------------------------------------------------------
+DROP TABLE IF EXISTS FACT_RACE_RESULTS CASCADE;
+DROP TABLE IF EXISTS DIM_DATE CASCADE;
+DROP TABLE IF EXISTS DIM_STATUS CASCADE;
+DROP TABLE IF EXISTS DIM_RACE CASCADE;
+DROP TABLE IF EXISTS DIM_CONSTRUCTOR CASCADE;
+DROP TABLE IF EXISTS DIM_DRIVER CASCADE;
+
+--------------------------------------------------------------------------------
+-- 2. CREATE DIMENSION TABLES
+--------------------------------------------------------------------------------
+
+-- DIM_DRIVER: Details of drivers participating in F1
+CREATE TABLE DIM_DRIVER (
+    driver_id INT PRIMARY KEY,
+    driver_ref VARCHAR(50) NOT NULL UNIQUE,
+    driver_code VARCHAR(3),
+    driver_name VARCHAR(100) NOT NULL,
+    driver_dob DATE,
+    driver_nationality VARCHAR(50)
+);
+
+-- DIM_CONSTRUCTOR: Details of constructors/teams participating in F1
+CREATE TABLE DIM_CONSTRUCTOR (
+    constructor_id INT PRIMARY KEY,
+    constructor_ref VARCHAR(50) NOT NULL UNIQUE,
+    constructor_name VARCHAR(100) NOT NULL,
+    constructor_nationality VARCHAR(50)
+);
+
+-- DIM_RACE: Details of races scheduled across seasons (includes denormalized Circuit details)
+CREATE TABLE DIM_RACE (
+    race_id INT PRIMARY KEY,
+    season_year INT NOT NULL,
+    round INT NOT NULL,
+    race_name VARCHAR(100) NOT NULL,
+    race_date DATE NOT NULL,
+    race_start_time TIME,
+    
+    -- Denormalized Circuit Attributes (Merged from DIM_CIRCUIT to form a flat Star Schema)
+    circuit_id INT NOT NULL,
+    circuit_name VARCHAR(150) NOT NULL,
+    circuit_location VARCHAR(100),
+    circuit_country VARCHAR(100),
+    circuit_latitude DECIMAL(9,6),
+    circuit_longitude DECIMAL(9,6),
+    circuit_altitude_m INT,
+    
+    CONSTRAINT uq_race_season_round UNIQUE (season_year, round)
+);
+
+-- DIM_STATUS: Map of status descriptions (Finished, DNF reasons, etc.)
+CREATE TABLE DIM_STATUS (
+    status_id SERIAL PRIMARY KEY,
+    status_description VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- DIM_DATE: Calendar date dimension for time-slice analysis
+CREATE TABLE DIM_DATE (
+    date_id INT PRIMARY KEY, -- Format: YYYYMMDD
+    full_date DATE NOT NULL UNIQUE,
+    year INT NOT NULL,
+    quarter INT NOT NULL CHECK (quarter BETWEEN 1 AND 4),
+    month INT NOT NULL CHECK (month BETWEEN 1 AND 12),
+    month_name VARCHAR(20) NOT NULL,
+    day_of_week INT NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
+    day_name VARCHAR(20) NOT NULL
+);
+
+--------------------------------------------------------------------------------
+-- 3. CREATE FACT TABLE
+--------------------------------------------------------------------------------
+
+-- FACT_RACE_RESULTS: Central fact table storing results, qualifying, pit summaries,
+-- standings and indicators. Links directly to all 5 flat dimensions.
+CREATE TABLE FACT_RACE_RESULTS (
+    result_id SERIAL PRIMARY KEY,
+    race_id INT NOT NULL REFERENCES DIM_RACE(race_id),
+    driver_id INT NOT NULL REFERENCES DIM_DRIVER(driver_id),
+    constructor_id INT NOT NULL REFERENCES DIM_CONSTRUCTOR(constructor_id),
+    date_id INT NOT NULL REFERENCES DIM_DATE(date_id),
+    status_id INT NOT NULL REFERENCES DIM_STATUS(status_id),
+    
+    -- Race Performance Metrics
+    car_number INT,
+    grid_position INT NOT NULL,
+    qualifying_position INT,
+    qualifying_best_time_sec DECIMAL(6,3),
+    finish_position INT, -- NULL if DNF
+    finish_position_text VARCHAR(10),
+    race_points DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    race_laps INT NOT NULL,
+    race_time VARCHAR(20),
+    race_milliseconds BIGINT,
+    
+    -- Fastest Lap & Pit Stop Summary Metrics
+    fastest_lap_number INT,
+    fastest_lap_rank INT,
+    fastest_lap_time VARCHAR(20),
+    fastest_lap_speed DECIMAL(6,3),
+    pit_stop_count INT NOT NULL DEFAULT 0,
+    total_pit_duration_sec DECIMAL(7,3) NOT NULL DEFAULT 0.000,
+    avg_pit_duration_sec DECIMAL(6,3) NOT NULL DEFAULT 0.000,
+    fastest_pit_duration_sec DECIMAL(6,3) NOT NULL DEFAULT 0.000,
+    last_pit_lap INT NOT NULL DEFAULT 0,
+    
+    -- Lap timing aggregates
+    laps_recorded INT NOT NULL DEFAULT 0,
+    fastest_recorded_lap_ms INT,
+    average_lap_ms INT,
+    
+    -- Standings & Championship Metrics (Cumulative up to this race)
+    driver_standing_points DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+    driver_championship_position INT,
+    driver_championship_wins INT NOT NULL DEFAULT 0,
+    constructor_standing_points DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+    constructor_championship_position INT,
+    constructor_championship_wins INT NOT NULL DEFAULT 0,
+    constructor_race_points DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+    driver_standing_gap_to_leader DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+    constructor_standing_gap_to_leader DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+    
+    -- Sprint & Positioning Deltas
+    sprint_position INT,
+    sprint_points DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    position_gain INT,
+    qualifying_to_finish_delta INT,
+    
+    -- Indicators & Derived metrics
+    is_pole INT NOT NULL CHECK (is_pole IN (0, 1)),
+    is_podium INT NOT NULL CHECK (is_podium IN (0, 1)),
+    is_win INT NOT NULL CHECK (is_win IN (0, 1)),
+    is_top_10 INT NOT NULL CHECK (is_top_10 IN (0, 1)),
+    is_dnf INT NOT NULL CHECK (is_dnf IN (0, 1)),
+    points_per_lap DECIMAL(6,4),
+    race_completion_pct DECIMAL(5,4),
+    driver_age_years DECIMAL(5,2),
+    
+    CONSTRAINT uq_race_driver UNIQUE (race_id, driver_id)
+);
+
+--------------------------------------------------------------------------------
+-- 4. CREATE INDEXES ON FOREIGN KEYS & COMMON QUERY COLUMNS
+--------------------------------------------------------------------------------
+
+-- Dimension Indexes
+CREATE INDEX idx_dim_race_season ON DIM_RACE(season_year);
+
+-- FACT_RACE_RESULTS Indexes
+CREATE INDEX idx_fact_results_race ON FACT_RACE_RESULTS(race_id);
+CREATE INDEX idx_fact_results_driver ON FACT_RACE_RESULTS(driver_id);
+CREATE INDEX idx_fact_results_constructor ON FACT_RACE_RESULTS(constructor_id);
+CREATE INDEX idx_fact_results_date ON FACT_RACE_RESULTS(date_id);
+CREATE INDEX idx_fact_results_status ON FACT_RACE_RESULTS(status_id);
+
+-- Performance Composite Indexes
+CREATE INDEX idx_fact_results_season_driver ON FACT_RACE_RESULTS(race_id, driver_id);
+
+COMMIT;`;
+
+        const snowflakeSql = `-- PostgreSQL DDL script for F1 Race Performance Data Warehouse (Snowflake Schema)
+-- Creates dimension tables first (with DIM_CIRCUIT normalized out of DIM_RACE),
+-- then the central FACT_RACE_RESULTS table.
+
+BEGIN;
+
+--------------------------------------------------------------------------------
+-- 1. DROP EXISTING TABLES (FOR IDEMPOTENT EXECUTION)
+--------------------------------------------------------------------------------
+DROP TABLE IF EXISTS FACT_RACE_RESULTS CASCADE;
+DROP TABLE IF EXISTS DIM_DATE CASCADE;
+DROP TABLE IF EXISTS DIM_STATUS CASCADE;
+DROP TABLE IF EXISTS DIM_RACE CASCADE;
+DROP TABLE IF EXISTS DIM_CIRCUIT CASCADE;
+DROP TABLE IF EXISTS DIM_CONSTRUCTOR CASCADE;
+DROP TABLE IF EXISTS DIM_DRIVER CASCADE;
+
+--------------------------------------------------------------------------------
+-- 2. CREATE DIMENSION TABLES
+--------------------------------------------------------------------------------
+
+-- DIM_DRIVER: Details of drivers participating in F1
+CREATE TABLE DIM_DRIVER (
+    driver_id INT PRIMARY KEY,
+    driver_ref VARCHAR(50) NOT NULL UNIQUE,
+    driver_code VARCHAR(3),
+    driver_name VARCHAR(100) NOT NULL,
+    driver_dob DATE,
+    driver_nationality VARCHAR(50)
+);
+
+-- DIM_CONSTRUCTOR: Details of constructors/teams participating in F1
+CREATE TABLE DIM_CONSTRUCTOR (
+    constructor_id INT PRIMARY KEY,
+    constructor_ref VARCHAR(50) NOT NULL UNIQUE,
+    constructor_name VARCHAR(100) NOT NULL,
+    constructor_nationality VARCHAR(50)
+);
+
+-- DIM_CIRCUIT: Details of F1 race circuits (Normalized sub-dimension for races)
+CREATE TABLE DIM_CIRCUIT (
+    circuit_id INT PRIMARY KEY,
+    circuit_name VARCHAR(150) NOT NULL,
+    circuit_location VARCHAR(100),
+    circuit_country VARCHAR(100),
+    circuit_latitude DECIMAL(9,6),
+    circuit_longitude DECIMAL(9,6),
+    circuit_altitude_m INT
+);
+
+-- DIM_RACE: Details of races scheduled across seasons (References DIM_CIRCUIT)
+CREATE TABLE DIM_RACE (
+    race_id INT PRIMARY KEY,
+    season_year INT NOT NULL,
+    round INT NOT NULL,
+    race_name VARCHAR(100) NOT NULL,
+    circuit_id INT NOT NULL REFERENCES DIM_CIRCUIT(circuit_id),
+    race_date DATE NOT NULL,
+    race_start_time TIME,
+    CONSTRAINT uq_race_season_round UNIQUE (season_year, round)
+);
+
+-- DIM_STATUS: Map of status descriptions (Finished, DNF reasons, etc.)
+CREATE TABLE DIM_STATUS (
+    status_id SERIAL PRIMARY KEY,
+    status_description VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- DIM_DATE: Calendar date dimension for time-slice analysis
+CREATE TABLE DIM_DATE (
+    date_id INT PRIMARY KEY, -- Format: YYYYMMDD
+    full_date DATE NOT NULL UNIQUE,
+    year INT NOT NULL,
+    quarter INT NOT NULL CHECK (quarter BETWEEN 1 AND 4),
+    month INT NOT NULL CHECK (month BETWEEN 1 AND 12),
+    month_name VARCHAR(20) NOT NULL,
+    day_of_week INT NOT NULL CHECK (day_of_week BETWEEN 1 AND 7),
+    day_name VARCHAR(20) NOT NULL
+);
+
+--------------------------------------------------------------------------------
+-- 3. CREATE FACT TABLE
+--------------------------------------------------------------------------------
+
+-- FACT_RACE_RESULTS: Central fact table storing results, qualifying, pit summaries,
+-- standings and indicators.
+CREATE TABLE FACT_RACE_RESULTS (
+    result_id SERIAL PRIMARY KEY,
+    race_id INT NOT NULL REFERENCES DIM_RACE(race_id),
+    driver_id INT NOT NULL REFERENCES DIM_DRIVER(driver_id),
+    constructor_id INT NOT NULL REFERENCES DIM_CONSTRUCTOR(constructor_id),
+    date_id INT NOT NULL REFERENCES DIM_DATE(date_id),
+    status_id INT NOT NULL REFERENCES DIM_STATUS(status_id),
+    
+    -- Race Performance Metrics
+    car_number INT,
+    grid_position INT NOT NULL,
+    qualifying_position INT,
+    qualifying_best_time_sec DECIMAL(6,3),
+    finish_position INT, -- NULL if DNF
+    finish_position_text VARCHAR(10),
+    race_points DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    race_laps INT NOT NULL,
+    race_time VARCHAR(20),
+    race_milliseconds BIGINT,
+    
+    -- Fastest Lap & Pit Stop Summary Metrics
+    fastest_lap_number INT,
+    fastest_lap_rank INT,
+    fastest_lap_time VARCHAR(20),
+    fastest_lap_speed DECIMAL(6,3),
+    pit_stop_count INT NOT NULL DEFAULT 0,
+    total_pit_duration_sec DECIMAL(7,3) NOT NULL DEFAULT 0.000,
+    avg_pit_duration_sec DECIMAL(6,3) NOT NULL DEFAULT 0.000,
+    fastest_pit_duration_sec DECIMAL(6,3) NOT NULL DEFAULT 0.000,
+    last_pit_lap INT NOT NULL DEFAULT 0,
+    
+    -- Lap timing aggregates
+    laps_recorded INT NOT NULL DEFAULT 0,
+    fastest_recorded_lap_ms INT,
+    average_lap_ms INT,
+    
+    -- Standings & Championship Metrics (Cumulative up to this race)
+    driver_standing_points DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+    driver_championship_position INT,
+    driver_championship_wins INT NOT NULL DEFAULT 0,
+    constructor_standing_points DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+    constructor_championship_position INT,
+    constructor_championship_wins INT NOT NULL DEFAULT 0,
+    constructor_race_points DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+    driver_standing_gap_to_leader DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+    constructor_standing_gap_to_leader DECIMAL(7,2) NOT NULL DEFAULT 0.00,
+    
+    -- Sprint & Positioning Deltas
+    sprint_position INT,
+    sprint_points DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+    position_gain INT,
+    qualifying_to_finish_delta INT,
+    
+    -- Indicators & Derived metrics
+    is_pole INT NOT NULL CHECK (is_pole IN (0, 1)),
+    is_podium INT NOT NULL CHECK (is_podium IN (0, 1)),
+    is_win INT NOT NULL CHECK (is_win IN (0, 1)),
+    is_top_10 INT NOT NULL CHECK (is_top_10 IN (0, 1)),
+    is_dnf INT NOT NULL CHECK (is_dnf IN (0, 1)),
+    points_per_lap DECIMAL(6,4),
+    race_completion_pct DECIMAL(5,4),
+    driver_age_years DECIMAL(5,2),
+    
+    CONSTRAINT uq_race_driver UNIQUE (race_id, driver_id)
+);
+
+--------------------------------------------------------------------------------
+-- 4. CREATE INDEXES ON FOREIGN KEYS & COMMON QUERY COLUMNS
+--------------------------------------------------------------------------------
+
+-- Dimension Indexes
+CREATE INDEX idx_dim_race_circuit ON DIM_RACE(circuit_id);
+CREATE INDEX idx_dim_race_season ON DIM_RACE(season_year);
+
+-- FACT_RACE_RESULTS Indexes
+CREATE INDEX idx_fact_results_race ON FACT_RACE_RESULTS(race_id);
+CREATE INDEX idx_fact_results_driver ON FACT_RACE_RESULTS(driver_id);
+CREATE INDEX idx_fact_results_constructor ON FACT_RACE_RESULTS(constructor_id);
+CREATE INDEX idx_fact_results_date ON FACT_RACE_RESULTS(date_id);
+CREATE INDEX idx_fact_results_status ON FACT_RACE_RESULTS(status_id);
+
+-- Performance Composite Indexes
+CREATE INDEX idx_fact_results_season_driver ON FACT_RACE_RESULTS(race_id, driver_id);
+
+COMMIT;`;
+
+        // Mermaid Diagram Syntax
+        const starMermaid = `erDiagram
+    DIM_DRIVER ||--o{ FACT_RACE_RESULTS : "competes"
+    DIM_CONSTRUCTOR ||--o{ FACT_RACE_RESULTS : "supplies"
+    DIM_RACE ||--o{ FACT_RACE_RESULTS : "contains"
+    DIM_STATUS ||--o{ FACT_RACE_RESULTS : "categorizes"
+    DIM_DATE ||--o{ FACT_RACE_RESULTS : "occurs_on"
+
+    DIM_DRIVER {
+        INT driver_id PK
+        VARCHAR driver_ref
+        VARCHAR driver_code
+        VARCHAR driver_name
+        DATE driver_dob
+        VARCHAR driver_nationality
+    }
+
+    DIM_CONSTRUCTOR {
+        INT constructor_id PK
+        VARCHAR constructor_ref
+        VARCHAR constructor_name
+        VARCHAR constructor_nationality
+    }
+
+    DIM_RACE {
+        INT race_id PK
+        INT season_year
+        INT round
+        VARCHAR race_name
+        DATE race_date
+        TIME race_start_time
+        INT circuit_id "Natural Key"
+        VARCHAR circuit_name
+        VARCHAR circuit_location
+        VARCHAR circuit_country
+        DECIMAL circuit_latitude
+        DECIMAL circuit_longitude
+        INT circuit_altitude_m
+    }
+
+    DIM_STATUS {
+        INT status_id PK
+        VARCHAR status_description
+    }
+
+    DIM_DATE {
+        INT date_id PK
+        DATE full_date
+        INT year
+        INT quarter
+        INT month
+        VARCHAR month_name
+        INT day_of_week
+        VARCHAR day_name
+    }
+
+    FACT_RACE_RESULTS {
+        INT result_id PK
+        INT race_id FK
+        INT driver_id FK
+        INT constructor_id FK
+        INT date_id FK
+        INT status_id FK
+        INT car_number
+        INT grid_position
+        INT qualifying_position
+        DECIMAL qualifying_best_time_sec
+        INT finish_position
+        VARCHAR finish_position_text
+        DECIMAL race_points
+        INT race_laps
+        VARCHAR race_time
+        BIGINT race_milliseconds
+        INT fastest_lap_number
+        INT fastest_lap_rank
+        VARCHAR fastest_lap_time
+        DECIMAL fastest_lap_speed
+        INT pit_stop_count
+        DECIMAL total_pit_duration_sec
+        DECIMAL avg_pit_duration_sec
+        DECIMAL fastest_pit_duration_sec
+        INT last_pit_lap
+        INT laps_recorded
+        INT fastest_recorded_lap_ms
+        INT average_lap_ms
+        INT sprint_position
+        DECIMAL sprint_points
+        DECIMAL driver_standing_points
+        INT driver_championship_position
+        INT driver_championship_wins
+        DECIMAL constructor_standing_points
+        INT constructor_championship_position
+        INT constructor_championship_wins
+        DECIMAL constructor_race_points
+        INT position_gain
+        INT qualifying_to_finish_delta
+        INT is_pole
+        INT is_podium
+        INT is_win
+        INT is_top_10
+        INT is_dnf
+        DECIMAL points_per_lap
+        DECIMAL race_completion_pct
+        DECIMAL driver_age_years
+        DECIMAL driver_standing_gap_to_leader
+        DECIMAL constructor_standing_gap_to_leader
+    }`;
+
+        const snowflakeMermaid = `erDiagram
+    DIM_DRIVER ||--o{ FACT_RACE_RESULTS : "competes"
+    DIM_CONSTRUCTOR ||--o{ FACT_RACE_RESULTS : "supplies"
+    DIM_RACE ||--o{ FACT_RACE_RESULTS : "contains"
+    DIM_STATUS ||--o{ FACT_RACE_RESULTS : "categorizes"
+    DIM_DATE ||--o{ FACT_RACE_RESULTS : "occurs_on"
+    DIM_CIRCUIT ||--o{ DIM_RACE : "hosts"
+
+    DIM_DRIVER {
+        INT driver_id PK
+        VARCHAR driver_ref
+        VARCHAR driver_code
+        VARCHAR driver_name
+        DATE driver_dob
+        VARCHAR driver_nationality
+    }
+
+    DIM_CONSTRUCTOR {
+        INT constructor_id PK
+        VARCHAR constructor_ref
+        VARCHAR constructor_name
+        VARCHAR constructor_nationality
+    }
+
+    DIM_CIRCUIT {
+        INT circuit_id PK
+        VARCHAR circuit_name
+        VARCHAR circuit_location
+        VARCHAR circuit_country
+        DECIMAL circuit_latitude
+        DECIMAL circuit_longitude
+        INT circuit_altitude_m
+    }
+
+    DIM_RACE {
+        INT race_id PK
+        INT season_year
+        INT round
+        VARCHAR race_name
+        INT circuit_id FK
+        DATE race_date
+        TIME race_start_time
+    }
+
+    DIM_STATUS {
+        INT status_id PK
+        VARCHAR status_description
+    }
+
+    DIM_DATE {
+        INT date_id PK
+        DATE full_date
+        INT year
+        INT quarter
+        INT month
+        VARCHAR month_name
+        INT day_of_week
+        VARCHAR day_name
+    }
+
+    FACT_RACE_RESULTS {
+        INT result_id PK
+        INT race_id FK
+        INT driver_id FK
+        INT constructor_id FK
+        INT date_id FK
+        INT status_id FK
+        INT car_number
+        INT grid_position
+        INT qualifying_position
+        DECIMAL qualifying_best_time_sec
+        INT finish_position
+        VARCHAR finish_position_text
+        DECIMAL race_points
+        INT race_laps
+        VARCHAR race_time
+        BIGINT race_milliseconds
+        INT fastest_lap_number
+        INT fastest_lap_rank
+        VARCHAR fastest_lap_time
+        DECIMAL fastest_lap_speed
+        INT pit_stop_count
+        DECIMAL total_pit_duration_sec
+        DECIMAL avg_pit_duration_sec
+        DECIMAL fastest_pit_duration_sec
+        INT last_pit_lap
+        INT laps_recorded
+        INT fastest_recorded_lap_ms
+        INT average_lap_ms
+        INT sprint_position
+        DECIMAL sprint_points
+        DECIMAL driver_standing_points
+        INT driver_championship_position
+        INT driver_championship_wins
+        DECIMAL constructor_standing_points
+        INT constructor_championship_position
+        INT constructor_championship_wins
+        DECIMAL constructor_race_points
+        INT position_gain
+        INT qualifying_to_finish_delta
+        INT is_pole
+        INT is_podium
+        INT is_win
+        INT is_top_10
+        INT is_dnf
+        DECIMAL points_per_lap
+        DECIMAL race_completion_pct
+        DECIMAL driver_age_years
+        DECIMAL driver_standing_gap_to_leader
+        DECIMAL constructor_standing_gap_to_leader
+    }`;
+
+        // Complete Data Dictionary definition with schema-applicability markers
+        const dataDictionary = [
+            // DIM_DRIVER
+            { t: 'DIM_DRIVER', c: 'driver_id', type: 'INT', k: 'PK', d: 'Unique identifier for each driver', s: 'driver_id', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_DRIVER', c: 'driver_ref', type: 'VARCHAR(50)', k: 'Unique', d: 'Code-like reference name for the driver', s: 'driver_ref', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_DRIVER', c: 'driver_code', type: 'VARCHAR(3)', k: '', d: 'Standard three-letter driver abbreviation (e.g. HAM)', s: 'driver_code', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_DRIVER', c: 'driver_name', type: 'VARCHAR(100)', k: '', d: 'Full name of the driver', s: 'driver_name', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_DRIVER', c: 'driver_dob', type: 'DATE', k: '', d: 'Driver date of birth (YYYY-MM-DD)', s: 'driver_dob', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_DRIVER', c: 'driver_nationality', type: 'VARCHAR(50)', k: '', d: 'Nationality of the driver', s: 'driver_nationality', schemas: ['star', 'snowflake'] },
+
+            // DIM_CONSTRUCTOR
+            { t: 'DIM_CONSTRUCTOR', c: 'constructor_id', type: 'INT', k: 'PK', d: 'Unique identifier for each constructor', s: 'constructor_id', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_CONSTRUCTOR', c: 'constructor_ref', type: 'VARCHAR(50)', k: 'Unique', d: 'Code-like reference name for the constructor', s: 'constructor_ref', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_CONSTRUCTOR', c: 'constructor_name', type: 'VARCHAR(100)', k: '', d: 'Official name of the team/constructor', s: 'constructor_name', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_CONSTRUCTOR', c: 'constructor_nationality', type: 'VARCHAR(50)', k: '', d: 'Nationality of the constructor team', s: 'constructor_nationality', schemas: ['star', 'snowflake'] },
+
+            // DIM_CIRCUIT (Snowflake Only)
+            { t: 'DIM_CIRCUIT', c: 'circuit_id', type: 'INT', k: 'PK', d: 'Unique identifier for each circuit', s: 'circuit_id', schemas: ['snowflake'] },
+            { t: 'DIM_CIRCUIT', c: 'circuit_name', type: 'VARCHAR(150)', k: '', d: 'Official name of the circuit', s: 'circuit_name', schemas: ['snowflake'] },
+            { t: 'DIM_CIRCUIT', c: 'circuit_location', type: 'VARCHAR(100)', k: '', d: 'City or area of the circuit', s: 'circuit_location', schemas: ['snowflake'] },
+            { t: 'DIM_CIRCUIT', c: 'circuit_country', type: 'VARCHAR(100)', k: '', d: 'Country where the circuit is located', s: 'circuit_country', schemas: ['snowflake'] },
+            { t: 'DIM_CIRCUIT', c: 'circuit_latitude', type: 'DECIMAL(9,6)', k: '', d: 'Geographic latitude coordinate', s: 'circuit_latitude', schemas: ['snowflake'] },
+            { t: 'DIM_CIRCUIT', c: 'circuit_longitude', type: 'DECIMAL(9,6)', k: '', d: 'Geographic longitude coordinate', s: 'circuit_longitude', schemas: ['snowflake'] },
+            { t: 'DIM_CIRCUIT', c: 'circuit_altitude_m', type: 'INT', k: '', d: 'Elevation of the circuit above sea level (meters)', s: 'circuit_altitude_m', schemas: ['snowflake'] },
+
+            // DIM_RACE (With conditional circuit columns in Star Schema)
+            { t: 'DIM_RACE', c: 'race_id', type: 'INT', k: 'PK', d: 'Unique identifier for each race event', s: 'race_id', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_RACE', c: 'season_year', type: 'INT', k: 'Unique-1', d: 'Year of the race season', s: 'season', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_RACE', c: 'round', type: 'INT', k: 'Unique-2', d: 'Round number in championship season', s: 'round', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_RACE', c: 'race_name', type: 'VARCHAR(100)', k: '', d: 'The official name of the Grand Prix', s: 'race_name', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_RACE', c: 'circuit_id', type: 'INT', k: 'FK', d: 'In Star: natural identifier attribute. In Snowflake: FK to DIM_CIRCUIT identifying the track.', s: 'circuit_id', schemas: ['star', 'snowflake'] },
+            // Denormalized circuit fields in DIM_RACE (Star Only)
+            { t: 'DIM_RACE', c: 'circuit_name', type: 'VARCHAR(150)', k: '', d: 'Official name of the circuit (Denormalized)', s: 'circuit_name', schemas: ['star'] },
+            { t: 'DIM_RACE', c: 'circuit_location', type: 'VARCHAR(100)', k: '', d: 'City or area of the circuit (Denormalized)', s: 'circuit_location', schemas: ['star'] },
+            { t: 'DIM_RACE', c: 'circuit_country', type: 'VARCHAR(100)', k: '', d: 'Country where the circuit is located (Denormalized)', s: 'circuit_country', schemas: ['star'] },
+            { t: 'DIM_RACE', c: 'circuit_latitude', type: 'DECIMAL(9,6)', k: '', d: 'Geographic latitude coordinate (Denormalized)', s: 'circuit_latitude', schemas: ['star'] },
+            { t: 'DIM_RACE', c: 'circuit_longitude', type: 'DECIMAL(9,6)', k: '', d: 'Geographic longitude coordinate (Denormalized)', s: 'circuit_longitude', schemas: ['star'] },
+            { t: 'DIM_RACE', c: 'circuit_altitude_m', type: 'INT', k: '', d: 'Elevation of the circuit above sea level in meters (Denormalized)', s: 'circuit_altitude_m', schemas: ['star'] },
+            { t: 'DIM_RACE', c: 'race_date', type: 'DATE', k: '', d: 'Date when the race occurred', s: 'race_date', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_RACE', c: 'race_start_time', type: 'TIME', k: '', d: 'Race start time (UTC)', s: 'race_start_time', schemas: ['star', 'snowflake'] },
+
+            // DIM_STATUS
+            { t: 'DIM_STATUS', c: 'status_id', type: 'SERIAL', k: 'PK', d: 'Primary key representing race finish status', s: 'race_status (Derived)', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_STATUS', c: 'status_description', type: 'VARCHAR(100)', k: 'Unique', d: 'Description of finish/retirement (e.g. Finished, Collision)', s: 'race_status', schemas: ['star', 'snowflake'] },
+
+            // DIM_DATE
+            { t: 'DIM_DATE', c: 'date_id', type: 'INT', k: 'PK', d: 'Unique key representation of date: YYYYMMDD', s: 'race_date (Derived)', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_DATE', c: 'full_date', type: 'DATE', k: 'Unique', d: 'Full calendar date value', s: 'race_date (Derived)', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_DATE', c: 'year', type: 'INT', k: '', d: 'Calendar year', s: 'race_date (Derived)', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_DATE', c: 'quarter', type: 'INT', k: '', d: 'Quarter of the year (1 - 4)', s: 'race_date (Derived)', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_DATE', c: 'month', type: 'INT', k: '', d: 'Month number (1 - 12)', s: 'race_date (Derived)', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_DATE', c: 'month_name', type: 'VARCHAR(20)', k: '', d: 'Text month name (e.g. March)', s: 'race_date (Derived)', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_DATE', c: 'day_of_week', type: 'INT', k: '', d: 'Day of week index (1 = Monday, 7 = Sunday)', s: 'race_date (Derived)', schemas: ['star', 'snowflake'] },
+            { t: 'DIM_DATE', c: 'day_name', type: 'VARCHAR(20)', k: '', d: 'Text name of day (e.g. Sunday)', s: 'race_date (Derived)', schemas: ['star', 'snowflake'] },
+
+            // FACT_RACE_RESULTS
+            { t: 'FACT_RACE_RESULTS', c: 'result_id', type: 'SERIAL', k: 'PK', d: 'Surrogate primary key for race results', s: 'n/a (Auto-generated)', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'race_id', type: 'INT', k: 'FK', d: 'FK link to DIM_RACE dimension', s: 'race_id', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'driver_id', type: 'INT', k: 'FK', d: 'FK link to DIM_DRIVER dimension', s: 'driver_id', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'constructor_id', type: 'INT', k: 'FK', d: 'FK link to DIM_CONSTRUCTOR dimension', s: 'constructor_id', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'date_id', type: 'INT', k: 'FK', d: 'FK link to DIM_DATE calendar dimension', s: 'race_date (Lookup)', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'status_id', type: 'INT', k: 'FK', d: 'FK link to DIM_STATUS finishing dimension', s: 'race_status (Lookup)', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'car_number', type: 'INT', k: '', d: "The driver's car number during the race", s: 'car_number', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'grid_position', type: 'INT', k: '', d: 'Starting grid position', s: 'grid_position', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'qualifying_position', type: 'INT', k: '', d: 'Qualifying position', s: 'qualifying_position', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'qualifying_best_time_sec', type: 'DECIMAL(6,3)', k: '', d: 'Fastest lap time in qualifying (seconds)', s: 'qualifying_best_time_sec', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'finish_position', type: 'INT', k: '', d: 'Final classification position (NULL if DNF)', s: 'finish_position', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'finish_position_text', type: 'VARCHAR(10)', k: '', d: 'Finishing code text (e.g. 1, R, D)', s: 'finish_position_text', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'race_points', type: 'DECIMAL(5,2)', k: '', d: 'Championship points scored in the GP', s: 'race_points', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'race_laps', type: 'INT', k: '', d: 'Total laps completed in race', s: 'race_laps', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'race_time', type: 'VARCHAR(20)', k: '', d: 'Total race duration as text', s: 'race_time', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'race_milliseconds', type: 'BIGINT', k: '', d: 'Total race duration in milliseconds', s: 'race_milliseconds', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'fastest_lap_number', type: 'INT', k: '', d: 'Lap number of driver fastest lap', s: 'fastest_lap_number', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'fastest_lap_rank', type: 'INT', k: '', d: 'Rank of fastest lap relative to others', s: 'fastest_lap_rank', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'fastest_lap_time', type: 'VARCHAR(20)', k: '', d: 'Fastest lap time duration string', s: 'fastest_lap_time', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'fastest_lap_speed', type: 'DECIMAL(6,3)', k: '', d: 'Average speed of fastest lap (km/h)', s: 'fastest_lap_speed', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'pit_stop_count', type: 'INT', k: '', d: 'Total pit stops made', s: 'pit_stop_count', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'total_pit_duration_sec', type: 'DECIMAL(7,3)', k: '', d: 'Total duration of all pit stops (seconds)', s: 'total_pit_duration_sec', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'avg_pit_duration_sec', type: 'DECIMAL(6,3)', k: '', d: 'Average pit stop duration (seconds)', s: 'avg_pit_duration_sec', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'fastest_pit_duration_sec', type: 'DECIMAL(6,3)', k: '', d: 'Duration of fastest pit stop (seconds)', s: 'fastest_pit_duration_sec', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'last_pit_lap', type: 'INT', k: '', d: 'Lap number of the final pit stop', s: 'last_pit_lap', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'laps_recorded', type: 'INT', k: '', d: 'Laps recorded with timing data', s: 'laps_recorded', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'fastest_recorded_lap_ms', type: 'INT', k: '', d: 'Fastest recorded lap duration in ms', s: 'fastest_recorded_lap_ms', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'average_lap_ms', type: 'INT', k: '', d: 'Average lap time in milliseconds', s: 'average_lap_ms', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'sprint_position', type: 'INT', k: '', d: 'Sprint race finish position (0 if none)', s: 'sprint_position', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'sprint_points', type: 'DECIMAL(5,2)', k: '', d: 'Points scored in the Sprint race', s: 'sprint_points', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'driver_standing_points', type: 'DECIMAL(7,2)', k: '', d: 'Driver championship points at this race', s: 'driver_standing_points', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'driver_championship_position', type: 'INT', k: '', d: 'Driver rank in standings at this race', s: 'driver_championship_position', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'driver_championship_wins', type: 'INT', k: '', d: 'Cumulative seasonal wins by driver', s: 'driver_championship_wins', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'constructor_standing_points', type: 'DECIMAL(7,2)', k: '', d: 'Constructor points at this race', s: 'constructor_standing_points', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'constructor_championship_position', type: 'INT', k: '', d: 'Constructor rank in standings at this race', s: 'constructor_championship_position', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'constructor_championship_wins', type: 'INT', k: '', d: 'Cumulative seasonal wins by constructor', s: 'constructor_championship_wins', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'constructor_race_points', type: 'DECIMAL(7,2)', k: '', d: 'Total points scored by team in this race', s: 'constructor_race_points', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'position_gain', type: 'INT', k: '', d: 'Positions gained/lost in race', s: 'position_gain', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'qualifying_to_finish_delta', type: 'INT', k: '', d: 'Qualifying position vs finishing delta', s: 'qualifying_to_finish_delta', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'is_pole', type: 'INT', k: '', d: '1 if driver was pole-sitter, else 0', s: 'is_pole', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'is_podium', type: 'INT', k: '', d: '1 if driver finished 1st, 2nd, or 3rd, else 0', s: 'is_podium', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'is_win', type: 'INT', k: '', d: '1 if driver won the Grand Prix, else 0', s: 'is_win', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'is_top_10', type: 'INT', k: '', d: '1 if driver scored points in top 10, else 0', s: 'is_top_10', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'is_dnf', type: 'INT', k: '', d: '1 if driver retired/DNF, else 0', s: 'is_dnf', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'points_per_lap', type: 'DECIMAL(6,4)', k: '', d: 'Race points scored per completed lap', s: 'points_per_lap', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'race_completion_pct', type: 'DECIMAL(5,4)', k: '', d: 'Percentage of total laps completed', s: 'race_completion_pct', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'driver_age_years', type: 'DECIMAL(5,2)', k: '', d: "Driver's age in decimal years at race date", s: 'driver_age_years', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'driver_standing_gap_to_leader', type: 'DECIMAL(7,2)', k: '', d: 'Gap in championship points behind leader', s: 'driver_standing_gap_to_leader', schemas: ['star', 'snowflake'] },
+            { t: 'FACT_RACE_RESULTS', c: 'constructor_standing_gap_to_leader', type: 'DECIMAL(7,2)', k: '', d: 'Constructor points gap behind team leader', s: 'constructor_standing_gap_to_leader', schemas: ['star', 'snowflake'] }
+        ];
+
+        // Mappings definition with schema-conditional target tables & rules
+        const mappings = [
+            { s: 'race_id', t_table: 'DIM_RACE', t_col: 'race_id', rule: 'Direct mapping (Cast to INT PK)', type: 'INT' },
+            { s: 'season', t_table: 'DIM_RACE', t_col: 'season_year', rule: 'Direct mapping (Cast to INT)', type: 'INT' },
+            { s: 'round', t_table: 'DIM_RACE', t_col: 'round', rule: 'Direct mapping (Cast to INT)', type: 'INT' },
+            { s: 'race_name', t_table: 'DIM_RACE', t_col: 'race_name', rule: 'Direct mapping', type: 'VARCHAR(100)' },
+            { s: 'race_date', t_table: 'DIM_RACE', t_col: 'race_date', rule: 'Direct mapping (Parse as Date)', type: 'DATE' },
+            { s: 'race_start_time', t_table: 'DIM_RACE', t_col: 'race_start_time', rule: 'Cast to TIME (replace \'\\N\' with NULL)', type: 'TIME' },
+            
+            // Circuit fields
+            { s: 'circuit_id', t_table: { star: 'DIM_RACE', snowflake: 'DIM_CIRCUIT' }, t_col: 'circuit_id', rule: { star: 'Direct mapping (Cast to INT attribute)', snowflake: 'Direct mapping (Cast to INT PK)' }, type: 'INT' },
+            { s: 'circuit_name', t_table: { star: 'DIM_RACE', snowflake: 'DIM_CIRCUIT' }, t_col: 'circuit_name', rule: 'Direct mapping', type: 'VARCHAR(150)' },
+            { s: 'circuit_location', t_table: { star: 'DIM_RACE', snowflake: 'DIM_CIRCUIT' }, t_col: 'circuit_location', rule: 'Direct mapping', type: 'VARCHAR(100)' },
+            { s: 'circuit_country', t_table: { star: 'DIM_RACE', snowflake: 'DIM_CIRCUIT' }, t_col: 'circuit_country', rule: 'Direct mapping', type: 'VARCHAR(100)' },
+            { s: 'circuit_latitude', t_table: { star: 'DIM_RACE', snowflake: 'DIM_CIRCUIT' }, t_col: 'circuit_latitude', rule: 'Cast to DECIMAL(9,6)', type: 'DECIMAL(9,6)' },
+            { s: 'circuit_longitude', t_table: { star: 'DIM_RACE', snowflake: 'DIM_CIRCUIT' }, t_col: 'circuit_longitude', rule: 'Cast to DECIMAL(9,6)', type: 'DECIMAL(9,6)' },
+            { s: 'circuit_altitude_m', t_table: { star: 'DIM_RACE', snowflake: 'DIM_CIRCUIT' }, t_col: 'circuit_altitude_m', rule: 'Cast to INT (replace \'\\N\' with NULL)', type: 'INT' },
+            
+            // Driver fields
+            { s: 'driver_id', t_table: 'DIM_DRIVER', t_col: 'driver_id', rule: 'Direct mapping (Cast to INT PK)', type: 'INT' },
+            { s: 'driver_ref', t_table: 'DIM_DRIVER', t_col: 'driver_ref', rule: 'Direct mapping', type: 'VARCHAR(50)' },
+            { s: 'driver_code', t_table: 'DIM_DRIVER', t_col: 'driver_code', rule: 'Direct mapping (replace \'\\N\' with NULL)', type: 'VARCHAR(3)' },
+            { s: 'driver_name', t_table: 'DIM_DRIVER', t_col: 'driver_name', rule: 'Direct mapping', type: 'VARCHAR(100)' },
+            { s: 'driver_dob', t_table: 'DIM_DRIVER', t_col: 'driver_dob', rule: 'Direct mapping (Parse as Date)', type: 'DATE' },
+            { s: 'driver_nationality', t_table: 'DIM_DRIVER', t_col: 'driver_nationality', rule: 'Direct mapping', type: 'VARCHAR(50)' },
+            
+            // Constructor fields
+            { s: 'constructor_id', t_table: 'DIM_CONSTRUCTOR', t_col: 'constructor_id', rule: 'Direct mapping (Cast to INT PK)', type: 'INT' },
+            { s: 'constructor_ref', t_table: 'DIM_CONSTRUCTOR', t_col: 'constructor_ref', rule: 'Direct mapping', type: 'VARCHAR(50)' },
+            { s: 'constructor_name', t_table: 'DIM_CONSTRUCTOR', t_col: 'constructor_name', rule: 'Direct mapping', type: 'VARCHAR(100)' },
+            { s: 'constructor_nationality', t_table: 'DIM_CONSTRUCTOR', t_col: 'constructor_nationality', rule: 'Direct mapping', type: 'VARCHAR(50)' },
+            
+            // Fact fields
+            { s: 'car_number', t_table: 'FACT_RACE_RESULTS', t_col: 'car_number', rule: 'Cast to INT (replace \'\\N\' with NULL)', type: 'INT' },
+            { s: 'grid_position', t_table: 'FACT_RACE_RESULTS', t_col: 'grid_position', rule: 'Direct mapping (Cast to INT)', type: 'INT' },
+            { s: 'qualifying_position', t_table: 'FACT_RACE_RESULTS', t_col: 'qualifying_position', rule: 'Cast to INT (replace \'\\N\' with NULL)', type: 'INT' },
+            { s: 'qualifying_best_time_sec', t_table: 'FACT_RACE_RESULTS', t_col: 'qualifying_best_time_sec', rule: 'Cast to DECIMAL (replace \'\\N\' with NULL)', type: 'DECIMAL(6,3)' },
+            { s: 'finish_position', t_table: 'FACT_RACE_RESULTS', t_col: 'finish_position', rule: 'Cast to INT (replace \'\\N\' with NULL)', type: 'INT' },
+            { s: 'finish_position_text', t_table: 'FACT_RACE_RESULTS', t_col: 'finish_position_text', rule: 'Direct mapping', type: 'VARCHAR(10)' },
+            { s: 'race_points', t_table: 'FACT_RACE_RESULTS', t_col: 'race_points', rule: 'Cast to DECIMAL(5,2)', type: 'DECIMAL(5,2)' },
+            { s: 'race_laps', t_table: 'FACT_RACE_RESULTS', t_col: 'race_laps', rule: 'Direct mapping (Cast to INT)', type: 'INT' },
+            { s: 'race_time', t_table: 'FACT_RACE_RESULTS', t_col: 'race_time', rule: 'Direct mapping (replace \'\\N\' with NULL)', type: 'VARCHAR(20)' },
+            { s: 'race_milliseconds', t_table: 'FACT_RACE_RESULTS', t_col: 'race_milliseconds', rule: 'Cast to BIGINT (replace \'\\N\' with NULL)', type: 'BIGINT' },
+            { s: 'race_status', t_table: 'DIM_STATUS', t_col: 'status_description', rule: 'Lookup and insert distinct status value', type: 'VARCHAR(100)' },
+            { s: 'fastest_lap_number', t_table: 'FACT_RACE_RESULTS', t_col: 'fastest_lap_number', rule: 'Cast to INT (replace \'\\N\' with NULL)', type: 'INT' },
+            { s: 'fastest_lap_rank', t_table: 'FACT_RACE_RESULTS', t_col: 'fastest_lap_rank', rule: 'Cast to INT (replace \'\\N\' with NULL)', type: 'INT' },
+            { s: 'fastest_lap_time', t_table: 'FACT_RACE_RESULTS', t_col: 'fastest_lap_time', rule: 'Direct mapping (replace \'\\N\' with NULL)', type: 'VARCHAR(20)' },
+            { s: 'fastest_lap_speed', t_table: 'FACT_RACE_RESULTS', t_col: 'fastest_lap_speed', rule: 'Cast to DECIMAL (replace \'\\N\' with NULL)', type: 'DECIMAL(6,3)' },
+            { s: 'pit_stop_count', t_table: 'FACT_RACE_RESULTS', t_col: 'pit_stop_count', rule: 'Cast to INT (replace \'\\N\' with 0)', type: 'INT' },
+            { s: 'total_pit_duration_sec', t_table: 'FACT_RACE_RESULTS', t_col: 'total_pit_duration_sec', rule: 'Cast to DECIMAL (replace \'\\N\' with 0.0)', type: 'DECIMAL(7,3)' },
+            { s: 'avg_pit_duration_sec', t_table: 'FACT_RACE_RESULTS', t_col: 'avg_pit_duration_sec', rule: 'Cast to DECIMAL (replace \'\\N\' with 0.0)', type: 'DECIMAL(6,3)' },
+            { s: 'fastest_pit_duration_sec', t_table: 'FACT_RACE_RESULTS', t_col: 'fastest_pit_duration_sec', rule: 'Cast to DECIMAL (replace \'\\N\' with 0.0)', type: 'DECIMAL(6,3)' },
+            { s: 'last_pit_lap', t_table: 'FACT_RACE_RESULTS', t_col: 'last_pit_lap', rule: 'Cast to INT (replace \'\\N\' with 0)', type: 'INT' },
+            { s: 'laps_recorded', t_table: 'FACT_RACE_RESULTS', t_col: 'laps_recorded', rule: 'Cast to INT', type: 'INT' },
+            { s: 'fastest_recorded_lap_ms', t_table: 'FACT_RACE_RESULTS', t_col: 'fastest_recorded_lap_ms', rule: 'Cast to INT (replace \'\\N\' with NULL)', type: 'INT' },
+            { s: 'average_lap_ms', t_table: 'FACT_RACE_RESULTS', t_col: 'average_lap_ms', rule: 'Cast to INT (replace \'\\N\' with NULL)', type: 'INT' },
+            { s: 'sprint_position', t_table: 'FACT_RACE_RESULTS', t_col: 'sprint_position', rule: 'Cast to INT (replace \'\\N\' with NULL)', type: 'INT' },
+            { s: 'sprint_points', t_table: 'FACT_RACE_RESULTS', t_col: 'sprint_points', rule: 'Cast to DECIMAL (replace \'\\N\' with 0.0)', type: 'DECIMAL(5,2)' },
+            { s: 'driver_standing_points', t_table: 'FACT_RACE_RESULTS', t_col: 'driver_standing_points', rule: 'Cast to DECIMAL', type: 'DECIMAL(7,2)' },
+            { s: 'driver_championship_position', t_table: 'FACT_RACE_RESULTS', t_col: 'driver_championship_position', rule: 'Cast to INT', type: 'INT' },
+            { s: 'driver_championship_wins', t_table: 'FACT_RACE_RESULTS', t_col: 'driver_championship_wins', rule: 'Cast to INT', type: 'INT' },
+            { s: 'constructor_standing_points', t_table: 'FACT_RACE_RESULTS', t_col: 'constructor_standing_points', rule: 'Cast to DECIMAL', type: 'DECIMAL(7,2)' },
+            { s: 'constructor_championship_position', t_table: 'FACT_RACE_RESULTS', t_col: 'constructor_championship_position', rule: 'Cast to INT', type: 'INT' },
+            { s: 'constructor_championship_wins', t_table: 'FACT_RACE_RESULTS', t_col: 'constructor_championship_wins', rule: 'Cast to INT', type: 'INT' },
+            { s: 'constructor_race_points', t_table: 'FACT_RACE_RESULTS', t_col: 'constructor_race_points', rule: 'Cast to DECIMAL', type: 'DECIMAL(7,2)' },
+            { s: 'position_gain', t_table: 'FACT_RACE_RESULTS', t_col: 'position_gain', rule: 'Cast to INT', type: 'INT' },
+            { s: 'qualifying_to_finish_delta', t_table: 'FACT_RACE_RESULTS', t_col: 'qualifying_to_finish_delta', rule: 'Cast to INT', type: 'INT' },
+            { s: 'is_pole', t_table: 'FACT_RACE_RESULTS', t_col: 'is_pole', rule: 'Cast to INT (0 or 1)', type: 'INT' },
+            { s: 'is_podium', t_table: 'FACT_RACE_RESULTS', t_col: 'is_podium', rule: 'Cast to INT (0 or 1)', type: 'INT' },
+            { s: 'is_win', t_table: 'FACT_RACE_RESULTS', t_col: 'is_win', rule: 'Cast to INT (0 or 1)', type: 'INT' },
+            { s: 'is_top_10', t_table: 'FACT_RACE_RESULTS', t_col: 'is_top_10', rule: 'Cast to INT (0 or 1)', type: 'INT' },
+            { s: 'is_dnf', t_table: 'FACT_RACE_RESULTS', t_col: 'is_dnf', rule: 'Cast to INT (0 or 1)', type: 'INT' },
+            { s: 'points_per_lap', t_table: 'FACT_RACE_RESULTS', t_col: 'points_per_lap', rule: 'Cast to DECIMAL', type: 'DECIMAL(6,4)' },
+            { s: 'race_completion_pct', t_table: 'FACT_RACE_RESULTS', t_col: 'race_completion_pct', rule: 'Cast to DECIMAL', type: 'DECIMAL(5,4)' },
+            { s: 'driver_age_years', t_table: 'FACT_RACE_RESULTS', t_col: 'driver_age_years', rule: 'Cast to DECIMAL', type: 'DECIMAL(5,2)' },
+            { s: 'driver_standing_gap_to_leader', t_table: 'FACT_RACE_RESULTS', t_col: 'driver_standing_gap_to_leader', rule: 'Cast to DECIMAL', type: 'DECIMAL(7,2)' },
+            { s: 'constructor_standing_gap_to_leader', t_table: 'FACT_RACE_RESULTS', t_col: 'constructor_standing_gap_to_leader', rule: 'Cast to DECIMAL', type: 'DECIMAL(7,2)' },
+            
+            // Derived calendar mapping
+            { s: 'race_date (derived)', t_table: 'DIM_DATE', t_col: 'date_id', rule: 'Convert race_date format YYYY-MM-DD to YYYYMMDD', type: 'INT' },
+            { s: 'race_date (derived)', t_table: 'DIM_DATE', t_col: 'full_date', rule: 'Parse as date', type: 'DATE' },
+            { s: 'race_date (derived)', t_table: 'DIM_DATE', t_col: 'year', rule: 'Extract year', type: 'INT' },
+            { s: 'race_date (derived)', t_table: 'DIM_DATE', t_col: 'quarter', rule: 'Calculate quarter (1-4)', type: 'INT' },
+            { s: 'race_date (derived)', t_table: 'DIM_DATE', t_col: 'month', rule: 'Extract month number (1-12)', type: 'INT' },
+            { s: 'race_date (derived)', t_table: 'DIM_DATE', t_col: 'month_name', rule: 'Extract month name text', type: 'VARCHAR(20)' },
+            { s: 'race_date (derived)', t_table: 'DIM_DATE', t_col: 'day_of_week', rule: 'Calculate day index (1-7)', type: 'INT' },
+            { s: 'race_date (derived)', t_table: 'DIM_DATE', t_col: 'day_name', rule: 'Extract day name text', type: 'VARCHAR(20)' },
+            { s: 'race_date (derived)', t_table: 'FACT_RACE_RESULTS', t_col: 'date_id', rule: 'Lookup date_id in DIM_DATE', type: 'INT' },
+            { s: 'race_status (derived)', t_table: 'FACT_RACE_RESULTS', t_col: 'status_id', rule: 'Lookup status_id in DIM_STATUS', type: 'INT' }
+        ];
+
+        // Switch tab mechanism
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            // Remove active style from all tab buttons
+            document.querySelectorAll('[id^="btn-tab-"]').forEach(el => {
+                el.classList.remove('glass-tab-active', 'bg-gray-800/80', 'text-white');
+                el.classList.add('text-gray-400');
+            });
+
+            // Show active tab
+            document.getElementById(tabId).classList.remove('hidden');
+            // Add active style to target button
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.add('glass-tab-active', 'bg-gray-800/80');
+            activeBtn.classList.remove('text-gray-400');
+
+            // Handle rendering when entering ERD or DDL script tabs
+            if (tabId === 'tab-er') {
+                renderMermaid();
+            } else if (tabId === 'tab-ddl') {
+                renderDdlScript();
+            }
+        }
+
+        // Schema Switching logic
+        function setSchema(schema) {
+            activeSchema = schema;
+
+            // Highlight switcher buttons
+            const starBtn = document.getElementById('schema-star-btn');
+            const snowflakeBtn = document.getElementById('schema-snowflake-btn');
+
+            if (schema === 'star') {
+                starBtn.className = "px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition duration-150 flex items-center gap-1.5 bg-red-600 text-white shadow";
+                snowflakeBtn.className = "px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition duration-150 flex items-center gap-1.5 text-gray-400 hover:text-white";
+                
+                // Update Overview Metrics
+                document.getElementById('stat-schema-name').textContent = 'Star Schema';
+                document.getElementById('stat-schema-desc').textContent = 'Flat denormalized dimensions';
+                document.getElementById('stat-table-count').textContent = '6';
+                document.getElementById('stat-table-details').textContent = '1 Fact + 5 Dimensions';
+                document.getElementById('dimension-desc-panel').innerHTML = 'Star Schema dimensions represent entities providing business context: <strong>DIM_DRIVER</strong>, <strong>DIM_CONSTRUCTOR</strong>, <strong>DIM_RACE</strong> (incorporating circuit columns directly), <strong>DIM_STATUS</strong>, and <strong>DIM_DATE</strong>.';
+                
+                // Update ERD copy text & fields
+                document.getElementById('er-title-name').textContent = 'Star Schema';
+                document.getElementById('er-desc-name').textContent = 'All circuit columns collapsed directly into DIM_RACE to eliminate join depth.';
+                document.getElementById('er-code').value = starMermaid;
+                
+                // Hide DIM_CIRCUIT in Data Dictionary drop-down filter
+                const circuitOpt = document.getElementById('filter-opt-circuit');
+                circuitOpt.style.display = 'none';
+                if (document.getElementById('dict-table-filter').value === 'DIM_CIRCUIT') {
+                    document.getElementById('dict-table-filter').value = 'ALL';
+                }
+
+                // Update DDL script filename
+                document.getElementById('sql-filename').textContent = 'create_star_schema.sql';
+            } else {
+                snowflakeBtn.className = "px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition duration-150 flex items-center gap-1.5 bg-red-600 text-white shadow";
+                starBtn.className = "px-4 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition duration-150 flex items-center gap-1.5 text-gray-400 hover:text-white";
+
+                // Update Overview Metrics
+                document.getElementById('stat-schema-name').textContent = 'Snowflake Schema';
+                document.getElementById('stat-schema-desc').textContent = 'Normalized circuit sub-dimension';
+                document.getElementById('stat-table-count').textContent = '7';
+                document.getElementById('stat-table-details').textContent = '1 Fact + 6 Dimensions';
+                document.getElementById('dimension-desc-panel').innerHTML = 'Snowflake Schema dimensions normalize nested hierarchies: <strong>DIM_DRIVER</strong>, <strong>DIM_CONSTRUCTOR</strong>, <strong>DIM_RACE</strong> (linked to sub-dimension <strong>DIM_CIRCUIT</strong>), <strong>DIM_STATUS</strong>, and <strong>DIM_DATE</strong>.';
+
+                // Update ERD copy text & fields
+                document.getElementById('er-title-name').textContent = 'Snowflake Schema';
+                document.getElementById('er-desc-name').textContent = 'DIM_CIRCUIT is isolated as a normalized sub-dimension connected to DIM_RACE.';
+                document.getElementById('er-code').value = snowflakeMermaid;
+
+                // Show DIM_CIRCUIT in Data Dictionary drop-down filter
+                document.getElementById('filter-opt-circuit').style.display = 'block';
+
+                // Update DDL script filename
+                document.getElementById('sql-filename').textContent = 'create_snowflake_schema.sql';
+            }
+
+            // Re-draw elements
+            populateDict();
+            populateMapping();
+            
+            // Re-render active view if on ERD or DDL tabs
+            const erdTabOpen = !document.getElementById('tab-er').classList.contains('hidden');
+            const ddlTabOpen = !document.getElementById('tab-ddl').classList.contains('hidden');
+            if (erdTabOpen) renderMermaid();
+            if (ddlTabOpen) renderDdlScript();
+        }
+
+        // Render Mermaid Diagram
+        function renderMermaid() {
+            const erdWrapper = document.getElementById('erd-wrapper');
+            erdWrapper.innerHTML = `<pre class="mermaid text-center" id="erd-graph">${activeSchema === 'star' ? starMermaid : snowflakeMermaid}</pre>`;
+            try {
+                mermaid.init(undefined, document.getElementById('erd-graph'));
+            } catch (e) {
+                console.error("Mermaid render error: ", e);
+            }
+        }
+
+        // Render DDL SQL Script
+        function renderDdlScript() {
+            const sqlBlock = document.getElementById('sql-code-block');
+            sqlBlock.textContent = activeSchema === 'star' ? starSql : snowflakeSql;
+            // Trigger Prism highlighting
+            Prism.highlightElement(sqlBlock);
+        }
+
+        // Initialize Data Dictionary
+        function populateDict() {
+            const tbody = document.getElementById('dict-tbody');
+            tbody.innerHTML = '';
+            
+            dataDictionary.forEach(item => {
+                // Check if column is applicable in active schema
+                if (!item.schemas.includes(activeSchema)) return;
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-900/40 transition duration-100 border-b border-gray-800/40';
+                tr.setAttribute('data-table', item.t);
+                tr.setAttribute('data-search', `${item.c} ${item.d} ${item.type} ${item.s}`.toLowerCase());
+                
+                const isFact = item.t.startsWith('FACT');
+                const badgeColor = isFact ? 'bg-red-950/60 text-red-400 border-red-900/50' : 'bg-blue-950/60 text-blue-400 border-blue-900/50';
+                
+                let keyBadge = '';
+                if (item.k === 'PK') {
+                    keyBadge = '<span class="px-1.5 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-900/30 text-[10px] font-bold font-mono">PK</span>';
+                } else if (item.k === 'FK') {
+                    keyBadge = '<span class="px-1.5 py-0.5 rounded bg-purple-950 text-purple-400 border border-purple-900/30 text-[10px] font-bold font-mono">FK</span>';
+                } else if (item.k.startsWith('Unique')) {
+                    keyBadge = '<span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-900/30 text-[10px] font-bold font-mono">UQ</span>';
+                }
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono text-xs"><span class="border px-2 py-0.5 rounded-full ${badgeColor}">${item.t}</span></td>
+                    <td class="py-3 px-4 font-semibold text-white text-xs font-mono">${item.c}</td>
+                    <td class="py-3 px-4 font-mono text-xs text-gray-300">${item.type}</td>
+                    <td class="py-3 px-4 text-center">${keyBadge}</td>
+                    <td class="py-3 px-4 text-gray-400 text-xs">${item.d}</td>
+                    <td class="py-3 px-4 text-gray-500 font-mono text-xs">${item.s}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            // Reapply filters
+            filterDict();
+        }
+
+        // Filter Data Dictionary
+        function filterDict() {
+            const query = document.getElementById('dict-search').value.toLowerCase();
+            const tableFilter = document.getElementById('dict-table-filter').value;
+            const rows = document.querySelectorAll('#dict-tbody tr');
+
+            rows.forEach(row => {
+                const table = row.getAttribute('data-table');
+                const searchContent = row.getAttribute('data-search');
+                
+                const matchesTable = (tableFilter === 'ALL' || table === tableFilter);
+                const matchesSearch = (!query || searchContent.includes(query));
+
+                if (matchesTable && matchesSearch) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+        }
+
+        // Initialize Mapping
+        function populateMapping() {
+            const tbody = document.getElementById('mapping-tbody');
+            tbody.innerHTML = '';
+
+            mappings.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-900/40 transition duration-100 border-b border-gray-800/40';
+
+                // Resolve conditional strings for star/snowflake
+                const tTable = typeof item.t_table === 'object' ? item.t_table[activeSchema] : item.t_table;
+                const rule = typeof item.rule === 'object' ? item.rule[activeSchema] : item.rule;
+
+                tr.setAttribute('data-search', `${item.s} ${tTable} ${item.t_col} ${rule}`.toLowerCase());
+
+                const isFact = tTable.startsWith('FACT');
+                const badgeColor = isFact ? 'bg-red-950/60 text-red-400 border-red-900/50' : (tTable === 'n/a' ? 'bg-gray-900 text-gray-500 border-gray-800' : 'bg-blue-950/60 text-blue-400 border-blue-900/50');
+
+                tr.innerHTML = `
+                    <td class="py-3 px-4 font-mono text-xs text-white font-semibold">${item.s}</td>
+                    <td class="py-3 px-4 text-center text-red-500 text-xs"><i class="fa-solid fa-angle-right"></i></td>
+                    <td class="py-3 px-4 font-mono text-xs"><span class="border px-2 py-0.5 rounded-full ${badgeColor}">${tTable}</span></td>
+                    <td class="py-3 px-4 font-mono text-xs text-gray-300 font-semibold">${item.t_col}</td>
+                    <td class="py-3 px-4 text-xs text-gray-400">${rule}</td>
+                    <td class="py-3 px-4 font-mono text-xs text-gray-500">${item.type}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            // Reapply filters
+            filterMapping();
+        }
+
+        // Filter Mapping
+        function filterMapping() {
+            const query = document.getElementById('mapping-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#mapping-tbody tr');
+
+            rows.forEach(row => {
+                const searchContent = row.getAttribute('data-search');
+                if (!query || searchContent.includes(query)) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+        }
+
+        // Copy Code utility
+        function copyToClipboard(blockId) {
+            const element = document.getElementById(blockId);
+            const textToCopy = element.value || element.textContent;
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const toast = document.getElementById('toast');
+                toast.classList.remove('translate-y-24', 'opacity-0');
+                toast.classList.add('translate-y-0', 'opacity-100');
+                
+                setTimeout(() => {
+                    toast.classList.remove('translate-y-0', 'opacity-100');
+                    toast.classList.add('translate-y-24', 'opacity-0');
+                }, 3000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+
+        // ====================================================================
+        // DYNAMIC SQL CONSOLE, OLAP PIVOT, & WHAT-IF STRATEGY CONTROLLERS
+        // ====================================================================
+        let sqlChart = null;
+        let olapChart = null;
+        let whatifChart = null;
+
+        const SQL_TEMPLATES = {
+            1: `-- 🏆 Top 10 Drivers by Grand Prix Wins (2008 - 2024)
+SELECT d.driver_name, d.driver_code, d.driver_nationality, SUM(f.is_win) AS total_wins, SUM(f.race_points) AS total_points, COUNT(f.result_id) AS total_entries
+FROM FACT_RACE_RESULTS f
+JOIN DIM_DRIVER d ON f.driver_id = d.driver_id
+GROUP BY d.driver_name
+HAVING total_wins > 0
+ORDER BY total_wins DESC
+LIMIT 10;`,
+            2: `-- 🚀 Top 10 Fastest Speed Traps Recorded in Telemetry
+SELECT flt.speed_trap_kmh, d.driver_code, d.driver_name, c.constructor_name, r.race_name, r.season_year, flt.lap_number
+FROM FACT_LAP_TIMES flt
+JOIN DIM_DRIVER d ON flt.driver_id = d.driver_id
+JOIN DIM_CONSTRUCTOR c ON flt.constructor_id = c.constructor_id
+JOIN DIM_RACE r ON flt.race_id = r.race_id
+ORDER BY flt.speed_trap_kmh DESC
+LIMIT 10;`,
+            3: `-- ⏱️ Fastest Average Pit Stop Crews by Constructor (Min 50 stops)
+SELECT c.constructor_name, ROUND(AVG(f.avg_pit_duration_sec), 2) AS avg_pit_seconds, ROUND(MIN(f.fastest_pit_duration_sec), 2) AS record_pit_seconds, SUM(f.pit_stop_count) AS total_pit_stops
+FROM FACT_RACE_RESULTS f
+JOIN DIM_CONSTRUCTOR c ON f.constructor_id = c.constructor_id
+WHERE f.avg_pit_duration_sec > 0
+GROUP BY c.constructor_name
+HAVING total_pit_stops >= 50
+ORDER BY avg_pit_seconds ASC
+LIMIT 10;`,
+            4: `-- 🥇 Hamilton vs Verstappen Career Head-to-Head by Season
+SELECT r.season_year,
+       SUM(CASE WHEN f.driver_id = 1 THEN f.race_points ELSE 0 END) AS hamilton_points,
+       SUM(CASE WHEN f.driver_id = 830 THEN f.race_points ELSE 0 END) AS verstappen_points,
+       SUM(CASE WHEN f.driver_id = 1 THEN f.is_win ELSE 0 END) AS hamilton_wins,
+       SUM(CASE WHEN f.driver_id = 830 THEN f.is_win ELSE 0 END) AS verstappen_wins
+FROM FACT_RACE_RESULTS f
+JOIN DIM_RACE r ON f.race_id = r.race_id
+WHERE f.driver_id IN (1, 830) AND r.season_year >= 2015
+GROUP BY r.season_year
+ORDER BY r.season_year ASC;`,
+            5: `-- 🏁 Constructor Championship Points Aggregation (2008 - 2024)
+SELECT c.constructor_name, SUM(f.race_points) AS total_points, SUM(f.is_win) AS total_wins, COUNT(DISTINCT r.season_year) AS seasons_competed
+FROM FACT_RACE_RESULTS f
+JOIN DIM_CONSTRUCTOR c ON f.constructor_id = c.constructor_id
+JOIN DIM_RACE r ON f.race_id = r.race_id
+WHERE r.season_year >= 2008
+GROUP BY c.constructor_name
+ORDER BY total_points DESC
+LIMIT 10;`
+        };
+
+        function loadSqlTemplate(id) {
+            const sql = SQL_TEMPLATES[id];
+            if (sql) {
+                document.getElementById('sql-input').value = sql;
+                runUserSQL();
+            }
+        }
+
+        async function runUserSQL() {
+            const query = document.getElementById('sql-input').value.trim();
+            const timeBadge = document.getElementById('sql-exec-time');
+            const thead = document.getElementById('sql-thead');
+            const tbody = document.getElementById('sql-tbody');
+            const rowBadge = document.getElementById('sql-row-badge');
+
+            timeBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-yellow-400"></i> Running...';
+
+            try {
+                const res = await fetch('/api/analytics/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sql: query, limit: 100 })
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    timeBadge.innerHTML = `<i class="fa-solid fa-circle-xmark text-red-500"></i> Error (${data.execution_time_ms}ms)`;
+                    thead.innerHTML = '<tr><th class="p-3 text-red-400">Query Error</th></tr>';
+                    tbody.innerHTML = `<tr><td class="p-4 text-red-300 font-mono">${data.error}</td></tr>`;
+                    rowBadge.textContent = '0 rows';
+                    return;
+                }
+
+                timeBadge.innerHTML = `<i class="fa-solid fa-bolt text-yellow-400"></i> ${data.execution_time_ms} ms`;
+                rowBadge.textContent = `${data.row_count} rows`;
+
+                // Render Table Header
+                thead.innerHTML = '<tr>' + data.columns.map(col => `<th class="p-2.5 border-b border-gray-800">${col}</th>`).join('') + '</tr>';
+
+                // Render Table Body
+                if (data.rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="' + data.columns.length + '" class="p-4 text-center text-gray-500">Query returned 0 rows.</td></tr>';
+                } else {
+                    tbody.innerHTML = data.rows.map(row => 
+                        '<tr class="hover:bg-gray-900/40">' + data.columns.map(col => `<td class="p-2.5">${row[col] ?? 'NULL'}</td>`).join('') + '</tr>'
+                    ).join('');
+                }
+
+                // Render Dynamic EChart from first string/number columns
+                renderDynamicSqlChart(data);
+
+            } catch (err) {
+                timeBadge.innerHTML = '<i class="fa-solid fa-circle-xmark text-red-500"></i> Failed';
+                console.error(err);
+            }
+        }
+
+        function renderDynamicSqlChart(data) {
+            const container = document.getElementById('sql-chart-container');
+            if (!container) return;
+            if (!sqlChart) sqlChart = echarts.init(container);
+
+            if (!data.rows || data.rows.length === 0 || data.columns.length < 2) {
+                sqlChart.clear();
+                return;
+            }
+
+            const labelCol = data.columns[0];
+            const valCol = data.columns.find((c, idx) => idx > 0 && typeof data.rows[0][c] === 'number') || data.columns[1];
+
+            const categories = data.rows.map(r => String(r[labelCol]));
+            const values = data.rows.map(r => Number(r[valCol]) || 0);
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                grid: { left: '3%', right: '4%', bottom: '3%', top: '8%', containLabel: true },
+                xAxis: {
+                    type: 'value',
+                    splitLine: { lineStyle: { color: '#1f2937' } },
+                    axisLabel: { color: '#9ca3af', fontFamily: 'Inter' }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: categories.reverse(),
+                    axisLabel: { color: '#f3f4f6', fontFamily: 'Inter', formatter: val => val.length > 14 ? val.substring(0, 14) + '…' : val }
+                },
+                series: [{
+                    name: valCol,
+                    type: 'bar',
+                    data: values.reverse(),
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+                            { offset: 0, color: '#ef4444' },
+                            { offset: 1, color: '#7f1d1d' }
+                        ]),
+                        borderRadius: [0, 4, 4, 0]
+                    }
+                }]
+            };
+            sqlChart.setOption(option, true);
+        }
+
+        async function runOlapPivot() {
+            const dim = document.getElementById('olap-dim').value;
+            const metric = document.getElementById('olap-metric').value;
+            const minYr = document.getElementById('olap-min-year').value;
+            const maxYr = document.getElementById('olap-max-year').value;
+            const limit = document.getElementById('olap-limit').value;
+
+            try {
+                const res = await fetch(`/api/analytics/pivot?dimension=${dim}&metric=${metric}&season_min=${minYr}&season_max=${maxYr}&limit=${limit}`);
+                const data = await res.json();
+
+                const tbody = document.getElementById('olap-tbody');
+                if (!tbody) return;
+
+                if (!data.results || data.results.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="p-4 text-center text-gray-500">No records found for selected criteria.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.results.map((r, i) => `
+                    <tr class="hover:bg-gray-900/40">
+                        <td class="p-2.5 font-bold text-white flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800 text-[10px] flex items-center justify-center font-mono">${i + 1}</span>
+                            <span>${r.dim_label}</span>
+                            ${r.sub_label && r.sub_label !== r.dim_label ? `<span class="text-gray-500 text-[10px]">(${r.sub_label})</span>` : ''}
+                        </td>
+                        <td class="p-2.5 text-right font-mono font-bold text-cyan-400 text-sm">${r.metric_val?.toLocaleString()}</td>
+                        <td class="p-2.5 text-center font-mono text-gray-400">${r.total_races_participated}</td>
+                    </tr>
+                `).join('');
+
+                renderOlapChart(data);
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderOlapChart(data) {
+            const container = document.getElementById('olap-chart-container');
+            if (!container) return;
+            if (!olapChart) olapChart = echarts.init(container);
+
+            const categories = data.results.map(r => r.dim_label).reverse();
+            const values = data.results.map(r => r.metric_val).reverse();
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                grid: { left: '3%', right: '4%', bottom: '3%', top: '6%', containLabel: true },
+                xAxis: {
+                    type: 'value',
+                    splitLine: { lineStyle: { color: '#1f2937' } },
+                    axisLabel: { color: '#9ca3af', fontFamily: 'Inter' }
+                },
+                yAxis: {
+                    type: 'category',
+                    data: categories,
+                    axisLabel: { color: '#f3f4f6', fontFamily: 'Inter', formatter: val => val.length > 14 ? val.substring(0, 14) + '…' : val }
+                },
+                series: [{
+                    type: 'bar',
+                    data: values,
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+                            { offset: 0, color: '#06b6d4' },
+                            { offset: 1, color: '#083344' }
+                        ]),
+                        borderRadius: [0, 4, 4, 0]
+                    }
+                }]
+            };
+            olapChart.setOption(option, true);
+        }
+
+        async function runWhatIfSimulation() {
+            const p1 = document.getElementById('input-pit1').value;
+            const p2 = document.getElementById('input-pit2').value;
+            const deg = document.getElementById('input-deg').value;
+            const under = document.getElementById('input-undercut').value;
+
+            document.getElementById('val-pit1').textContent = `Lap ${p1}`;
+            document.getElementById('val-pit2').textContent = `Lap ${p2}`;
+            document.getElementById('val-deg').textContent = `${deg}% / lap`;
+            document.getElementById('val-undercut').textContent = `${under}s gain`;
+
+            try {
+                const res = await fetch(`/api/analytics/what-if?pit_lap_1=${p1}&pit_lap_2=${p2}&tyre_deg_rate_pct=${deg}&undercut_gain_sec=${under}&total_laps=52`);
+                const data = await res.json();
+
+                document.getElementById('whatif-total-time').textContent = data.total_race_time_str;
+
+                renderWhatIfChart(data);
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderWhatIfChart(data) {
+            const container = document.getElementById('whatif-chart-container');
+            if (!container) return;
+            if (!whatifChart) whatifChart = echarts.init(container);
+
+            const laps = data.laps.map(l => l.lap);
+            const lapTimes = data.laps.map(l => l.lap_time_sec);
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    valueFormatter: v => `${v}s`
+                },
+                grid: { left: '3%', right: '3%', bottom: '8%', top: '10%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: laps,
+                    name: 'Lap',
+                    splitLine: { lineStyle: { color: '#1f2937' } },
+                    axisLabel: { color: '#9ca3af' }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Lap Time (s)',
+                    min: 85,
+                    splitLine: { lineStyle: { color: '#1f2937' } },
+                    axisLabel: { color: '#9ca3af', formatter: '{value}s' }
+                },
+                series: [{
+                    name: 'Projected Lap Time',
+                    type: 'line',
+                    smooth: true,
+                    data: lapTimes,
+                    lineStyle: { color: '#f59e0b', width: 3 },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(245, 158, 11, 0.3)' },
+                            { offset: 1, color: 'rgba(245, 158, 11, 0.0)' }
+                        ])
+                    }
+                }]
+            };
+            whatifChart.setOption(option, true);
+        }
+
+        // Initialize elements on load
+        window.addEventListener('DOMContentLoaded', () => {
+            setSchema('star'); // Default to Star Schema
+            switchTab('tab-overview'); // Set initial view to overview
+            setTimeout(() => {
+                runUserSQL();
+                runOlapPivot();
+                runWhatIfSimulation();
+            }, 200);
+        });
+
+        // Resize listeners
+        window.addEventListener('resize', () => {
+            sqlChart?.resize();
+            olapChart?.resize();
+            whatifChart?.resize();
+        });
+    </script>
+</body>
+</html>

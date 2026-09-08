@@ -1,0 +1,151 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 300,
+      "title": "🏆 Constructors Championship & Team Points",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+      "gridPos": { "h": 9, "w": 14, "x": 0, "y": 1 },
+      "id": 301,
+      "title": "Constructor Points Accumulation (Season Standings)",
+      "type": "barchart",
+      "options": {
+        "barRadius": 0.1,
+        "barWidth": 0.8,
+        "groupWidth": 0.7,
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": false },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": { "mode": "single" },
+        "xTickLabelRotation": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "pts"
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Mercedes" }, "properties": [{ "id": "color", "value": { "fixedColor": "#27F4D2", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Red Bull" }, "properties": [{ "id": "color", "value": { "fixedColor": "#3671C6", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Ferrari" }, "properties": [{ "id": "color", "value": { "fixedColor": "#E8002D", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "McLaren" }, "properties": [{ "id": "color", "value": { "fixedColor": "#FF8000", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "Aston Martin" }, "properties": [{ "id": "color", "value": { "fixedColor": "#229971", "mode": "fixed" } }] }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+          "format": "table",
+          "rawSql": "SELECT t.team_name AS \"Constructor\", SUM(f.points) AS \"Points\"\nFROM fact_race_results f\nJOIN dim_team t ON f.team_id = t.team_id\nJOIN dim_race r ON f.race_id = r.race_id\nWHERE r.season_year = ${season}\nGROUP BY t.team_name\nORDER BY \"Points\" ASC;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+      "gridPos": { "h": 9, "w": 10, "x": 14, "y": 1 },
+      "id": 302,
+      "title": "Team Race Wins & Podiums Breakdown",
+      "type": "table",
+      "options": {
+        "footer": { "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Points" }]
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+          "format": "table",
+          "rawSql": "SELECT \n  t.team_name AS \"Constructor\",\n  t.engine_supplier AS \"Engine\",\n  SUM(f.points) AS \"Points\",\n  SUM(f.is_win) AS \"Wins\",\n  SUM(f.is_podium) AS \"Podiums\",\n  SUM(f.is_pole) AS \"Poles\"\nFROM fact_race_results f\nJOIN dim_team t ON f.team_id = t.team_id\nJOIN dim_race r ON f.race_id = r.race_id\nWHERE r.season_year = ${season}\nGROUP BY t.team_name, t.engine_supplier\nORDER BY \"Points\" DESC;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 10 },
+      "id": 303,
+      "title": "⏱️ Pit Stop Efficiency & Crew Performance",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 11 },
+      "id": 304,
+      "title": "Average Pit Duration vs Fastest Recorded Pit Stop (Seconds)",
+      "type": "bargauge",
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 24 },
+              { "color": "red", "value": 27 }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+          "format": "table",
+          "rawSql": "SELECT \n  t.team_name AS \"Constructor\",\n  ROUND(AVG(f.total_pit_time_ms / 1000.0 / NULLIF(f.pit_stop_count, 0)), 2) AS \"Avg Pit Stop (s)\"\nFROM fact_race_results f\nJOIN dim_team t ON f.team_id = t.team_id\nJOIN dim_race r ON f.race_id = r.race_id\nWHERE r.season_year = ${season} AND f.pit_stop_count > 0\nGROUP BY t.team_name\nORDER BY \"Avg Pit Stop (s)\" ASC;",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["f1", "constructors", "telemetry"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "2024", "value": "2024" },
+        "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+        "definition": "SELECT DISTINCT season_year AS __text, season_year AS __value FROM dim_race ORDER BY season_year DESC;",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Season",
+        "multi": false,
+        "name": "season",
+        "options": [],
+        "query": "SELECT DISTINCT season_year AS __text, season_year AS __value FROM dim_race ORDER BY season_year DESC;",
+        "refresh": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "Formula 1 — Constructors & Pit Strategy",
+  "uid": "f1-constructors",
+  "version": 1
+}

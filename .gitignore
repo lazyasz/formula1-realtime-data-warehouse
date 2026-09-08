@@ -1,0 +1,18 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.env
+
+# Large database & archives
+*.db
+*.sqlite
+*.sqlite3
+*.zip
+*.tar.gz
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,79 @@
+Source_File,Source_Column,Target_Table,Target_Column,Transformation_Rule,Data_Type
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_id,DIM_RACE,race_id,Direct mapping (Cast to INT PK),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,season,DIM_RACE,season_year,Direct mapping (Cast to INT),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,round,DIM_RACE,round,Direct mapping (Cast to INT),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_name,DIM_RACE,race_name,Direct mapping,VARCHAR(100)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_date,DIM_RACE,race_date,Direct mapping (Parse as YYYY-MM-DD Date),DATE
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_start_time,DIM_RACE,race_start_time,Cast to TIME (replace '\N' with NULL),TIME
+F1_Warehouse_Master_65_Columns_2004_2024.csv,circuit_id,DIM_RACE (Star) / DIM_CIRCUIT (Snowflake),circuit_id,Direct mapping (Star: Attribute; Snowflake: FK/PK),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,circuit_name,DIM_RACE (Star) / DIM_CIRCUIT (Snowflake),circuit_name,Direct mapping,VARCHAR(150)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,circuit_location,DIM_RACE (Star) / DIM_CIRCUIT (Snowflake),circuit_location,Direct mapping,VARCHAR(100)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,circuit_country,DIM_RACE (Star) / DIM_CIRCUIT (Snowflake),circuit_country,Direct mapping,VARCHAR(100)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,circuit_latitude,DIM_RACE (Star) / DIM_CIRCUIT (Snowflake),circuit_latitude,Cast to DECIMAL(9,6),DECIMAL(9,6)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,circuit_longitude,DIM_RACE (Star) / DIM_CIRCUIT (Snowflake),circuit_longitude,Cast to DECIMAL(9,6),DECIMAL(9,6)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,circuit_altitude_m,DIM_RACE (Star) / DIM_CIRCUIT (Snowflake),circuit_altitude_m,Cast to INT (replace '\N' with NULL),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,driver_id,DIM_DRIVER,driver_id,Direct mapping (Cast to INT PK),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,driver_ref,DIM_DRIVER,driver_ref,Direct mapping,VARCHAR(50)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,driver_code,DIM_DRIVER,driver_code,Direct mapping (replace '\N' with NULL),VARCHAR(3)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,driver_name,DIM_DRIVER,driver_name,Direct mapping,VARCHAR(100)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,driver_dob,DIM_DRIVER,driver_dob,Direct mapping (Parse as YYYY-MM-DD Date),DATE
+F1_Warehouse_Master_65_Columns_2004_2024.csv,driver_nationality,DIM_DRIVER,driver_nationality,Direct mapping,VARCHAR(50)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,constructor_id,DIM_CONSTRUCTOR,constructor_id,Direct mapping (Cast to INT PK),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,constructor_ref,DIM_CONSTRUCTOR,constructor_ref,Direct mapping,VARCHAR(50)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,constructor_name,DIM_CONSTRUCTOR,constructor_name,Direct mapping,VARCHAR(100)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,constructor_nationality,DIM_CONSTRUCTOR,constructor_nationality,Direct mapping,VARCHAR(50)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,car_number,FACT_RACE_RESULTS,car_number,Cast to INT (replace '\N' with NULL),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,grid_position,FACT_RACE_RESULTS,grid_position,Direct mapping (Cast to INT),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,qualifying_position,FACT_RACE_RESULTS,qualifying_position,Cast to INT (replace '\N' with NULL),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,qualifying_best_time_sec,FACT_RACE_RESULTS,qualifying_best_time_sec,Cast to DECIMAL(6,3) (replace '\N' with NULL),DECIMAL(6,3)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,finish_position,FACT_RACE_RESULTS,finish_position,Cast to INT (replace '\N' with NULL),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,finish_position_text,FACT_RACE_RESULTS,finish_position_text,Direct mapping (replace '\N' with NULL),VARCHAR(10)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_points,FACT_RACE_RESULTS,race_points,Cast to DECIMAL(5,2),DECIMAL(5,2)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_laps,FACT_RACE_RESULTS,race_laps,Direct mapping (Cast to INT),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_time,FACT_RACE_RESULTS,race_time,Direct mapping (replace '\N' with NULL),VARCHAR(20)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_milliseconds,FACT_RACE_RESULTS,race_milliseconds,Cast to BIGINT (replace '\N' with NULL),BIGINT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_status,DIM_STATUS,status_description,Insert distinct status text & return status_id,VARCHAR(100)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,fastest_lap_number,FACT_RACE_RESULTS,fastest_lap_number,Cast to INT (replace '\N' with NULL),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,fastest_lap_rank,FACT_RACE_RESULTS,fastest_lap_rank,Cast to INT (replace '\N' with NULL),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,fastest_lap_time,FACT_RACE_RESULTS,fastest_lap_time,Direct mapping (replace '\N' with NULL),VARCHAR(20)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,fastest_lap_speed,FACT_RACE_RESULTS,fastest_lap_speed,Cast to DECIMAL(6,3) (replace '\N' with NULL),DECIMAL(6,3)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,pit_stop_count,FACT_RACE_RESULTS,pit_stop_count,Cast to INT (replace '\N' with 0),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,total_pit_duration_sec,FACT_RACE_RESULTS,total_pit_duration_sec,Cast to DECIMAL(7,3) (replace '\N' with 0.0),DECIMAL(7,3)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,avg_pit_duration_sec,FACT_RACE_RESULTS,avg_pit_duration_sec,Cast to DECIMAL(6,3) (replace '\N' with 0.0),DECIMAL(6,3)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,fastest_pit_duration_sec,FACT_RACE_RESULTS,fastest_pit_duration_sec,Cast to DECIMAL(6,3) (replace '\N' with 0.0),DECIMAL(6,3)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,last_pit_lap,FACT_RACE_RESULTS,last_pit_lap,Cast to INT (replace '\N' with 0),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,laps_recorded,FACT_RACE_RESULTS,laps_recorded,Cast to INT (replace '\N' with 0),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,fastest_recorded_lap_ms,FACT_RACE_RESULTS,fastest_recorded_lap_ms,Cast to INT (replace '\N' with NULL),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,average_lap_ms,FACT_RACE_RESULTS,average_lap_ms,Cast to INT (replace '\N' with NULL),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,sprint_position,FACT_RACE_RESULTS,sprint_position,Cast to INT (replace '\N' with NULL/0),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,sprint_points,FACT_RACE_RESULTS,sprint_points,Cast to DECIMAL(5,2) (replace '\N' with 0.0),DECIMAL(5,2)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,driver_standing_points,FACT_RACE_RESULTS,driver_standing_points,Cast to DECIMAL(7,2) (replace '\N' with 0.0),DECIMAL(7,2)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,driver_championship_position,FACT_RACE_RESULTS,driver_championship_position,Cast to INT (replace '\N' with NULL),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,driver_championship_wins,FACT_RACE_RESULTS,driver_championship_wins,Cast to INT (replace '\N' with 0),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,constructor_standing_points,FACT_RACE_RESULTS,constructor_standing_points,Cast to DECIMAL(7,2) (replace '\N' with 0.0),DECIMAL(7,2)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,constructor_championship_position,FACT_RACE_RESULTS,constructor_championship_position,Cast to INT (replace '\N' with NULL),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,constructor_championship_wins,FACT_RACE_RESULTS,constructor_championship_wins,Cast to INT (replace '\N' with 0),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,constructor_race_points,FACT_RACE_RESULTS,constructor_race_points,Cast to DECIMAL(7,2) (replace '\N' with 0.0),DECIMAL(7,2)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,position_gain,FACT_RACE_RESULTS,position_gain,Cast to INT (replace '\N' with NULL),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,qualifying_to_finish_delta,FACT_RACE_RESULTS,qualifying_to_finish_delta,Cast to INT (replace '\N' with NULL),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,is_pole,FACT_RACE_RESULTS,is_pole,Cast to INT (0 or 1),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,is_podium,FACT_RACE_RESULTS,is_podium,Cast to INT (0 or 1),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,is_win,FACT_RACE_RESULTS,is_win,Cast to INT (0 or 1),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,is_top_10,FACT_RACE_RESULTS,is_top_10,Cast to INT (0 or 1),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,is_dnf,FACT_RACE_RESULTS,is_dnf,Cast to INT (0 or 1),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,points_per_lap,FACT_RACE_RESULTS,points_per_lap,Cast to DECIMAL(6,4),DECIMAL(6,4)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_completion_pct,FACT_RACE_RESULTS,race_completion_pct,Cast to DECIMAL(5,4),DECIMAL(5,4)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,driver_age_years,FACT_RACE_RESULTS,driver_age_years,Cast to DECIMAL(5,2),DECIMAL(5,2)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,driver_age_at_race,n/a,n/a,Duplicate of driver_age_years (Ignore),n/a
+F1_Warehouse_Master_65_Columns_2004_2024.csv,driver_standing_gap_to_leader,FACT_RACE_RESULTS,driver_standing_gap_to_leader,Cast to DECIMAL(7,2) (replace '\N' with 0.0),DECIMAL(7,2)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,constructor_standing_gap_to_leader,FACT_RACE_RESULTS,constructor_standing_gap_to_leader,Cast to DECIMAL(7,2) (replace '\N' with 0.0),DECIMAL(7,2)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_date (derived),DIM_DATE,date_id,Convert race_date format YYYY-MM-DD to YYYYMMDD,INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_date (derived),DIM_DATE,full_date,Parse as date,DATE
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_date (derived),DIM_DATE,year,Extract year from date,INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_date (derived),DIM_DATE,quarter,Calculate quarter from date,INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_date (derived),DIM_DATE,month,Extract month from date,INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_date (derived),DIM_DATE,month_name,Extract month name,VARCHAR(20)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_date (derived),DIM_DATE,day_of_week,Calculate day of week index (1-7),INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_date (derived),DIM_DATE,day_name,Extract day name,VARCHAR(20)
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_date (derived),FACT_RACE_RESULTS,date_id,Lookup date_id in DIM_DATE,INT
+F1_Warehouse_Master_65_Columns_2004_2024.csv,race_status (derived),FACT_RACE_RESULTS,status_id,Lookup status_id in DIM_STATUS,INT

@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # ---------------------------------------------------------------------------
+  # 1. POSTGRESQL DATA WAREHOUSE LAYER
+  # ---------------------------------------------------------------------------
+  f1-postgres:
+    image: postgres:16-alpine
+    container_name: f1-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: f1_warehouse
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres_init:/docker-entrypoint-initdb.d:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d f1_warehouse"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - f1-network
+
+  # ---------------------------------------------------------------------------
+  # 2. PYTHON ETL & LIVE TELEMETRY SIMULATION SERVICE
+  # ---------------------------------------------------------------------------
+  f1-sim-service:
+    build:
+      context: .
+      dockerfile: sim_service/Dockerfile
+    container_name: f1-sim-service
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: f1-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: f1_warehouse
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      SIM_INTERVAL_SEC: 1.5
+      CSV_PATH: /app/F1_Warehouse_Master_65_Columns_2004_2024.csv
+    depends_on:
+      f1-postgres:
+        condition: service_healthy
+    networks:
+      - f1-network
+
+  # ---------------------------------------------------------------------------
+  # 3. GRAFANA OSS DASHBOARD LAYER (FULLY PROVISIONED AS CODE)
+  # ---------------------------------------------------------------------------
+  f1-grafana:
+    image: grafana/grafana-oss:latest
+    container_name: f1-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_DEFAULT_THEME=dark
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=false
+      - POSTGRES_HOST=f1-postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=f1_warehouse
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - ./provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - grafanadata:/var/lib/grafana
+    depends_on:
+      f1-postgres:
+        condition: service_healthy
+    networks:
+      - f1-network
+
+networks:
+  f1-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+  grafanadata:

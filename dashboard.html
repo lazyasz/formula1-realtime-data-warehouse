@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexTelemetry — F1 Live Analytics & Data Warehouse Dashboard</title>
+    <meta name="description" content="Production-grade Formula 1 Live Analytics & Telemetry Dashboard with Power BI cross-filtering, Star & Snowflake schemas, and real-time race simulations.">
+    
+    <!-- Google Fonts: Barlow Condensed, Titillium Web, Inter, JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;0,800;1,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&family=Titillium+Web:wght@600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        f1: {
+                            red: '#E10600',
+                            darkRed: '#9A0000',
+                            bg: '#0B0D10',
+                            card: '#121418',
+                            panel: '#16191F',
+                            border: '#222733',
+                            hover: '#1C212B',
+                            textMuted: '#8E95A5',
+                            textBright: '#F3F4F6',
+                            purple: '#A855F7',
+                            green: '#22C55E',
+                            yellow: '#EAB308',
+                            cyan: '#06B6D4'
+                        },
+                        team: {
+                            redbull: '#3671C6',
+                            ferrari: '#E8002D',
+                            mclaren: '#FF8000',
+                            mercedes: '#27F4D2',
+                            aston: '#229971',
+                            alpine: '#FF87BC',
+                            williams: '#64C4FF',
+                            rb: '#6692FF',
+                            sauber: '#52E252',
+                            haas: '#B6BABD'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        condensed: ['"Barlow Condensed"', 'sans-serif'],
+                        racing: ['"Titillium Web"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Apache ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+    <style>
+        /* Carbon fiber texture pattern */
+        body {
+            background-color: #0B0D10;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(225, 6, 0, 0.08) 0%, transparent 45%),
+                linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+            background-size: 100% 100%, 24px 24px, 24px 24px;
+            color: #F3F4F6;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0D10;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2A303F;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #E10600;
+        }
+
+        /* Glassmorphism & Panel Styling */
+        .f1-card {
+            background: linear-gradient(135deg, rgba(22, 25, 31, 0.95) 0%, rgba(18, 20, 24, 0.98) 100%);
+            border: 1px solid #222733;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .f1-card:hover {
+            border-color: #353D50;
+        }
+        .f1-card-accent {
+            border-left: 3px solid #E10600;
+        }
+
+        /* Pulsing Live indicator */
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 12px rgba(225, 6, 0, 0.9); }
+            50% { opacity: 0.5; transform: scale(0.92); box-shadow: 0 0 4px rgba(225, 6, 0, 0.4); }
+        }
+        .live-pulse {
+            animation: pulse-glow 1.5s infinite ease-in-out;
+        }
+
+        /* Gradient Text */
+        .text-gradient-f1 {
+            background: linear-gradient(135deg, #FFFFFF 30%, #E10600 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Power BI Table Highlight */
+        .f1-table-row {
+            transition: all 0.15s ease;
+        }
+        .f1-table-row:hover {
+            background-color: rgba(225, 6, 0, 0.08);
+            cursor: pointer;
+        }
+        .f1-table-row.selected-row {
+            background-color: rgba(225, 6, 0, 0.18) !important;
+            border-left: 3px solid #E10600;
+        }
+
+        /* Slicer pill */
+        .slicer-pill {
+            transition: all 0.15s ease;
+        }
+        .slicer-pill.active {
+            background-color: #E10600;
+            color: #FFFFFF;
+            border-color: #E10600;
+            box-shadow: 0 0 10px rgba(225, 6, 0, 0.4);
+        }
+
+        /* Track SVG styles */
+        .track-path {
+            stroke: #4B5563;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            transition: stroke 0.3s ease;
+        }
+        .track-sector-1 { stroke: #06B6D4; }
+        .track-sector-2 { stroke: #EAB308; }
+        .track-sector-3 { stroke: #22C55E; }
+        .car-blip {
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-red-600 selection:text-white">
+
+    <!-- Top Announcement / Live Race Ticker -->
+    <div id="live-ticker-bar" class="bg-f1-card border-b border-f1-border px-4 py-1.5 text-xs flex items-center justify-between text-f1-textMuted overflow-hidden z-30">
+        <div class="flex items-center space-x-3 overflow-hidden">
+            <span class="flex items-center space-x-1.5 bg-f1-red/20 text-f1-red font-condensed font-bold px-2 py-0.5 rounded text-[11px] uppercase tracking-wider">
+                <span class="w-2 h-2 rounded-full bg-f1-red live-pulse"></span>
+                <span>TELEMETRY FEED</span>
+            </span>
+            <span id="ticker-text" class="font-mono text-f1-textBright truncate">
+                Connected to Data Warehouse Star Schema &bull; Live session ready &bull; 23,376 telemetry points loaded
+            </span>
+        </div>
+        <div class="flex items-center space-x-4 text-[11px] font-mono shrink-0">
+            <span class="text-f1-textMuted hidden sm:inline">DB: <span class="text-green-400">f1_warehouse.db (ONLINE)</span></span>
+            <span class="text-f1-textMuted hidden md:inline">LATENCY: <span id="query-latency-kpi" class="text-green-400 font-bold">4.2ms</span></span>
+            <span id="system-clock" class="text-f1-textBright font-bold">14:00:00 UTC</span>
+        </div>
+    </div>
+
+    <!-- Main App Container: Sidebar + Content -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Left Sidebar Navigation -->
+        <aside class="w-16 md:w-60 bg-f1-card border-r border-f1-border flex flex-col justify-between shrink-0 z-20 transition-all duration-200">
+            <div>
+                <!-- Brand / Logo -->
+                <div class="p-4 border-b border-f1-border flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-lg bg-f1-red flex items-center justify-center font-racing font-black text-white text-xl tracking-tighter shadow-lg shadow-f1-red/30 shrink-0">
+                        F1
+                    </div>
+                    <div class="hidden md:block overflow-hidden">
+                        <h1 class="font-racing font-black text-lg tracking-wider leading-none text-white flex items-center space-x-1">
+                            <span>APEX</span><span class="text-f1-red">IQ</span>
+                        </h1>
+                        <p class="text-[10px] font-condensed text-f1-textMuted uppercase tracking-widest mt-0.5">Live Data Warehouse</p>
+                    </div>
+                </div>
+
+                <!-- Nav Menu -->
+                <nav class="p-2 space-y-1">
+                    <button onclick="switchView('overview')" id="nav-overview" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-f1-red text-white shadow-md shadow-f1-red/20">
+                        <i data-lucide="gauge" class="w-5 h-5 shrink-0"></i>
+                        <span class="hidden md:inline font-condensed uppercase tracking-wider text-sm">Race Command</span>
+                    </button>
+                    <button onclick="switchView('drivers')" id="nav-drivers" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-f1-textMuted hover:text-white hover:bg-f1-hover transition-all">
+                        <i data-lucide="user-check" class="w-5 h-5 shrink-0"></i>
+                        <span class="hidden md:inline font-condensed uppercase tracking-wider text-sm">Driver Telemetry</span>
+                    </button>
+                    <button onclick="switchView('constructors')" id="nav-constructors" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-f1-textMuted hover:text-white hover:bg-f1-hover transition-all">
+                        <i data-lucide="shield" class="w-5 h-5 shrink-0"></i>
+                        <span class="hidden md:inline font-condensed uppercase tracking-wider text-sm">Constructors & Pits</span>
+                    </button>
+                    <button onclick="switchView('sectors')" id="nav-sectors" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-f1-textMuted hover:text-white hover:bg-f1-hover transition-all">
+                        <i data-lucide="split" class="w-5 h-5 shrink-0"></i>
+                        <span class="hidden md:inline font-condensed uppercase tracking-wider text-sm">Sector Multiples</span>
+                    </button>
+                    <button onclick="switchView('standings')" id="nav-standings" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-f1-textMuted hover:text-white hover:bg-f1-hover transition-all">
+                        <i data-lucide="trophy" class="w-5 h-5 shrink-0"></i>
+                        <span class="hidden md:inline font-condensed uppercase tracking-wider text-sm">Championship</span>
+                    </button>
+                    <button onclick="switchView('schemas')" id="nav-schemas" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-f1-textMuted hover:text-white hover:bg-f1-hover transition-all">
+                        <i data-lucide="database" class="w-5 h-5 shrink-0"></i>
+                        <span class="hidden md:inline font-condensed uppercase tracking-wider text-sm">Schema & OLAP</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Bottom Session Controls & Status -->
+            <div class="p-3 border-t border-f1-border">
+                <div class="bg-f1-bg/80 border border-f1-border rounded-lg p-2.5 hidden md:block">
+                    <div class="flex items-center justify-between text-xs font-mono mb-1.5">
+                        <span class="text-f1-textMuted">DATA GRAIN</span>
+                        <span class="text-f1-cyan font-bold">1 Row / Lap</span>
+                    </div>
+                    <div class="w-full bg-f1-border h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-gradient-to-r from-f1-cyan to-f1-red h-full w-[94%]"></div>
+                    </div>
+                    <div class="flex items-center justify-between text-[10px] font-mono text-f1-textMuted mt-1.5">
+                        <span>Star Schema</span>
+                        <span>0.008s SLA</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col min-w-0 overflow-y-auto bg-f1-bg">
+
+            <!-- Power BI Style Global Sticky Filter Bar -->
+            <header class="sticky top-0 bg-f1-card/95 backdrop-blur-md border-b border-f1-border z-10 p-3 sm:p-4 shadow-xl">
+                <div class="max-w-7xl mx-auto space-y-3">
+                    
+                    <!-- Top Row: Primary Slicers & Live Simulation Controls -->
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        
+                        <!-- Slicers: Season, Grand Prix, Session -->
+                        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                            <!-- Season Slicer -->
+                            <div class="flex items-center space-x-1.5 bg-f1-bg border border-f1-border rounded-lg px-2.5 py-1.5">
+                                <label for="slicer-season" class="text-[11px] font-condensed uppercase tracking-wider text-f1-textMuted">Season:</label>
+                                <select id="slicer-season" onchange="handleSeasonChange(this.value)" class="bg-transparent text-sm font-racing font-bold text-white focus:outline-none cursor-pointer">
+                                    <option value="2024" class="bg-f1-card text-white">2024 FIA F1</option>
+                                    <option value="2023" class="bg-f1-card text-white">2023 FIA F1</option>
+                                </select>
+                            </div>
+
+                            <!-- Grand Prix / Race Slicer -->
+                            <div class="flex items-center space-x-1.5 bg-f1-bg border border-f1-border rounded-lg px-2.5 py-1.5">
+                                <label for="slicer-race" class="text-[11px] font-condensed uppercase tracking-wider text-f1-textMuted">Grand Prix:</label>
+                                <select id="slicer-race" onchange="handleRaceChange(this.value)" class="bg-transparent text-sm font-racing font-bold text-white focus:outline-none cursor-pointer max-w-[180px] sm:max-w-[220px] truncate">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+
+                            <!-- Live Search Input -->
+                            <div class="flex items-center space-x-1.5 bg-f1-bg border border-f1-border rounded-lg px-2.5 py-1.5">
+                                <i data-lucide="search" class="w-3.5 h-3.5 text-f1-textMuted"></i>
+                                <input type="text" id="driver-search-input" placeholder="Search driver/team..." oninput="handleDriverSearch(this.value)" class="bg-transparent text-xs font-mono text-white placeholder:text-gray-500 focus:outline-none w-24 sm:w-36">
+                            </div>
+
+                            <!-- Lap Range Filter -->
+                            <div class="hidden 2xl:flex items-center space-x-1.5 bg-f1-bg border border-f1-border rounded-lg px-2.5 py-1.5">
+                                <label class="text-[11px] font-condensed uppercase tracking-wider text-f1-textMuted">Laps:</label>
+                                <input type="number" id="lap-min-input" value="1" min="1" max="70" onchange="handleLapRangeChange()" class="w-10 bg-transparent text-xs font-mono text-center text-white border-b border-f1-border focus:outline-none">
+                                <span class="text-f1-textMuted text-xs">-</span>
+                                <input type="number" id="lap-max-input" value="60" min="1" max="70" onchange="handleLapRangeChange()" class="w-10 bg-transparent text-xs font-mono text-center text-white border-b border-f1-border focus:outline-none">
+                            </div>
+
+                            <!-- Session Slicer -->
+                            <div class="hidden lg:flex items-center space-x-1 bg-f1-bg border border-f1-border rounded-lg p-1">
+                                <button onclick="setSession(6, this)" class="session-btn px-2.5 py-1 text-xs font-condensed uppercase font-bold rounded bg-f1-red text-white">RACE</button>
+                                <button onclick="setSession(4, this)" class="session-btn px-2.5 py-1 text-xs font-condensed uppercase font-bold rounded text-f1-textMuted hover:text-white">QUALI</button>
+                                <button onclick="setSession(5, this)" class="session-btn px-2.5 py-1 text-xs font-condensed uppercase font-bold rounded text-f1-textMuted hover:text-white">SPRINT</button>
+                            </div>
+
+                            <!-- Tyre Compounds Slicer -->
+                            <div class="hidden xl:flex items-center space-x-1 bg-f1-bg border border-f1-border rounded-lg p-1">
+                                <button onclick="toggleCompoundFilter(1, this)" class="compound-pill px-2 py-0.5 rounded text-[11px] font-mono font-bold text-white bg-red-600/30 border border-red-500 hover:bg-red-600/50" title="Soft (Red)">S</button>
+                                <button onclick="toggleCompoundFilter(2, this)" class="compound-pill px-2 py-0.5 rounded text-[11px] font-mono font-bold text-yellow-300 bg-yellow-500/30 border border-yellow-500 hover:bg-yellow-500/50" title="Medium (Yellow)">M</button>
+                                <button onclick="toggleCompoundFilter(3, this)" class="compound-pill px-2 py-0.5 rounded text-[11px] font-mono font-bold text-white bg-gray-500/30 border border-gray-400 hover:bg-gray-500/50" title="Hard (White)">H</button>
+                                <button onclick="toggleCompoundFilter(4, this)" class="compound-pill px-2 py-0.5 rounded text-[11px] font-mono font-bold text-green-400 bg-green-600/30 border border-green-500 hover:bg-green-600/50" title="Intermediate (Green)">I</button>
+                            </div>
+                        </div>
+
+                        <!-- Right: Live Simulation Controls & Showcase Switcher -->
+                        <div class="flex items-center space-x-2.5">
+                            <a href="/showcase" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-red-600/20 to-red-950/40 border border-red-600/50 hover:border-red-500 text-xs font-racing font-bold text-white transition-all shadow-md shadow-red-950/40 hover:scale-105">
+                                <i data-lucide="database" class="w-3.5 h-3.5 text-f1-red"></i>
+                                <span>🏛️ Warehouse Showcase</span>
+                            </a>
+
+                            <div class="flex items-center space-x-2 bg-f1-bg border border-f1-border rounded-lg p-1.5 shadow-inner">
+                                <button id="live-toggle-btn" onclick="toggleLiveSimulation()" class="flex items-center space-x-2 px-3 py-1 rounded bg-f1-panel hover:bg-f1-hover border border-f1-border text-xs font-racing font-bold text-f1-textBright transition-all">
+                                    <span id="live-dot" class="w-2.5 h-2.5 rounded-full bg-gray-500"></span>
+                                    <span id="live-text">START LIVE SIM</span>
+                                </button>
+                                
+                                <div id="live-controls" class="hidden flex items-center space-x-2 pl-1 border-l border-f1-border">
+                                    <span class="text-[11px] font-mono text-f1-cyan font-bold" id="live-lap-counter">LAP 1/52</span>
+                                    <select onchange="setLiveSpeed(this.value)" class="bg-f1-card text-[11px] font-mono text-white border border-f1-border rounded px-1.5 py-0.5 focus:outline-none">
+                                        <option value="1">1x</option>
+                                        <option value="2">2x</option>
+                                        <option value="5">5x</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Bottom Row: Breadcrumb Drill-Down + Active Filter Chips -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-f1-border/50 text-xs">
+                        
+                        <!-- Hierarchical Breadcrumb Navigator -->
+                        <div class="flex items-center space-x-1.5 font-condensed uppercase tracking-wider text-xs">
+                            <span class="text-f1-textMuted flex items-center space-x-1">
+                                <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                                <span>Hierarchy:</span>
+                            </span>
+                            <button onclick="drillTo('season')" id="crumb-season" class="text-f1-cyan hover:underline font-bold">Season 2024</button>
+                            <span class="text-f1-textMuted">&rsaquo;</span>
+                            <button onclick="drillTo('race')" id="crumb-race" class="text-f1-cyan hover:underline font-bold">British GP</button>
+                            <span class="text-f1-textMuted">&rsaquo;</span>
+                            <span id="crumb-driver" class="text-white font-bold bg-f1-panel px-2 py-0.5 rounded border border-f1-border">All Drivers (Cross-Filtered)</span>
+                        </div>
+
+                        <!-- Active Filter Chips Row -->
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <div id="active-chips" class="flex flex-wrap items-center gap-1.5">
+                                <!-- Dynamic Chips injected here -->
+                            </div>
+                            <button onclick="clearAllFilters()" id="btn-clear-filters" class="hidden text-[11px] font-condensed uppercase tracking-wider text-f1-red hover:text-white px-2 py-0.5 rounded bg-f1-red/10 hover:bg-f1-red/30 border border-f1-red/30 transition-all">
+                                Clear All
+                            </button>
+                        </div>
+
+                    </div>
+
+                </div>
+            </header>
+
+            <!-- Main Canvas Body -->
+            <div class="p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-6">
+
+                <!-- ========================================================= -->
+                <!-- VIEW 1: OVERVIEW / RACE COMMAND HUB -->
+                <!-- ========================================================= -->
+                <div id="view-overview" class="space-y-6">
+                    
+                    <!-- KPI Cards Row -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        
+                        <!-- KPI 1: Fastest Lap -->
+                        <div class="f1-card f1-card-accent p-4 rounded-xl relative overflow-hidden group">
+                            <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <i data-lucide="zap" class="w-24 h-24 text-f1-purple"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-[11px] font-condensed uppercase tracking-wider text-f1-textMuted font-bold">Fastest Lap</span>
+                                <span class="bg-f1-purple/20 text-f1-purple font-mono text-[10px] font-bold px-1.5 py-0.5 rounded border border-f1-purple/30">PURPLE S1/S3</span>
+                            </div>
+                            <div class="flex items-baseline space-x-2">
+                                <span id="kpi-fastest-lap-time" class="font-mono font-bold text-2xl text-white tracking-tight">1:28.412</span>
+                                <span id="kpi-fastest-lap-driver" class="font-racing font-bold text-sm text-team-redbull">VER</span>
+                            </div>
+                            <div class="text-[11px] font-mono text-f1-textMuted flex items-center justify-between mt-2 pt-2 border-t border-f1-border">
+                                <span>Speed: <strong id="kpi-fastest-lap-speed" class="text-white">239.5 km/h</strong></span>
+                                <span>Lap: <strong id="kpi-fastest-lap-num" class="text-white">#48</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- KPI 2: Current Leader / Winner -->
+                        <div class="f1-card f1-card-accent p-4 rounded-xl relative overflow-hidden group">
+                            <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <i data-lucide="flag" class="w-24 h-24 text-f1-red"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-[11px] font-condensed uppercase tracking-wider text-f1-textMuted font-bold">Race Leader</span>
+                                <span class="bg-green-500/20 text-green-400 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded">P1 &bull; 25 PTS</span>
+                            </div>
+                            <div class="flex items-baseline space-x-2">
+                                <span id="kpi-leader-name" class="font-racing font-black text-2xl text-white tracking-tight truncate">Lando Norris</span>
+                            </div>
+                            <div class="text-[11px] font-mono text-f1-textMuted flex items-center justify-between mt-2 pt-2 border-t border-f1-border">
+                                <span id="kpi-leader-team" class="text-team-mclaren font-bold">McLaren F1</span>
+                                <span id="kpi-leader-gap" class="text-green-400 font-bold">LEADER</span>
+                            </div>
+                        </div>
+
+                        <!-- KPI 3: Pit Stop Benchmark -->
+                        <div class="f1-card f1-card-accent p-4 rounded-xl relative overflow-hidden group">
+                            <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <i data-lucide="wrench" class="w-24 h-24 text-f1-cyan"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-[11px] font-condensed uppercase tracking-wider text-f1-textMuted font-bold">Avg Pit Stop</span>
+                                <span class="bg-f1-cyan/20 text-f1-cyan font-mono text-[10px] font-bold px-1.5 py-0.5 rounded">34 STOPS</span>
+                            </div>
+                            <div class="flex items-baseline space-x-2">
+                                <span id="kpi-avg-pit" class="font-mono font-bold text-2xl text-white tracking-tight">22.4s</span>
+                                <span class="text-xs text-f1-textMuted">total lane</span>
+                            </div>
+                            <div class="text-[11px] font-mono text-f1-textMuted flex items-center justify-between mt-2 pt-2 border-t border-f1-border">
+                                <span>Fastest Stop:</span>
+                                <span id="kpi-fastest-pit" class="text-white font-bold">20.8s (Red Bull)</span>
+                            </div>
+                        </div>
+
+                        <!-- KPI 4: Championship Margin -->
+                        <div class="f1-card f1-card-accent p-4 rounded-xl relative overflow-hidden group">
+                            <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <i data-lucide="award" class="w-24 h-24 text-yellow-500"></i>
+                            </div>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-[11px] font-condensed uppercase tracking-wider text-f1-textMuted font-bold">Championship Gap</span>
+                                <span class="bg-yellow-500/20 text-yellow-400 font-mono text-[10px] font-bold px-1.5 py-0.5 rounded">P1 vs P2</span>
+                            </div>
+                            <div class="flex items-baseline space-x-2">
+                                <span id="kpi-champ-gap" class="font-mono font-bold text-2xl text-white tracking-tight">45 PTS</span>
+                                <span class="text-xs text-green-400 font-bold">&uarr; +6 pts</span>
+                            </div>
+                            <div class="text-[11px] font-mono text-f1-textMuted flex items-center justify-between mt-2 pt-2 border-t border-f1-border">
+                                <span>Total Overtakes:</span>
+                                <span id="kpi-overtakes" class="text-white font-bold">24 Overtakes</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Row 2: Hero Chart & Circuit Track Map Panel -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        <!-- Hero Chart (2 cols): Lap Time Progression & Positions -->
+                        <div class="lg:col-span-2 f1-card p-4 sm:p-5 rounded-xl flex flex-col justify-between">
+                            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                                <div>
+                                    <h2 class="font-racing font-bold text-lg text-white tracking-wide flex items-center space-x-2">
+                                        <i data-lucide="activity" class="w-5 h-5 text-f1-red"></i>
+                                        <span>RACE PACE & LAP PROGRESSION</span>
+                                    </h2>
+                                    <p class="text-xs text-f1-textMuted font-condensed uppercase tracking-wider">Lap-by-lap telemetry cross-filtered for active driver selection</p>
+                                </div>
+                                <div class="flex items-center space-x-1.5 bg-f1-bg border border-f1-border rounded-lg p-1 text-xs font-condensed uppercase">
+                                    <button onclick="setHeroChartMode('lap_time', this)" class="hero-mode-btn px-2.5 py-1 rounded font-bold bg-f1-red text-white">Lap Time (s)</button>
+                                    <button onclick="setHeroChartMode('position', this)" class="hero-mode-btn px-2.5 py-1 rounded font-bold text-f1-textMuted hover:text-white">Position (P1-P20)</button>
+                                    <button onclick="setHeroChartMode('gap', this)" class="hero-mode-btn px-2.5 py-1 rounded font-bold text-f1-textMuted hover:text-white">Gap to Leader</button>
+                                </div>
+                            </div>
+                            
+                            <!-- ECharts Canvas -->
+                            <div id="chart-hero-laps" class="w-full h-80 sm:h-96"></div>
+                            
+                            <!-- Chart Footer: Legend instructions -->
+                            <div class="mt-2 pt-3 border-t border-f1-border flex items-center justify-between text-[11px] text-f1-textMuted font-mono">
+                                <span class="flex items-center space-x-2">
+                                    <span class="w-2 h-2 rounded-full bg-f1-red"></span>
+                                    <span>Tip: Click driver lines to cross-filter entire dashboard</span>
+                                </span>
+                                <span>Grain: <strong class="text-f1-cyan font-bold">FACT_LAP_TIMES</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Circuit Track Map & Sector Heatmap (1 col) -->
+                        <div class="f1-card p-4 sm:p-5 rounded-xl flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <h3 id="circuit-card-name" class="font-racing font-bold text-base text-white tracking-wide">Silverstone Circuit</h3>
+                                    <p id="circuit-card-loc" class="text-xs text-f1-textMuted font-condensed uppercase">United Kingdom &bull; 5.891 km &bull; 52 Laps</p>
+                                </div>
+                                <span class="bg-f1-bg border border-f1-border px-2 py-1 rounded text-[11px] font-mono text-f1-cyan">
+                                    <i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>GPS TRACK
+                                </span>
+                            </div>
+
+                            <!-- Interactive SVG Circuit View -->
+                            <div class="relative w-full h-56 bg-f1-bg/80 rounded-lg border border-f1-border flex items-center justify-center p-3 overflow-hidden">
+                                <svg id="circuit-svg" viewBox="0 0 500 500" class="w-full h-full">
+                                    <!-- Dynamic Track Path injected here -->
+                                    <path id="svg-track-path" d="M110 260 L240 160 C290 140 340 170 360 220 L380 320 C360 370 300 420 240 390 L180 410 C130 410 90 340 110 260 Z" class="track-path"></path>
+                                    <!-- Car Blip -->
+                                    <circle id="live-car-blip" cx="110" cy="260" r="7" fill="#E10600" stroke="#FFFFFF" stroke-width="2" class="car-blip shadow-lg shadow-f1-red"></circle>
+                                </svg>
+                                <div class="absolute bottom-2 left-2 text-[10px] font-mono text-f1-textMuted bg-f1-card/80 px-2 py-0.5 rounded border border-f1-border">
+                                    Track Temp: <span class="text-yellow-400 font-bold">34.2&deg;C</span> | Weather: <span class="text-green-400 font-bold">DRY</span>
+                                </div>
+                            </div>
+
+                            <!-- Sector Splits Benchmark -->
+                            <div class="space-y-2 mt-3 pt-3 border-t border-f1-border">
+                                <div class="flex items-center justify-between text-xs font-mono">
+                                    <span class="text-f1-cyan flex items-center space-x-1">
+                                        <span class="w-2 h-2 rounded-full bg-f1-cyan"></span>
+                                        <span>SECTOR 1</span>
+                                    </span>
+                                    <span id="circuit-s1-purple" class="font-bold text-white">27.314s <span class="text-[10px] text-f1-purple">(VER)</span></span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs font-mono">
+                                    <span class="text-yellow-400 flex items-center space-x-1">
+                                        <span class="w-2 h-2 rounded-full bg-yellow-400"></span>
+                                        <span>SECTOR 2</span>
+                                    </span>
+                                    <span id="circuit-s2-purple" class="font-bold text-white">34.112s <span class="text-[10px] text-f1-purple">(NOR)</span></span>
+                                </div>
+                                <div class="flex items-center justify-between text-xs font-mono">
+                                    <span class="text-green-400 flex items-center space-x-1">
+                                        <span class="w-2 h-2 rounded-full bg-green-400"></span>
+                                        <span>SECTOR 3</span>
+                                    </span>
+                                    <span id="circuit-s3-purple" class="font-bold text-white">26.986s <span class="text-[10px] text-f1-purple">(HAM)</span></span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- Row 3: Live Interactive Classification Leaderboard Table -->
+                    <div class="f1-card p-4 sm:p-5 rounded-xl space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h2 class="font-racing font-bold text-lg text-white tracking-wide flex items-center space-x-2">
+                                    <i data-lucide="list-ordered" class="w-5 h-5 text-f1-red"></i>
+                                    <span>GRAND PRIX CLASSIFICATION & TELEMETRY STANDINGS</span>
+                                </h2>
+                                <p class="text-xs text-f1-textMuted font-condensed uppercase tracking-wider">Click any driver row to cross-filter the entire dashboard</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-mono text-f1-textMuted">Search Driver:</span>
+                                <input type="text" id="leaderboard-search" oninput="filterLeaderboardSearch(this.value)" placeholder="e.g. Norris, HAM..." class="bg-f1-bg border border-f1-border rounded-lg px-2.5 py-1 text-xs text-white placeholder-f1-textMuted focus:outline-none focus:border-f1-red">
+                            </div>
+                        </div>
+
+                        <!-- Table Canvas -->
+                        <div class="overflow-x-auto rounded-lg border border-f1-border">
+                            <table class="w-full text-left text-sm font-sans">
+                                <thead class="bg-f1-panel text-[11px] font-condensed uppercase tracking-wider text-f1-textMuted border-b border-f1-border select-none">
+                                    <tr>
+                                        <th onclick="sortTable('position')" class="py-2.5 px-3 cursor-pointer hover:text-white">POS <i data-lucide="arrow-up-down" class="w-3 h-3 inline"></i></th>
+                                        <th class="py-2.5 px-3">CAR</th>
+                                        <th onclick="sortTable('driver')" class="py-2.5 px-3 cursor-pointer hover:text-white">DRIVER <i data-lucide="arrow-up-down" class="w-3 h-3 inline"></i></th>
+                                        <th onclick="sortTable('constructor')" class="py-2.5 px-3 cursor-pointer hover:text-white">CONSTRUCTOR <i data-lucide="arrow-up-down" class="w-3 h-3 inline"></i></th>
+                                        <th class="py-2.5 px-3">GAP TO LEADER</th>
+                                        <th class="py-2.5 px-3">INTERVAL</th>
+                                        <th onclick="sortTable('fastest_lap')" class="py-2.5 px-3 cursor-pointer hover:text-white">FASTEST LAP <i data-lucide="arrow-up-down" class="w-3 h-3 inline"></i></th>
+                                        <th onclick="sortTable('pits')" class="py-2.5 px-3 cursor-pointer hover:text-white text-center">STOPS</th>
+                                        <th onclick="sortTable('gain')" class="py-2.5 px-3 cursor-pointer hover:text-white text-center">GRID DELTA</th>
+                                        <th class="py-2.5 px-3">STATUS</th>
+                                        <th onclick="sortTable('points')" class="py-2.5 px-3 cursor-pointer hover:text-white text-right">POINTS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboard-tbody" class="divide-y divide-f1-border font-mono text-xs text-f1-textBright">
+                                    <!-- Dynamic Rows Injected Here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- VIEW 2: DRIVER TELEMETRY & HEAD-TO-HEAD COMPARISON -->
+                <!-- ========================================================= -->
+                <div id="view-drivers" class="hidden space-y-6">
+                    
+                    <!-- Top Head-to-Head Driver Selection Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        <!-- Driver A Selector Card -->
+                        <div class="f1-card p-4 rounded-xl border-l-4 border-team-redbull flex items-center justify-between">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-14 h-14 rounded-full bg-f1-panel border-2 border-team-redbull flex items-center justify-center font-racing font-black text-2xl text-white">
+                                    1
+                                </div>
+                                <div>
+                                    <label for="select-driver-a" class="text-[10px] font-condensed uppercase tracking-wider text-f1-textMuted">Driver A:</label>
+                                    <select id="select-driver-a" onchange="updateDriverComparison()" class="bg-f1-bg text-base font-racing font-bold text-white border border-f1-border rounded px-2 py-1 block mt-0.5 focus:outline-none">
+                                        <!-- Populated -->
+                                    </select>
+                                    <span id="driver-a-team" class="text-xs text-team-redbull font-bold font-condensed">Red Bull Racing</span>
+                                </div>
+                            </div>
+                            <div class="text-right font-mono text-xs">
+                                <span class="text-f1-textMuted">Season Pts:</span>
+                                <div id="driver-a-pts" class="text-xl font-bold text-white">429</div>
+                            </div>
+                        </div>
+
+                        <!-- Driver B Selector Card -->
+                        <div class="f1-card p-4 rounded-xl border-l-4 border-team-mclaren flex items-center justify-between">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-14 h-14 rounded-full bg-f1-panel border-2 border-team-mclaren flex items-center justify-center font-racing font-black text-2xl text-white">
+                                    4
+                                </div>
+                                <div>
+                                    <label for="select-driver-b" class="text-[10px] font-condensed uppercase tracking-wider text-f1-textMuted">Driver B:</label>
+                                    <select id="select-driver-b" onchange="updateDriverComparison()" class="bg-f1-bg text-base font-racing font-bold text-white border border-f1-border rounded px-2 py-1 block mt-0.5 focus:outline-none">
+                                        <!-- Populated -->
+                                    </select>
+                                    <span id="driver-b-team" class="text-xs text-team-mclaren font-bold font-condensed">McLaren F1 Team</span>
+                                </div>
+                            </div>
+                            <div class="text-right font-mono text-xs">
+                                <span class="text-f1-textMuted">Season Pts:</span>
+                                <div id="driver-b-pts" class="text-xl font-bold text-white">384</div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Comparison Charts Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        
+                        <!-- Radar Chart: Multi-dimensional Driver Attribute Matrix -->
+                        <div class="f1-card p-5 rounded-xl space-y-3">
+                            <h3 class="font-racing font-bold text-base text-white tracking-wide flex items-center space-x-2">
+                                <i data-lucide="target" class="w-5 h-5 text-f1-red"></i>
+                                <span>PERFORMANCE ATTRIBUTE RADAR</span>
+                            </h3>
+                            <p class="text-xs text-f1-textMuted font-condensed uppercase">6-Axis comparison derived from telemetry & race results</p>
+                            <div id="chart-driver-radar" class="w-full h-80"></div>
+                        </div>
+
+                        <!-- Head-to-Head Gauges & Delta Metrics -->
+                        <div class="f1-card p-5 rounded-xl space-y-4">
+                            <h3 class="font-racing font-bold text-base text-white tracking-wide flex items-center space-x-2">
+                                <i data-lucide="sliders" class="w-5 h-5 text-f1-red"></i>
+                                <span>TELEMETRY METRIC DELTAS</span>
+                            </h3>
+                            <p class="text-xs text-f1-textMuted font-condensed uppercase">Calculated from FACT_LAP_TIMES</p>
+
+                            <div class="space-y-4 pt-2">
+                                <!-- Metric 1: Avg Race Pace -->
+                                <div class="bg-f1-bg p-3 rounded-lg border border-f1-border space-y-1">
+                                    <div class="flex justify-between text-xs font-mono">
+                                        <span id="h2h-driver-a-code" class="text-team-redbull font-bold">VER: 1:29.114</span>
+                                        <span class="text-f1-textMuted uppercase font-condensed">Average Lap Pace</span>
+                                        <span id="h2h-driver-b-code" class="text-team-mclaren font-bold">NOR: 1:29.256</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="flex-1 bg-f1-panel h-2 rounded-full overflow-hidden">
+                                            <div id="gauge-pace-bar" class="bg-gradient-to-r from-team-redbull to-team-mclaren h-full w-[54%]"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right text-[11px] font-mono text-green-400 font-bold" id="h2h-pace-delta">VER +0.142s / lap faster</div>
+                                </div>
+
+                                <!-- Metric 2: Speed Trap Velocity -->
+                                <div class="bg-f1-bg p-3 rounded-lg border border-f1-border space-y-1">
+                                    <div class="flex justify-between text-xs font-mono">
+                                        <span id="h2h-trap-a" class="text-team-redbull font-bold">338.4 km/h</span>
+                                        <span class="text-f1-textMuted uppercase font-condensed">Top Speed Trap</span>
+                                        <span id="h2h-trap-b" class="text-team-mclaren font-bold">336.1 km/h</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="flex-1 bg-f1-panel h-2 rounded-full overflow-hidden">
+                                            <div id="gauge-trap-bar" class="bg-gradient-to-r from-team-redbull to-team-mclaren h-full w-[52%]"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right text-[11px] font-mono text-green-400 font-bold" id="h2h-trap-delta">VER +2.3 km/h advantage</div>
+                                </div>
+
+                                <!-- Metric 3: Tyre Wear Degradation Rate -->
+                                <div class="bg-f1-bg p-3 rounded-lg border border-f1-border space-y-1">
+                                    <div class="flex justify-between text-xs font-mono">
+                                        <span id="h2h-deg-a" class="text-team-redbull font-bold">3.2% / lap</span>
+                                        <span class="text-f1-textMuted uppercase font-condensed">Tyre Wear Degradation</span>
+                                        <span id="h2h-deg-b" class="text-team-mclaren font-bold">2.9% / lap</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="flex-1 bg-f1-panel h-2 rounded-full overflow-hidden">
+                                            <div id="gauge-deg-bar" class="bg-gradient-to-r from-team-mclaren to-team-redbull h-full w-[46%]"></div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right text-[11px] font-mono text-yellow-400 font-bold" id="h2h-deg-delta">NOR 0.3% better tyre retention</div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- VIEW 3: CONSTRUCTORS & PIT STOP BENCHMARKS -->
+                <!-- ========================================================= -->
+                <div id="view-constructors" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        
+                        <!-- Constructor Championship Points Bar Chart -->
+                        <div class="f1-card p-5 rounded-xl space-y-3">
+                            <h3 class="font-racing font-bold text-base text-white tracking-wide flex items-center space-x-2">
+                                <i data-lucide="shield" class="w-5 h-5 text-f1-red"></i>
+                                <span>CONSTRUCTOR STANDINGS & POINTS TOTALS</span>
+                            </h3>
+                            <p class="text-xs text-f1-textMuted font-condensed uppercase">Aggregated across all season rounds</p>
+                            <div id="chart-constructor-points" class="w-full h-80"></div>
+                        </div>
+
+                        <!-- Pit Stop Crew Efficiency & Average Duration -->
+                        <div class="f1-card p-5 rounded-xl space-y-3">
+                            <h3 class="font-racing font-bold text-base text-white tracking-wide flex items-center space-x-2">
+                                <i data-lucide="timer" class="w-5 h-5 text-f1-cyan"></i>
+                                <span>PIT STOP CREW SPEED BENCHMARK</span>
+                            </h3>
+                            <p class="text-xs text-f1-textMuted font-condensed uppercase">Average stationary + total pit lane transit duration (seconds)</p>
+                            <div id="chart-pit-benchmarks" class="w-full h-80"></div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- VIEW 4: SECTOR MULTIPLES & TELEMETRY TRACES -->
+                <!-- ========================================================= -->
+                <div id="view-sectors" class="hidden space-y-6">
+                    <div class="f1-card p-5 rounded-xl space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h3 class="font-racing font-bold text-lg text-white tracking-wide flex items-center space-x-2">
+                                    <i data-lucide="split" class="w-5 h-5 text-f1-red"></i>
+                                    <span>SMALL MULTIPLES: SECTOR-BY-SECTOR PACE (TOP 5 DRIVERS)</span>
+                                </h3>
+                                <p class="text-xs text-f1-textMuted font-condensed uppercase">Comparing lap-by-lap Sector 1, 2, and 3 splits</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="small-multiples-container">
+                            <!-- Injected Small Multiple Charts -->
+                            <div class="bg-f1-bg p-3 rounded-lg border border-f1-border">
+                                <h4 class="font-racing font-bold text-sm text-team-mclaren mb-1">NORRIS (McLaren)</h4>
+                                <div id="chart-multi-1" class="w-full h-48"></div>
+                            </div>
+                            <div class="bg-f1-bg p-3 rounded-lg border border-f1-border">
+                                <h4 class="font-racing font-bold text-sm text-team-redbull mb-1">VERSTAPPEN (Red Bull)</h4>
+                                <div id="chart-multi-2" class="w-full h-48"></div>
+                            </div>
+                            <div class="bg-f1-bg p-3 rounded-lg border border-f1-border">
+                                <h4 class="font-racing font-bold text-sm text-team-ferrari mb-1">LECLERC (Ferrari)</h4>
+                                <div id="chart-multi-3" class="w-full h-48"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- VIEW 5: CHAMPIONSHIP STANDINGS & PROGRESSION -->
+                <!-- ========================================================= -->
+                <div id="view-standings" class="hidden space-y-6">
+                    <div class="f1-card p-5 rounded-xl space-y-4">
+                        <h3 class="font-racing font-bold text-lg text-white tracking-wide flex items-center space-x-2">
+                            <i data-lucide="trophy" class="w-5 h-5 text-yellow-500"></i>
+                            <span>CHAMPIONSHIP POINTS TRAJECTORY OVER THE SEASON</span>
+                        </h3>
+                        <p class="text-xs text-f1-textMuted font-condensed uppercase">Cumulative Driver Championship Points across Grands Prix rounds</p>
+                        <div id="chart-standings-progression" class="w-full h-96"></div>
+                    </div>
+                </div>
+
+                <!-- ========================================================= -->
+                <!-- VIEW 6: DATA WAREHOUSE SCHEMAS & LIVE BENCHMARKS -->
+                <!-- ========================================================= -->
+                <div id="view-schemas" class="hidden space-y-6">
+                    
+                    <!-- Live SQL Benchmark Runner Card -->
+                    <div class="f1-card p-5 rounded-xl space-y-4 border-l-4 border-f1-red">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <h3 class="font-racing font-bold text-lg text-white tracking-wide flex items-center space-x-2">
+                                    <i data-lucide="zap" class="w-5 h-5 text-f1-red"></i>
+                                    <span>LIVE SQL BENCHMARK: STAR SCHEMA VS SNOWFLAKE SCHEMA</span>
+                                </h3>
+                                <p class="text-xs text-f1-textMuted font-condensed uppercase">Real-time server-side query execution and execution plan comparison</p>
+                            </div>
+                            <button onclick="runServerBenchmark()" class="px-4 py-2 bg-f1-red hover:bg-f1-darkRed text-white font-racing font-bold rounded-lg text-sm transition-all shadow-lg shadow-f1-red/30 flex items-center space-x-2">
+                                <i data-lucide="play" class="w-4 h-4"></i>
+                                <span>EXECUTE 20x BENCHMARK</span>
+                            </button>
+                        </div>
+
+                        <!-- Benchmark Results Display -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                            <!-- Star Schema Result -->
+                            <div class="bg-f1-bg p-4 rounded-lg border border-green-500/40 space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-racing font-bold text-green-400 text-base">STAR SCHEMA (SERVING LAYER)</span>
+                                    <span id="bench-star-time" class="font-mono text-xl font-bold text-white">0.82 ms</span>
+                                </div>
+                                <p class="text-xs text-f1-textMuted font-mono">Joins: <strong>3 Flat Dimensions</strong> &bull; Denormalized Circuit & Dates</p>
+                                <div class="bg-f1-panel p-2.5 rounded font-mono text-[11px] text-gray-300 overflow-x-auto max-h-32">
+                                    <pre id="bench-star-sql">SELECT f.*, d.driver_name, c.constructor_name, r.circuit_country
+FROM FACT_RACE_RESULTS f
+JOIN DIM_RACE r ON f.race_id = r.race_id
+JOIN DIM_DRIVER d ON f.driver_id = d.driver_id
+JOIN DIM_CONSTRUCTOR c ON f.constructor_id = c.constructor_id</pre>
+                                </div>
+                            </div>
+
+                            <!-- Snowflake Schema Result -->
+                            <div class="bg-f1-bg p-4 rounded-lg border border-yellow-500/40 space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-racing font-bold text-yellow-400 text-base">SNOWFLAKE SCHEMA (ETL LAYER)</span>
+                                    <span id="bench-snow-time" class="font-mono text-xl font-bold text-white">3.94 ms</span>
+                                </div>
+                                <p class="text-xs text-f1-textMuted font-mono">Joins: <strong>7 Normalized Tables</strong> &bull; Country, Engine, Nationality</p>
+                                <div class="bg-f1-panel p-2.5 rounded font-mono text-[11px] text-gray-300 overflow-x-auto max-h-32">
+                                    <pre id="bench-snow-sql">SELECT f.*, cntry.country_name, eng.supplier_name
+FROM FACT_RACE_RESULTS_SNOWFLAKE f
+JOIN DIM_RACE_SNOWFLAKE r ON f.race_id = r.race_id
+JOIN DIM_CIRCUIT_SNOWFLAKE circ ON r.circuit_id = circ.circuit_id
+JOIN DIM_COUNTRY cntry ON circ.country_id = cntry.country_id
+JOIN DIM_CONSTRUCTOR_SNOWFLAKE c ON f.constructor_id = c.constructor_id
+JOIN DIM_ENGINE_SUPPLIER eng ON c.engine_supplier_id = eng.engine_supplier_id</pre>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Benchmark Verdict -->
+                        <div id="bench-verdict" class="bg-f1-panel p-3 rounded-lg border border-f1-border text-xs font-mono text-f1-cyan flex items-center space-x-2">
+                            <i data-lucide="check-circle" class="w-4 h-4 shrink-0 text-green-400"></i>
+                            <span>Star Schema demonstrates <strong>79.2% faster execution</strong> with 0 hash join spillage, making it ideal for live cross-filtering dashboards.</span>
+                        </div>
+                    </div>
+
+                    <!-- Schema Documentation & Visual Tabs -->
+                    <div class="f1-card p-5 rounded-xl space-y-4">
+                        <div class="flex items-center justify-between border-b border-f1-border pb-3">
+                            <h3 class="font-racing font-bold text-base text-white tracking-wide">DATA WAREHOUSE ARCHITECTURE SPECIFICATIONS</h3>
+                            <a href="/docs/schema.md" target="_blank" class="text-xs font-mono text-f1-cyan hover:underline flex items-center space-x-1">
+                                <span>View Full schema.md</span>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                            </a>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs text-f1-textMuted">
+                            <div class="space-y-2">
+                                <h4 class="font-racing font-bold text-sm text-white">⭐ STAR SCHEMA (PRIMARY SERVING)</h4>
+                                <ul class="list-disc list-inside space-y-1 font-sans">
+                                    <li><strong class="text-white">FACT_RACE_RESULTS</strong>: 1 row per driver per Grand Prix.</li>
+                                    <li><strong class="text-white">FACT_LAP_TIMES</strong>: 1 row per driver per lap (telemetry grain).</li>
+                                    <li><strong class="text-white">DIM_RACE</strong>: Denormalized circuit length, coordinates, and lap records.</li>
+                                    <li><strong class="text-white">Indexed Slicing</strong>: Composite indices on `(race_id, driver_id, lap_number)`.</li>
+                                </ul>
+                            </div>
+                            <div class="space-y-2">
+                                <h4 class="font-racing font-bold text-sm text-white">❄️ SNOWFLAKE SCHEMA (ETL / GOVERNANCE)</h4>
+                                <ul class="list-disc list-inside space-y-1 font-sans">
+                                    <li><strong class="text-white">DIM_COUNTRY / DIM_NATIONALITY</strong>: Normalized geographic entities.</li>
+                                    <li><strong class="text-white">DIM_ENGINE_SUPPLIER</strong>: Power unit manufacturers and specs.</li>
+                                    <li><strong class="text-white">DIM_CIRCUIT_LAYOUT_HISTORY</strong>: SCD Type 2 tracking layout changes.</li>
+                                    <li><strong class="text-white">ETL Pipeline</strong>: Cleanses and flattens into Star schema.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Application Logic & Cross-Filtering Engine -->
+    <script>
+        // Global Centralized State
+        const f1State = {
+            season: 2024,
+            race_id: 9, // Default to British GP
+            session_id: 6, // Race
+            driver_ids: [],
+            constructor_ids: [],
+            compound_ids: [],
+            lap_min: 1,
+            lap_max: 60,
+            search_query: '',
+            sort_by: 'position',
+            sort_dir: 'asc',
+            hero_mode: 'lap_time',
+            current_view: 'overview',
+            live_mode: false,
+            live_speed: 1,
+            ws: null,
+            metadata: null
+        };
+
+        // Chart Instances
+        let chartHero = null;
+        let chartRadar = null;
+        let chartConstructor = null;
+        let chartPits = null;
+        let chartStandings = null;
+        let chartMulti1 = null, chartMulti2 = null, chartMulti3 = null;
+
+        // Initialize Lucide Icons
+        document.addEventListener('DOMContentLoaded', async () => {
+            lucide.createIcons();
+            initCharts();
+            startSystemClock();
+            await fetchFilterMetadata();
+            await refreshAllVisuals();
+        });
+
+        function startSystemClock() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('system-clock').textContent = now.toTimeString().split(' ')[0] + ' UTC';
+            }, 1000);
+        }
+
+        function initCharts() {
+            chartHero = echarts.init(document.getElementById('chart-hero-laps'));
+            chartRadar = echarts.init(document.getElementById('chart-driver-radar'));
+            chartConstructor = echarts.init(document.getElementById('chart-constructor-points'));
+            chartPits = echarts.init(document.getElementById('chart-pit-benchmarks'));
+            chartStandings = echarts.init(document.getElementById('chart-standings-progression'));
+            
+            chartMulti1 = echarts.init(document.getElementById('chart-multi-1'));
+            chartMulti2 = echarts.init(document.getElementById('chart-multi-2'));
+            chartMulti3 = echarts.init(document.getElementById('chart-multi-3'));
+
+            window.addEventListener('resize', () => {
+                chartHero?.resize();
+                chartRadar?.resize();
+                chartConstructor?.resize();
+                chartPits?.resize();
+                chartStandings?.resize();
+                chartMulti1?.resize();
+                chartMulti2?.resize();
+                chartMulti3?.resize();
+            });
+
+            // Cross-filtering click interaction on Hero Chart
+            chartHero.on('click', (params) => {
+                if (params.seriesName) {
+                    const driver = f1State.metadata?.drivers.find(d => d.driver_code === params.seriesName || d.driver_name === params.seriesName);
+                    if (driver) {
+                        toggleDriverFilter(driver.driver_id);
+                    }
+                }
+            });
+        }
+
+        // Fetch Filter Metadata
+        async function fetchFilterMetadata() {
+            try {
+                const res = await fetch('/api/filters/options');
+                f1State.metadata = await res.json();
+
+                // Populate Season Slicer
+                const seasonSelect = document.getElementById('slicer-season');
+                if (seasonSelect && f1State.metadata.seasons) {
+                    seasonSelect.innerHTML = '';
+                    f1State.metadata.seasons.forEach(yr => {
+                        const opt = document.createElement('option');
+                        opt.value = yr;
+                        opt.textContent = `${yr} FIA F1`;
+                        opt.className = 'bg-f1-card text-white';
+                        if (yr === f1State.season) opt.selected = true;
+                        seasonSelect.appendChild(opt);
+                    });
+                }
+
+                // Populate Race Slicer
+                const raceSelect = document.getElementById('slicer-race');
+                raceSelect.innerHTML = '';
+                const seasonRaces = f1State.metadata.races.filter(r => r.season_year === f1State.season);
+                if (!seasonRaces.some(r => r.race_id === f1State.race_id) && seasonRaces.length > 0) {
+                    f1State.race_id = seasonRaces[seasonRaces.length > 8 ? 8 : 0].race_id;
+                }
+                seasonRaces.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r.race_id;
+                    opt.textContent = `R${r.round}: ${r.race_name.replace(/^[0-9]+ /, '')}`;
+                    opt.className = 'bg-f1-card text-white';
+                    if (r.race_id === f1State.race_id) opt.selected = true;
+                    raceSelect.appendChild(opt);
+                });
+
+                // Populate Driver Selectors
+                const selectA = document.getElementById('select-driver-a');
+                const selectB = document.getElementById('select-driver-b');
+                if (selectA && selectB) {
+                    selectA.innerHTML = '';
+                    selectB.innerHTML = '';
+                    f1State.metadata.drivers.forEach(d => {
+                        const optA = new Option(`${d.driver_code} - ${d.driver_name}`, d.driver_id);
+                        const optB = new Option(`${d.driver_code} - ${d.driver_name}`, d.driver_id);
+                        if (d.driver_id === 1) optA.selected = true; // VER
+                        if (d.driver_id === 5) optB.selected = true; // NOR
+                        selectA.add(optA);
+                        selectB.add(optB);
+                    });
+                }
+            } catch (err) {
+                console.error('Error fetching metadata:', err);
+            }
+        }
+
+        // Navigation Switcher
+        function switchView(viewName) {
+            f1State.current_view = viewName;
+            ['overview', 'drivers', 'constructors', 'sectors', 'standings', 'schemas'].forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                const btn = document.getElementById(`nav-${v}`);
+                if (el) el.classList.toggle('hidden', v !== viewName);
+                if (btn) {
+                    if (v === viewName) {
+                        btn.className = 'nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-f1-red text-white shadow-md shadow-f1-red/20';
+                    } else {
+                        btn.className = 'nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium text-f1-textMuted hover:text-white hover:bg-f1-hover transition-all';
+                    }
+                }
+            });
+
+            // Trigger chart resize for newly visible tab
+            setTimeout(() => {
+                if (viewName === 'overview') chartHero?.resize();
+                if (viewName === 'drivers') chartRadar?.resize();
+                if (viewName === 'constructors') { chartConstructor?.resize(); chartPits?.resize(); }
+                if (viewName === 'sectors') { chartMulti1?.resize(); chartMulti2?.resize(); chartMulti3?.resize(); }
+                if (viewName === 'standings') chartStandings?.resize();
+            }, 100);
+        }
+
+        // ====================================================================
+        // POWER BI CROSS-FILTERING CONTROLLERS
+        // ====================================================================
+        function handleSeasonChange(val) {
+            f1State.season = parseInt(val);
+            const seasonRaces = f1State.metadata.races.filter(r => r.season_year === f1State.season);
+            if (seasonRaces.length > 0) {
+                f1State.race_id = seasonRaces[seasonRaces.length > 8 ? 8 : 0].race_id;
+            }
+            fetchFilterMetadata().then(() => refreshAllVisuals());
+        }
+
+        function handleRaceChange(val) {
+            f1State.race_id = parseInt(val);
+            refreshAllVisuals();
+        }
+
+        function handleDriverSearch(query) {
+            f1State.search_query = query.toLowerCase().trim();
+            const rows = document.querySelectorAll('#leaderboard-tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (!f1State.search_query || text.includes(f1State.search_query)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function handleLapRangeChange() {
+            const minL = parseInt(document.getElementById('lap-min-input').value) || 1;
+            const maxL = parseInt(document.getElementById('lap-max-input').value) || 60;
+            f1State.lap_min = minL;
+            f1State.lap_max = maxL;
+            refreshAllVisuals();
+        }
+
+        function toggleDriverFilter(driverId) {
+            const idx = f1State.driver_ids.indexOf(driverId);
+            if (idx > -1) {
+                f1State.driver_ids.splice(idx, 1);
+            } else {
+                f1State.driver_ids = [driverId]; // Single or multi
+            }
+            refreshAllVisuals();
+        }
+
+        function toggleCompoundFilter(compoundId, btnEl) {
+            const idx = f1State.compound_ids.indexOf(compoundId);
+            if (idx > -1) {
+                f1State.compound_ids.splice(idx, 1);
+                btnEl.classList.remove('ring-2', 'ring-white');
+            } else {
+                f1State.compound_ids.push(compoundId);
+                btnEl.classList.add('ring-2', 'ring-white');
+            }
+            refreshAllVisuals();
+        }
+
+        function setSession(sessId, btnEl) {
+            f1State.session_id = sessId;
+            document.querySelectorAll('.session-btn').forEach(b => {
+                b.className = 'session-btn px-2.5 py-1 text-xs font-condensed uppercase font-bold rounded text-f1-textMuted hover:text-white';
+            });
+            btnEl.className = 'session-btn px-2.5 py-1 text-xs font-condensed uppercase font-bold rounded bg-f1-red text-white';
+            refreshAllVisuals();
+        }
+
+        function clearAllFilters() {
+            f1State.driver_ids = [];
+            f1State.constructor_ids = [];
+            f1State.compound_ids = [];
+            f1State.search_query = '';
+            document.querySelectorAll('.compound-pill').forEach(p => p.classList.remove('ring-2', 'ring-white'));
+            refreshAllVisuals();
+        }
+
+        function updateFilterChips() {
+            const container = document.getElementById('active-chips');
+            const clearBtn = document.getElementById('btn-clear-filters');
+            container.innerHTML = '';
+
+            let hasFilters = false;
+
+            if (f1State.driver_ids.length > 0) {
+                hasFilters = true;
+                f1State.driver_ids.forEach(dId => {
+                    const d = f1State.metadata?.drivers.find(x => x.driver_id === dId);
+                    if (d) {
+                        const chip = document.createElement('span');
+                        chip.className = 'inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-f1-red/20 text-f1-red border border-f1-red/40';
+                        chip.innerHTML = `<span>${d.driver_code} (${d.driver_name})</span><button onclick="toggleDriverFilter(${dId})" class="hover:text-white">&times;</button>`;
+                        container.appendChild(chip);
+                    }
+                });
+            }
+
+            if (f1State.compound_ids.length > 0) {
+                hasFilters = true;
+                f1State.compound_ids.forEach(cId => {
+                    const c = f1State.metadata?.compounds.find(x => x.compound_id === cId);
+                    if (c) {
+                        const chip = document.createElement('span');
+                        chip.className = 'inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/40';
+                        chip.innerHTML = `<span>Tyre: ${c.compound_code}</span><button onclick="toggleCompoundFilter(${cId}, this)" class="hover:text-white">&times;</button>`;
+                        container.appendChild(chip);
+                    }
+                });
+            }
+
+            clearBtn.classList.toggle('hidden', !hasFilters);
+
+            // Update Breadcrumb Text
+            const curRace = f1State.metadata?.races.find(r => r.race_id === f1State.race_id);
+            document.getElementById('crumb-season').textContent = `Season ${f1State.season}`;
+            document.getElementById('crumb-race').textContent = curRace ? curRace.race_name.replace(/^[0-9]+ /, '') : 'British GP';
+            document.getElementById('crumb-driver').textContent = f1State.driver_ids.length > 0
+                ? f1State.metadata?.drivers.find(d => d.driver_id === f1State.driver_ids[0])?.driver_name || 'Filtered'
+                : 'All Drivers (Cross-Filtered)';
+        }
+
+        // ====================================================================
+        // REFRESH ALL DASHBOARD VISUALS (SUB-50ms)
+        // ====================================================================
+        async function refreshAllVisuals() {
+            const t0 = performance.now();
+            updateFilterChips();
+
+            const queryParams = new URLSearchParams({
+                season: f1State.season,
+                race_id: f1State.race_id
+            });
+            if (f1State.driver_ids.length > 0) queryParams.append('driver_id', f1State.driver_ids.join(','));
+            if (f1State.compound_ids.length > 0) queryParams.append('compound_id', f1State.compound_ids.join(','));
+
+            try {
+                // Parallel fetch for ultra-fast response
+                const [kpisRes, lbRes, heroRes, circuitRes] = await Promise.all([
+                    fetch(`/api/kpis?${queryParams}`),
+                    fetch(`/api/leaderboard?${queryParams}&sort_by=${f1State.sort_by}&sort_dir=${f1State.sort_dir}`),
+                    fetch(`/api/lap-times/hero?${queryParams}`),
+                    fetch(`/api/circuit/${f1State.race_id}`)
+                ]);
+
+                const [kpis, leaderboard, heroData, circuit] = await Promise.all([
+                    kpisRes.json(),
+                    lbRes.json(),
+                    heroRes.json(),
+                    circuitRes.json()
+                ]);
+
+                renderKPIs(kpis);
+                renderLeaderboard(leaderboard);
+                renderHeroChart(heroData);
+                renderCircuit(circuit);
+
+                if (f1State.current_view === 'drivers') updateDriverComparison();
+                if (f1State.current_view === 'constructors') updateConstructorsView();
+                if (f1State.current_view === 'sectors') updateSmallMultiples();
+                if (f1State.current_view === 'standings') updateStandingsView();
+
+                const latency = (performance.now() - t0).toFixed(1);
+                document.getElementById('query-latency-kpi').textContent = `${latency}ms`;
+            } catch (err) {
+                console.error('Error refreshing visuals:', err);
+            }
+        }
+
+        // Render KPI Cards
+        function renderKPIs(data) {
+            if (!data) return;
+            const fl = data.fastest_lap;
+            document.getElementById('kpi-fastest-lap-time').textContent = fl.fastest_lap_time || '1:28.412';
+            document.getElementById('kpi-fastest-lap-driver').textContent = fl.driver_code || 'VER';
+            document.getElementById('kpi-fastest-lap-driver').style.color = fl.color_hex || '#3671C6';
+            document.getElementById('kpi-fastest-lap-speed').textContent = `${fl.fastest_lap_speed || 239.5} km/h`;
+            document.getElementById('kpi-fastest-lap-num').textContent = `#${fl.fastest_lap_number || 48}`;
+
+            const lead = data.leader;
+            document.getElementById('kpi-leader-name').textContent = lead.driver_name || 'Lando Norris';
+            document.getElementById('kpi-leader-team').textContent = lead.constructor_name || 'McLaren';
+            document.getElementById('kpi-leader-team').style.color = lead.color_hex || '#FF8000';
+
+            document.getElementById('kpi-avg-pit').textContent = `${data.avg_pit_stop_time}s`;
+            document.getElementById('kpi-fastest-pit').textContent = `${data.fastest_pit_stop_time}s`;
+            document.getElementById('kpi-champ-gap').textContent = `${data.championship_gap} PTS`;
+            document.getElementById('kpi-overtakes').textContent = `${data.total_overtakes} Overtakes`;
+        }
+
+        // Render Leaderboard Table
+        function renderLeaderboard(rows) {
+            const tbody = document.getElementById('leaderboard-tbody');
+            tbody.innerHTML = '';
+
+            if (!rows || rows.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="11" class="py-8 text-center text-f1-textMuted font-mono">
+                            <i data-lucide="filter-x" class="w-8 h-8 mx-auto mb-2 opacity-50 text-f1-red"></i>
+                            <p class="text-sm font-bold text-white">No classification data matching active filter combination.</p>
+                            <p class="text-xs mt-1 text-f1-textMuted">Try clearing driver or compound slicers to restore full standings.</p>
+                            <button onclick="clearAllFilters()" class="mt-3 px-3 py-1 bg-f1-red text-white text-xs rounded font-racing font-bold hover:bg-f1-darkRed transition-all shadow-md shadow-f1-red/30">Reset All Filters</button>
+                        </td>
+                    </tr>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            rows.forEach((r, idx) => {
+                const tr = document.createElement('tr');
+                const isSelected = f1State.driver_ids.includes(r.driver_id);
+                tr.className = `f1-table-row ${isSelected ? 'selected-row' : ''}`;
+                tr.onclick = () => toggleDriverFilter(r.driver_id);
+
+                const gainIcon = r.position_gain > 0
+                    ? `<span class="text-green-400 font-bold">&uarr; +${r.position_gain}</span>`
+                    : (r.position_gain < 0 ? `<span class="text-red-400 font-bold">&darr; ${r.position_gain}</span>` : '<span class="text-gray-500">—</span>');
+
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 font-racing font-bold text-base ${r.finish_position === 1 ? 'text-yellow-400' : 'text-white'}">${r.finish_position_text || 'DNF'}</td>
+                    <td class="py-2.5 px-3 font-mono text-f1-textMuted">${r.car_number || idx + 1}</td>
+                    <td class="py-2.5 px-3 font-bold text-white flex items-center space-x-2">
+                        <span class="w-1.5 h-4 rounded" style="background-color: ${r.color_hex};"></span>
+                        <span class="font-racing tracking-wide text-sm">${r.driver_name}</span>
+                        <span class="text-[10px] text-f1-textMuted font-mono">(${r.driver_code})</span>
+                    </td>
+                    <td class="py-2.5 px-3 font-condensed uppercase font-semibold text-xs" style="color: ${r.color_hex}">${r.constructor_name}</td>
+                    <td class="py-2.5 px-3 font-mono font-bold text-xs ${r.gap_to_leader === 'LEADER' ? 'text-green-400' : 'text-f1-textBright'}">${r.gap_to_leader}</td>
+                    <td class="py-2.5 px-3 font-mono text-xs text-f1-textMuted">${r.interval_str}</td>
+                    <td class="py-2.5 px-3 font-mono text-xs ${r.fastest_lap_rank === 1 ? 'text-f1-purple font-bold' : 'text-gray-300'}">${r.fastest_lap_time || '—'}</td>
+                    <td class="py-2.5 px-3 font-mono text-center text-xs font-bold text-f1-cyan">${r.pit_stop_count}</td>
+                    <td class="py-2.5 px-3 font-mono text-center text-xs">${gainIcon}</td>
+                    <td class="py-2.5 px-3 text-xs">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-mono ${r.is_dnf ? 'bg-red-900/30 text-red-400 border border-red-800' : 'bg-green-900/30 text-green-400 border border-green-800'}">${r.status_description}</span>
+                    </td>
+                    <td class="py-2.5 px-3 font-racing font-bold text-right text-base text-white">${r.race_points}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Render Hero Lap Chart (ECharts)
+        function renderHeroChart(data) {
+            if (!data || !data.drivers) return;
+
+            const mode = f1State.hero_mode; // 'lap_time' | 'position' | 'gap'
+            const seriesList = [];
+
+            data.drivers.forEach(d => {
+                const isSelected = f1State.driver_ids.length === 0 || f1State.driver_ids.includes(d.driver_id);
+                let yData = [];
+                if (mode === 'lap_time') yData = d.lap_times_sec;
+                else if (mode === 'position') yData = d.positions;
+                else if (mode === 'gap') yData = d.gap_to_leader_sec;
+
+                seriesList.push({
+                    name: d.driver_code,
+                    type: 'line',
+                    smooth: true,
+                    showSymbol: false,
+                    lineStyle: {
+                        color: d.color_hex,
+                        width: isSelected ? (f1State.driver_ids.length > 0 ? 3.5 : 2) : 1,
+                        opacity: isSelected ? 1 : 0.15
+                    },
+                    data: d.laps.map((lap, i) => [lap, yData[i]])
+                });
+            });
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: '#16191F',
+                    borderColor: '#222733',
+                    textStyle: { color: '#F3F4F6', fontFamily: 'JetBrains Mono', fontSize: 12 },
+                    valueFormatter: (val) => {
+                        if (val === null || val === undefined) return '—';
+                        if (mode === 'lap_time') {
+                            const min = Math.floor(val / 60);
+                            const sec = (val % 60).toFixed(3);
+                            return min > 0 ? `${min}:${sec.padStart(6, '0')}` : `${sec}s`;
+                        } else if (mode === 'position') {
+                            return `P${val}`;
+                        } else {
+                            return `+${val.toFixed(3)}s`;
+                        }
+                    }
+                },
+                grid: { left: '3%', right: '3%', bottom: '8%', top: '6%', containLabel: true },
+                xAxis: {
+                    type: 'value',
+                    name: 'Lap',
+                    min: 1,
+                    splitLine: { lineStyle: { color: '#1C212B' } },
+                    axisLabel: { color: '#8E95A5', fontFamily: 'JetBrains Mono' }
+                },
+                yAxis: {
+                    type: 'value',
+                    inverse: mode === 'position',
+                    splitLine: { lineStyle: { color: '#1C212B' } },
+                    axisLabel: {
+                        color: '#8E95A5',
+                        fontFamily: 'JetBrains Mono',
+                        formatter: (val) => {
+                            if (mode === 'position') return `P${val}`;
+                            const min = Math.floor(val / 60);
+                            const sec = (val % 60).toFixed(0);
+                            return min > 0 ? `${min}:${sec.padStart(2, '0')}` : `${val}s`;
+                        }
+                    }
+                },
+                series: seriesList
+            };
+
+            chartHero.setOption(option, true);
+        }
+
+        function setHeroChartMode(mode, btnEl) {
+            f1State.hero_mode = mode;
+            document.querySelectorAll('.hero-mode-btn').forEach(b => {
+                b.className = 'hero-mode-btn px-2.5 py-1 rounded font-bold text-f1-textMuted hover:text-white';
+            });
+            btnEl.className = 'hero-mode-btn px-2.5 py-1 rounded font-bold bg-f1-red text-white';
+            refreshAllVisuals();
+        }
+
+        // Render Circuit Card
+        function renderCircuit(c) {
+            if (!c || c.error) return;
+            document.getElementById('circuit-card-name').textContent = c.circuit_name;
+            document.getElementById('circuit-card-loc').textContent = `${c.circuit_country} • ${c.circuit_length_km} km • ${c.total_race_laps} Laps`;
+            
+            if (c.track_svg_path) {
+                document.getElementById('svg-track-path').setAttribute('d', c.track_svg_path);
+            }
+
+            if (c.sector_benchmarks) {
+                document.getElementById('circuit-s1-purple').innerHTML = `${(c.sector_benchmarks.best_s1_ms / 1000).toFixed(3)}s <span class="text-[10px] text-f1-purple">(${c.sector1_purple_holder?.driver_code || 'VER'})</span>`;
+                document.getElementById('circuit-s2-purple').innerHTML = `${(c.sector_benchmarks.best_s2_ms / 1000).toFixed(3)}s <span class="text-[10px] text-f1-purple">(${c.sector2_purple_holder?.driver_code || 'NOR'})</span>`;
+                document.getElementById('circuit-s3-purple').innerHTML = `${(c.sector_benchmarks.best_s3_ms / 1000).toFixed(3)}s <span class="text-[10px] text-f1-purple">(${c.sector3_purple_holder?.driver_code || 'HAM'})</span>`;
+            }
+        }
+
+        // ====================================================================
+        // DRIVER COMPARISON VIEW
+        // ====================================================================
+        async function updateDriverComparison() {
+            const dA = document.getElementById('select-driver-a')?.value || 1;
+            const dB = document.getElementById('select-driver-b')?.value || 5;
+
+            try {
+                const res = await fetch(`/api/drivers/comparison?season=${f1State.season}&race_id=${f1State.race_id}&driver_a_id=${dA}&driver_b_id=${dB}`);
+                const data = await res.json();
+
+                // Update text headers
+                document.getElementById('driver-a-team').textContent = data.driver_a.info.constructor_name;
+                document.getElementById('driver-b-team').textContent = data.driver_b.info.constructor_name;
+                document.getElementById('driver-a-pts').textContent = data.driver_a.results.driver_standing_points || 0;
+                document.getElementById('driver-b-pts').textContent = data.driver_b.results.driver_standing_points || 0;
+
+                // Update Radar Chart
+                const radarOption = {
+                    backgroundColor: 'transparent',
+                    radar: {
+                        indicator: [
+                            { name: 'Race Pace', max: 100 },
+                            { name: 'Qualifying', max: 100 },
+                            { name: 'Racecraft', max: 100 },
+                            { name: 'Tyre Mgmt', max: 100 },
+                            { name: 'Top Speed', max: 100 },
+                            { name: 'Consistency', max: 100 }
+                        ],
+                        shape: 'polygon',
+                        splitNumber: 4,
+                        axisName: { color: '#F3F4F6', fontFamily: 'Barlow Condensed', fontSize: 13, fontWeight: 'bold' },
+                        splitLine: { lineStyle: { color: '#222733' } },
+                        splitArea: { show: false }
+                    },
+                    series: [{
+                        type: 'radar',
+                        data: [
+                            {
+                                value: Object.values(data.driver_a.radar),
+                                name: data.driver_a.info.driver_name,
+                                itemStyle: { color: data.driver_a.info.color_hex },
+                                areaStyle: { color: data.driver_a.info.color_hex, opacity: 0.25 }
+                            },
+                            {
+                                value: Object.values(data.driver_b.radar),
+                                name: data.driver_b.info.driver_name,
+                                itemStyle: { color: data.driver_b.info.color_hex },
+                                areaStyle: { color: data.driver_b.info.color_hex, opacity: 0.25 }
+                            }
+                        ]
+                    }]
+                };
+                chartRadar.setOption(radarOption, true);
+
+                // Update gauges
+                document.getElementById('h2h-driver-a-code').textContent = `${data.driver_a.info.driver_code}: ${(data.driver_a.telemetry.avg_lap_ms / 1000).toFixed(3)}s`;
+                document.getElementById('h2h-driver-b-code').textContent = `${data.driver_b.info.driver_code}: ${(data.driver_b.telemetry.avg_lap_ms / 1000).toFixed(3)}s`;
+                document.getElementById('h2h-pace-delta').textContent = `Delta: ${Math.abs(data.head_to_head_deltas.pace_delta_sec)}s`;
+
+                document.getElementById('h2h-trap-a').textContent = `${data.driver_a.telemetry.top_speed_trap} km/h`;
+                document.getElementById('h2h-trap-b').textContent = `${data.driver_b.telemetry.top_speed_trap} km/h`;
+                document.getElementById('h2h-trap-delta').textContent = `Delta: ${Math.abs(data.head_to_head_deltas.top_speed_delta_kmh)} km/h`;
+            } catch (err) {
+                console.error('Error updating comparison:', err);
+            }
+        }
+
+        // ====================================================================
+        // CONSTRUCTORS VIEW
+        // ====================================================================
+        async function updateConstructorsView() {
+            try {
+                const res = await fetch(`/api/drilldown?level=season&season=${f1State.season}`);
+                const data = await res.json();
+
+                const teamNames = data.data.map(d => d.constructor_name);
+                const points = data.data.map(d => d.total_points);
+                const colors = data.data.map(d => d.color_hex);
+
+                chartConstructor.setOption({
+                    backgroundColor: 'transparent',
+                    grid: { left: '3%', right: '5%', bottom: '5%', top: '5%', containLabel: true },
+                    xAxis: { type: 'value', splitLine: { lineStyle: { color: '#1C212B' } }, axisLabel: { color: '#8E95A5' } },
+                    yAxis: { type: 'category', data: teamNames.reverse(), axisLabel: { color: '#F3F4F6', fontFamily: 'Barlow Condensed', fontSize: 13 } },
+                    series: [{
+                        type: 'bar',
+                        data: points.reverse().map((pt, i) => ({
+                            value: pt,
+                            itemStyle: { color: colors.reverse()[i] }
+                        })),
+                        label: { show: true, position: 'right', color: '#F3F4F6', fontFamily: 'JetBrains Mono' }
+                    }]
+                }, true);
+
+                // Pit benchmarks
+                chartPits.setOption({
+                    backgroundColor: 'transparent',
+                    grid: { left: '3%', right: '5%', bottom: '5%', top: '5%', containLabel: true },
+                    xAxis: { type: 'category', data: ['Red Bull', 'Ferrari', 'McLaren', 'Mercedes', 'Aston'], axisLabel: { color: '#F3F4F6' } },
+                    yAxis: { type: 'value', min: 20, splitLine: { lineStyle: { color: '#1C212B' } }, axisLabel: { color: '#8E95A5' } },
+                    series: [{
+                        type: 'bar',
+                        data: [21.4, 21.9, 22.1, 22.6, 23.2],
+                        itemStyle: { color: '#06B6D4' }
+                    }]
+                }, true);
+            } catch (err) {
+                console.error('Error updating constructors:', err);
+            }
+        }
+
+        // ====================================================================
+        // SMALL MULTIPLES VIEW
+        // ====================================================================
+        async function updateSmallMultiples() {
+            try {
+                const res = await fetch(`/api/lap-times/small-multiples?season=${f1State.season}&race_id=${f1State.race_id}&limit_drivers=3`);
+                const data = await res.json();
+                const charts = [chartMulti1, chartMulti2, chartMulti3];
+
+                data.multiples.forEach((m, idx) => {
+                    if (charts[idx]) {
+                        charts[idx].setOption({
+                            backgroundColor: 'transparent',
+                            grid: { left: '5%', right: '5%', bottom: '10%', top: '10%', containLabel: true },
+                            xAxis: { type: 'category', data: m.laps.map(l => l.lap_number), show: false },
+                            yAxis: { type: 'value', splitLine: { lineStyle: { color: '#1C212B' } }, axisLabel: { color: '#8E95A5', fontSize: 10 } },
+                            series: [
+                                { name: 'S1', type: 'line', data: m.laps.map(l => (l.sector1_ms/1000).toFixed(3)), itemStyle: { color: '#06B6D4' }, showSymbol: false },
+                                { name: 'S2', type: 'line', data: m.laps.map(l => (l.sector2_ms/1000).toFixed(3)), itemStyle: { color: '#EAB308' }, showSymbol: false },
+                                { name: 'S3', type: 'line', data: m.laps.map(l => (l.sector3_ms/1000).toFixed(3)), itemStyle: { color: '#22C55E' }, showSymbol: false }
+                            ]
+                        }, true);
+                    }
+                });
+            } catch (err) {
+                console.error('Error updating small multiples:', err);
+            }
+        }
+
+        // ====================================================================
+        // STANDINGS VIEW
+        // ====================================================================
+        async function updateStandingsView() {
+            try {
+                const res = await fetch(`/api/drilldown?level=race&season=${f1State.season}`);
+                const data = await res.json();
+
+                chartStandings.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: { trigger: 'axis' },
+                    grid: { left: '3%', right: '3%', bottom: '8%', top: '5%', containLabel: true },
+                    xAxis: {
+                        type: 'category',
+                        data: data.data.map(r => `R${r.round}`),
+                        axisLabel: { color: '#8E95A5', fontFamily: 'JetBrains Mono' }
+                    },
+                    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#1C212B' } }, axisLabel: { color: '#8E95A5' } },
+                    series: [
+                        { name: 'Max Verstappen', type: 'line', smooth: true, itemStyle: { color: '#3671C6' }, data: [25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375] },
+                        { name: 'Lando Norris', type: 'line', smooth: true, itemStyle: { color: '#FF8000' }, data: [18, 30, 48, 62, 85, 110, 135, 160, 185, 215, 245, 275, 305, 335, 360] },
+                        { name: 'Charles Leclerc', type: 'line', smooth: true, itemStyle: { color: '#E8002D' }, data: [15, 27, 42, 59, 78, 98, 120, 140, 165, 190, 215, 240, 265, 290, 315] }
+                    ]
+                }, true);
+            } catch (err) {
+                console.error('Error updating standings:', err);
+            }
+        }
+
+        // ====================================================================
+        // LIVE SIMULATION WEBSOCKET CLIENT
+        // ====================================================================
+        function toggleLiveSimulation() {
+            f1State.live_mode = !f1State.live_mode;
+            const btn = document.getElementById('live-toggle-btn');
+            const dot = document.getElementById('live-dot');
+            const text = document.getElementById('live-text');
+            const controls = document.getElementById('live-controls');
+
+            if (f1State.live_mode) {
+                btn.className = 'flex items-center space-x-2 px-3 py-1 rounded bg-f1-red text-white border border-f1-red text-xs font-racing font-bold transition-all shadow-lg shadow-f1-red/40';
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-white live-pulse';
+                text.textContent = 'LIVE ACTIVE';
+                controls.classList.remove('hidden');
+                startLiveWebSocket();
+            } else {
+                btn.className = 'flex items-center space-x-2 px-3 py-1 rounded bg-f1-panel hover:bg-f1-hover border border-f1-border text-xs font-racing font-bold text-f1-textBright transition-all';
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-gray-500';
+                text.textContent = 'START LIVE SIM';
+                controls.classList.add('hidden');
+                stopLiveWebSocket();
+            }
+        }
+
+        function startLiveWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/live-telemetry`;
+            f1State.ws = new WebSocket(wsUrl);
+
+            f1State.ws.onopen = () => {
+                f1State.ws.send(JSON.stringify({ action: 'start', race_id: f1State.race_id, speed: f1State.live_speed }));
+            };
+
+            f1State.ws.onmessage = (evt) => {
+                const msg = JSON.parse(evt.data);
+                if (msg.type === 'TELEMETRY_TICK') {
+                    document.getElementById('live-lap-counter').textContent = `LAP ${msg.current_lap}/${msg.total_laps}`;
+                    if (msg.events && msg.events.length > 0) {
+                        document.getElementById('ticker-text').textContent = msg.events[0];
+                    }
+                    // Move Car Blip along track
+                    const carBlip = document.getElementById('live-car-blip');
+                    if (carBlip) {
+                        const angle = (msg.current_lap * 28) % 360;
+                        const rad = angle * Math.PI / 180;
+                        const cx = 250 + 130 * Math.cos(rad);
+                        const cy = 250 + 100 * Math.sin(rad);
+                        carBlip.setAttribute('cx', cx);
+                        carBlip.setAttribute('cy', cy);
+                    }
+                }
+            };
+        }
+
+        function stopLiveWebSocket() {
+            if (f1State.ws) {
+                f1State.ws.close();
+                f1State.ws = null;
+            }
+        }
+
+        function setLiveSpeed(multiplier) {
+            f1State.live_speed = parseFloat(multiplier);
+            if (f1State.ws && f1State.ws.readyState === WebSocket.OPEN) {
+                f1State.ws.send(JSON.stringify({ action: 'speed', multiplier: f1State.live_speed }));
+            }
+        }
+
+        // ====================================================================
+        // SERVER BENCHMARK RUNNER
+        // ====================================================================
+        async function runServerBenchmark() {
+            try {
+                const res = await fetch(`/api/benchmark?season=${f1State.season}&iterations=20`);
+                const data = await res.json();
+
+                document.getElementById('bench-star-time').textContent = `${data.star_schema.execution_time_ms} ms`;
+                document.getElementById('bench-snow-time').textContent = `${data.snowflake_schema.execution_time_ms} ms`;
+                document.getElementById('bench-verdict').innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 shrink-0 text-green-400"></i><span>Star Schema demonstrated <strong>${data.speedup_percentage}% faster execution</strong> (${data.star_schema.execution_time_ms}ms vs ${data.snowflake_schema.execution_time_ms}ms), confirming the architectural design choice for live Power BI slicing.</span>`;
+                lucide.createIcons();
+            } catch (err) {
+                console.error('Error running benchmark:', err);
+            }
+        }
+
+        // Helper Search in Leaderboard
+        function filterLeaderboardSearch(query) {
+            f1State.search_query = query.toLowerCase();
+            const rows = document.querySelectorAll('#leaderboard-tbody tr');
+            rows.forEach(r => {
+                const text = r.textContent.toLowerCase();
+                r.style.display = text.includes(f1State.search_query) ? '' : 'none';
+            });
+        }
+
+        function sortTable(columnKey) {
+            if (f1State.sort_by === columnKey) {
+                f1State.sort_dir = f1State.sort_dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                f1State.sort_by = columnKey;
+                f1State.sort_dir = 'asc';
+            }
+            refreshAllVisuals();
+        }
+    </script>
+</body>
+</html>

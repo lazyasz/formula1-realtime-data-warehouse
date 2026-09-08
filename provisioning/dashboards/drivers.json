@@ -1,0 +1,182 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 200,
+      "title": "🏎️ Driver Performance & Head-to-Head Comparison",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "id": 201,
+      "title": "Total Championship Points by Driver",
+      "type": "bargauge",
+      "options": {
+        "displayMode": "gradient",
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }, { "color": "red", "value": 200 }] },
+          "unit": "pts"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+          "format": "table",
+          "rawSql": "SELECT d.driver_name AS \"Driver\", SUM(f.points) AS \"Points\"\nFROM fact_race_results f\nJOIN dim_driver d ON f.driver_id = d.driver_id\nJOIN dim_race r ON f.race_id = r.race_id\nWHERE r.season_year = ${season} AND f.driver_id IN (${driver})\nGROUP BY d.driver_name\nORDER BY \"Points\" DESC;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "id": 202,
+      "title": "Positions Gained / Overtake Performance",
+      "type": "bargauge",
+      "options": {
+        "displayMode": "lcd",
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showUnfilled": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 0 },
+              { "color": "green", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+          "format": "table",
+          "rawSql": "SELECT d.driver_name AS \"Driver\", SUM(f.positions_gained) AS \"Net Positions Gained\"\nFROM fact_race_results f\nJOIN dim_driver d ON f.driver_id = d.driver_id\nJOIN dim_race r ON f.race_id = r.race_id\nWHERE r.season_year = ${season} AND f.driver_id IN (${driver})\nGROUP BY d.driver_name\nORDER BY \"Net Positions Gained\" DESC;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "id": 203,
+      "title": "⏱️ Sector Times (S1, S2, S3) & Speed Trap Analysis",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 10 },
+      "id": 204,
+      "title": "Sector Splits & Top Speed by Driver",
+      "type": "table",
+      "options": {
+        "footer": { "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Speed Trap (km/h)" }]
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Speed Trap (km/h)" },
+            "properties": [
+              { "id": "color", "value": { "mode": "thresholds" } },
+              { "id": "thresholds", "value": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }, { "color": "yellow", "value": 320 }, { "color": "#9B51E0", "value": 330 }] } },
+              { "id": "unit", "value": "velocitykmh" }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+          "format": "table",
+          "rawSql": "SELECT \n  d.driver_code AS \"Driver\",\n  d.driver_name AS \"Full Name\",\n  ROUND(MIN(flt.sector1_ms) / 1000.0, 3) AS \"Best S1 (s)\",\n  ROUND(MIN(flt.sector2_ms) / 1000.0, 3) AS \"Best S2 (s)\",\n  ROUND(MIN(flt.sector3_ms) / 1000.0, 3) AS \"Best S3 (s)\",\n  ROUND(MIN(flt.lap_time_ms) / 1000.0, 3) AS \"Best Lap (s)\",\n  MAX(flt.speed_trap_kmh) AS \"Speed Trap (km/h)\",\n  COUNT(flt.lap_id) AS \"Laps Completed\"\nFROM fact_lap_times flt\nJOIN dim_driver d ON flt.driver_id = d.driver_id\nJOIN dim_race r ON flt.race_id = r.race_id\nWHERE r.season_year = ${season} AND flt.race_id = ${race} AND flt.driver_id IN (${driver})\nGROUP BY d.driver_code, d.driver_name\nORDER BY \"Best Lap (s)\" ASC;",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["f1", "drivers", "telemetry"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "2024", "value": "2024" },
+        "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+        "definition": "SELECT DISTINCT season_year AS __text, season_year AS __value FROM dim_race ORDER BY season_year DESC;",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Season",
+        "multi": false,
+        "name": "season",
+        "options": [],
+        "query": "SELECT DISTINCT season_year AS __text, season_year AS __value FROM dim_race ORDER BY season_year DESC;",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "current": { "selected": true, "text": "British Grand Prix", "value": "9" },
+        "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+        "definition": "SELECT race_name AS __text, race_id AS __value FROM dim_race WHERE season_year = ${season} ORDER BY round ASC;",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Grand Prix",
+        "multi": false,
+        "name": "race",
+        "options": [],
+        "query": "SELECT race_name AS __text, race_id AS __value FROM dim_race WHERE season_year = ${season} ORDER BY round ASC;",
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "allValue": null,
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+        "definition": "SELECT DISTINCT d.driver_name AS __text, d.driver_id AS __value FROM dim_driver d JOIN fact_race_results f ON d.driver_id = f.driver_id JOIN dim_race r ON f.race_id = r.race_id WHERE r.season_year = ${season} ORDER BY d.driver_name ASC;",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Driver",
+        "multi": true,
+        "name": "driver",
+        "options": [],
+        "query": "SELECT DISTINCT d.driver_name AS __text, d.driver_id AS __value FROM dim_driver d JOIN fact_race_results f ON d.driver_id = f.driver_id JOIN dim_race r ON f.race_id = r.race_id WHERE r.season_year = ${season} ORDER BY d.driver_name ASC;",
+        "refresh": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "Formula 1 — Drivers & Sector Performance",
+  "uid": "f1-drivers",
+  "version": 1
+}

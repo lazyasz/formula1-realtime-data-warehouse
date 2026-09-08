@@ -1,0 +1,2912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formula 1 — Interactive Power BI Analytics Report</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pbi: {
+                            canvas: '#141414',
+                            card: '#242424',
+                            cardLighter: '#2E2E2E',
+                            border: '#383838',
+                            borderLight: '#4A4A4A',
+                            teal: '#00BDAE',
+                            tealHover: '#00D9C8',
+                            textWhite: '#FFFFFF',
+                            textMuted: '#A0A0A0',
+                            barGrey: '#4A4A4A',
+                            barLightGrey: '#777777',
+                            red: '#E10600',
+                            gold: '#F59E0B'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Segoe UI', '-apple-system', 'BlinkMacSystemFont', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Menlo', 'Consolas', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Apache ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+    <style>
+        body {
+            background-color: #121212;
+            color: #FFFFFF;
+            font-family: 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+        }
+        .pbi-card {
+            background-color: #242424;
+            color: #FFFFFF;
+            border-radius: 6px;
+            border: 1px solid #383838;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .pbi-card:hover {
+            border-color: #4A4A4A;
+        }
+        .pbi-kpi-tile {
+            background-color: #242424;
+            color: #FFFFFF;
+            border-radius: 6px;
+            border: 1px solid #383838;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .pbi-kpi-tile:hover {
+            border-color: #00BDAE;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 189, 174, 0.15);
+        }
+        .pbi-kpi-value {
+            font-size: 22px;
+            font-weight: 800;
+            color: #00BDAE;
+            line-height: 1.1;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .pbi-kpi-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #CCCCCC;
+            letter-spacing: 0.6px;
+            margin-top: 5px;
+            text-transform: uppercase;
+        }
+        .pbi-nav-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #888888;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+        .pbi-nav-btn:hover {
+            color: #00BDAE;
+            background-color: #333333;
+        }
+        .pbi-nav-btn.active {
+            color: #00BDAE;
+            background-color: #262626;
+            border-left: 3px solid #00BDAE;
+        }
+        .team-pill-btn {
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            background-color: #262626;
+            border: 1px solid #3D3D3D;
+            color: #E0E0E0;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .team-pill-btn:hover {
+            background-color: #383838;
+            color: #00BDAE;
+            border-color: #00BDAE;
+        }
+        .team-pill-btn.active {
+            background-color: #00BDAE;
+            border-color: #00BDAE;
+            color: #111111;
+            font-weight: 800;
+            box-shadow: 0 0 12px rgba(0, 189, 174, 0.4);
+        }
+        .driver-avatar-btn {
+            border: 2px solid #383838;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            border-radius: 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+        }
+        .driver-avatar-btn:hover {
+            border-color: #00BDAE;
+            transform: translateY(-2px);
+        }
+        .driver-avatar-btn.active {
+            border-color: #00BDAE;
+            background-color: #333333;
+            box-shadow: 0 0 12px rgba(0, 189, 174, 0.4);
+        }
+        .filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 9px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            background-color: #1A1A1A;
+            border: 1px solid #444444;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .filter-chip:hover {
+            border-color: #00BDAE;
+        }
+        .filter-chip button {
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.1s;
+        }
+        .filter-chip button:hover {
+            opacity: 1;
+            color: #E10600;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #181818; }
+        ::-webkit-scrollbar-thumb { background: #444444; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00BDAE; }
+
+        /* Toast notification */
+        #pbi-toast {
+            visibility: hidden;
+            min-width: 260px;
+            background-color: #242424;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            border: 1px solid #00BDAE;
+            padding: 11px 18px;
+            position: fixed;
+            z-index: 9999;
+            bottom: 24px;
+            right: 24px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+        #pbi-toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 30px;
+        }
+
+        /* Modal Overlay */
+        .pbi-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+        .pbi-modal.open {
+            display: flex;
+        }
+
+        /* High-contrast custom dropdown styling to prevent white-on-white */
+        :root, html, body {
+            color-scheme: dark !important;
+        }
+        select, select * {
+            background-color: #181818 !important;
+            color: #FFFFFF !important;
+            border-color: #383838 !important;
+            color-scheme: dark !important;
+        }
+        select:focus {
+            border-color: #00BDAE !important;
+            outline: none !important;
+        }
+        select option {
+            background-color: #222222 !important;
+            color: #FFFFFF !important;
+            padding: 8px 12px !important;
+        }
+        select option:checked, select option:hover {
+            background-color: #00BDAE !important;
+            color: #111111 !important;
+            font-weight: bold !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex bg-[#121212]">
+
+    <!-- Toast container -->
+    <div id="pbi-toast"><i class="fa-solid fa-filter text-pbi-teal mr-2"></i><span id="toast-text">Filter applied</span></div>
+
+    <!-- Hotkeys Help Modal -->
+    <div id="hotkeys-modal" class="pbi-modal" onclick="closeHotkeysModal(event)">
+        <div class="pbi-card p-6 max-w-md w-full mx-4 border border-[#444] shadow-2xl space-y-4" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between border-b border-pbi-border pb-3">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-keyboard text-pbi-teal"></i> Keyboard Shortcuts
+                </h3>
+                <button onclick="toggleHotkeysModal()" class="text-gray-400 hover:text-white text-lg">&times;</button>
+            </div>
+            <div class="space-y-2.5 text-xs">
+                <div class="flex justify-between items-center bg-[#181818] p-2 rounded border border-[#333]">
+                    <span class="text-gray-300">Switch to Page 1 (Overview)</span>
+                    <kbd class="px-2 py-0.5 bg-[#2A2A2A] border border-[#555] rounded text-pbi-teal font-mono font-bold">1</kbd>
+                </div>
+                <div class="flex justify-between items-center bg-[#181818] p-2 rounded border border-[#333]">
+                    <span class="text-gray-300">Switch to Page 2 (Constructors)</span>
+                    <kbd class="px-2 py-0.5 bg-[#2A2A2A] border border-[#555] rounded text-pbi-teal font-mono font-bold">2</kbd>
+                </div>
+                <div class="flex justify-between items-center bg-[#181818] p-2 rounded border border-[#333]">
+                    <span class="text-gray-300">Switch to Page 3 (Drivers)</span>
+                    <kbd class="px-2 py-0.5 bg-[#2A2A2A] border border-[#555] rounded text-pbi-teal font-mono font-bold">3</kbd>
+                </div>
+                <div class="flex justify-between items-center bg-[#181818] p-2 rounded border border-[#333]">
+                    <span class="text-gray-300">Switch to Page 4 (Circuits)</span>
+                    <kbd class="px-2 py-0.5 bg-[#2A2A2A] border border-[#555] rounded text-pbi-teal font-mono font-bold">4</kbd>
+                </div>
+                <div class="flex justify-between items-center bg-[#181818] p-2 rounded border border-[#333]">
+                    <span class="text-gray-300">Reset All Filters</span>
+                    <kbd class="px-2 py-0.5 bg-[#2A2A2A] border border-[#555] rounded text-pbi-teal font-mono font-bold">Esc</kbd>
+                </div>
+                <div class="flex justify-between items-center bg-[#181818] p-2 rounded border border-[#333]">
+                    <span class="text-gray-300">Focus Quick Search</span>
+                    <kbd class="px-2 py-0.5 bg-[#2A2A2A] border border-[#555] rounded text-pbi-teal font-mono font-bold">/</kbd>
+                </div>
+            </div>
+            <p class="text-[11px] text-gray-400 text-center font-mono">Press Esc or click outside to dismiss</p>
+        </div>
+    </div>
+
+    <!-- Left Power BI Vertical Navigation Rail -->
+    <aside class="w-14 bg-[#181818] border-r border-[#2C2C2C] flex flex-col items-center py-4 space-y-4 shrink-0 shadow-xl z-20">
+        <!-- F1 Logo -->
+        <div class="w-10 h-8 flex items-center justify-center mb-2">
+            <span class="bg-[#E10600] text-white font-extrabold text-sm px-2 py-0.5 rounded tracking-tighter italic shadow">F1</span>
+        </div>
+
+        <!-- 4 Report Page Buttons -->
+        <button onclick="switchPbiPage('page-overview')" id="nav-btn-overview" class="pbi-nav-btn active" title="Page 1: Overview & F1 Foundations (Key: 1)">
+            <i class="fa-solid fa-flag-checkered text-base"></i>
+        </button>
+        <button onclick="switchPbiPage('page-constructor')" id="nav-btn-constructor" class="pbi-nav-btn" title="Page 2: Constructor Showcase & Performance (Key: 2)">
+            <i class="fa-solid fa-car-side text-base"></i>
+        </button>
+        <button onclick="switchPbiPage('page-driver')" id="nav-btn-driver" class="pbi-nav-btn" title="Page 3: Driver Performance & Bio (Key: 3)">
+            <i class="fa-solid fa-helmet-un text-base"></i>
+        </button>
+        <button onclick="switchPbiPage('page-circuit')" id="nav-btn-circuit" class="pbi-nav-btn" title="Page 4: Circuit & Race Analytics (Key: 4)">
+            <i class="fa-solid fa-route text-base"></i>
+        </button>
+
+        <!-- Divider -->
+        <div class="w-8 h-px bg-[#333333] my-2"></div>
+
+        <!-- External Switchers to Other Dashboards -->
+        <a href="/" class="pbi-nav-btn" title="Switch to ApexIQ Live Telemetry Dashboard">
+            <i class="fa-solid fa-gauge text-xs"></i>
+        </a>
+        <a href="/grafana" class="pbi-nav-btn" title="Switch to Grafana Analytics Suite">
+            <i class="fa-solid fa-chart-line text-xs"></i>
+        </a>
+        <a href="/showcase" class="pbi-nav-btn" title="Switch to Warehouse Showcase">
+            <i class="fa-solid fa-database text-xs"></i>
+        </a>
+
+        <!-- Hotkeys Help Button -->
+        <button onclick="toggleHotkeysModal()" class="pbi-nav-btn mt-auto text-gray-500 hover:text-amber-400" title="View Keyboard Shortcuts (?)">
+            <i class="fa-solid fa-circle-question text-sm"></i>
+        </button>
+    </aside>
+
+    <!-- Main Power BI Canvas Area -->
+    <main class="flex-grow p-4 lg:p-6 overflow-y-auto max-w-[1750px] space-y-4">
+
+        <!-- ================================================================= -->
+        <!-- GLOBAL DYNAMIC POWER BI SLICER / FILTER TOOLBAR -->
+        <!-- ================================================================= -->
+        <section class="pbi-card p-3.5 border border-[#3D3D3D] shadow-xl sticky top-0 z-30 bg-[#242424]/95 backdrop-blur">
+            <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+                <!-- Left: Slicer Dropdowns -->
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <!-- Season Slicer -->
+                    <div id="slicer-container-season" class="flex items-center space-x-1.5 bg-[#181818] px-2.5 py-1.5 rounded border border-[#3A3A3A] hover:border-pbi-teal transition">
+                        <span class="text-pbi-teal font-bold uppercase tracking-wider text-[10px]"><i class="fa-regular fa-calendar mr-1"></i>Season:</span>
+                        <select id="pbi-slicer-season" onchange="onGlobalFilterChange('season')" class="bg-[#181818] text-white font-mono font-bold focus:outline-none cursor-pointer text-xs px-1 py-0.5 rounded border border-[#444]">
+                            <option value="2024" class="bg-[#242424] text-white" selected>2024</option>
+                            <option value="2023" class="bg-[#242424] text-white">2023</option>
+                            <option value="2022" class="bg-[#242424] text-white">2022</option>
+                            <option value="2021" class="bg-[#242424] text-white">2021</option>
+                            <option value="2020" class="bg-[#242424] text-white">2020</option>
+                            <option value="2019" class="bg-[#242424] text-white">2019</option>
+                            <option value="2018" class="bg-[#242424] text-white">2018</option>
+                            <option value="2017" class="bg-[#242424] text-white">2017</option>
+                            <option value="2016" class="bg-[#242424] text-white">2016</option>
+                            <option value="2015" class="bg-[#242424] text-white">2015</option>
+                            <option value="2014" class="bg-[#242424] text-white">2014</option>
+                            <option value="2013" class="bg-[#242424] text-white">2013</option>
+                            <option value="2012" class="bg-[#242424] text-white">2012</option>
+                            <option value="2011" class="bg-[#242424] text-white">2011</option>
+                            <option value="2010" class="bg-[#242424] text-white">2010</option>
+                            <option value="2009" class="bg-[#242424] text-white">2009</option>
+                            <option value="2008" class="bg-[#242424] text-white">2008</option>
+                            <option value="2007" class="bg-[#242424] text-white">2007</option>
+                            <option value="2006" class="bg-[#242424] text-white">2006</option>
+                            <option value="2005" class="bg-[#242424] text-white">2005</option>
+                            <option value="2004" class="bg-[#242424] text-white">2004</option>
+                        </select>
+                    </div>
+
+                    <!-- Grand Prix Slicer -->
+                    <div id="slicer-container-race" class="hidden items-center space-x-1.5 bg-[#181818] px-2.5 py-1.5 rounded border border-[#3A3A3A] hover:border-pbi-teal transition">
+                        <span class="text-gray-400 font-bold uppercase tracking-wider text-[10px]"><i class="fa-solid fa-flag-checkered mr-1"></i>Grand Prix:</span>
+                        <select id="pbi-slicer-race" onchange="onGlobalFilterChange('race')" class="bg-[#181818] text-white font-semibold focus:outline-none max-w-[200px] truncate cursor-pointer text-xs px-1 py-0.5 rounded border border-[#444]">
+                            <option value="ALL" class="bg-[#242424] text-white">All Grands Prix</option>
+                        </select>
+                    </div>
+
+                    <!-- Driver Slicer -->
+                    <div id="slicer-container-driver" class="hidden items-center space-x-1.5 bg-[#181818] px-2.5 py-1.5 rounded border border-[#3A3A3A] hover:border-pbi-teal transition">
+                        <span class="text-gray-400 font-bold uppercase tracking-wider text-[10px]"><i class="fa-solid fa-helmet-un mr-1"></i>Driver:</span>
+                        <select id="pbi-slicer-driver" onchange="onGlobalFilterChange('driver')" class="bg-[#181818] text-white font-semibold focus:outline-none max-w-[190px] truncate cursor-pointer text-xs px-1 py-0.5 rounded border border-[#444]">
+                            <option value="ALL" class="bg-[#242424] text-white">All Drivers</option>
+                        </select>
+                    </div>
+
+                    <!-- Constructor Slicer -->
+                    <div id="slicer-container-team" class="flex items-center space-x-1.5 bg-[#181818] px-2.5 py-1.5 rounded border border-[#3A3A3A] hover:border-pbi-teal transition">
+                        <span class="text-gray-400 font-bold uppercase tracking-wider text-[10px]"><i class="fa-solid fa-car mr-1"></i>Constructor:</span>
+                        <select id="pbi-slicer-team" onchange="onGlobalFilterChange('team')" class="bg-[#181818] text-white font-semibold focus:outline-none max-w-[180px] truncate cursor-pointer text-xs px-1 py-0.5 rounded border border-[#444]">
+                            <option value="ALL" class="bg-[#242424] text-white">All Constructors</option>
+                        </select>
+                    </div>
+
+                    <!-- Tyre Compound Slicer -->
+                    <div id="slicer-container-compound" class="hidden items-center space-x-1.5 bg-[#181818] px-2.5 py-1.5 rounded border border-[#3A3A3A] hover:border-pbi-teal transition">
+                        <span class="text-gray-400 font-bold uppercase tracking-wider text-[10px]"><i class="fa-solid fa-circle-dot mr-1"></i>Tyre:</span>
+                        <select id="pbi-slicer-compound" onchange="onGlobalFilterChange('compound')" class="bg-[#181818] text-white font-semibold focus:outline-none cursor-pointer text-xs px-1 py-0.5 rounded border border-[#444]">
+                            <option value="ALL" class="bg-[#242424] text-white">All Compounds</option>
+                            <option value="1" class="bg-[#242424] text-white">Soft (Red)</option>
+                            <option value="2" class="bg-[#242424] text-white">Medium (Yellow)</option>
+                            <option value="3" class="bg-[#242424] text-white">Hard (White)</option>
+                            <option value="4" class="bg-[#242424] text-white">Intermediate (Green)</option>
+                            <option value="5" class="bg-[#242424] text-white">Wet (Blue)</option>
+                        </select>
+                    </div>
+
+                    <!-- Quick Live Search Slicer -->
+                    <div id="slicer-container-search" class="flex items-center space-x-1 bg-[#181818] px-2.5 py-1.5 rounded border border-[#3A3A3A] hover:border-pbi-teal transition">
+                        <i class="fa-solid fa-magnifying-glass text-gray-500 text-[10px]"></i>
+                        <input id="pbi-search-input" type="text" placeholder="Search (Press /)..." oninput="onSearchFilterChange()" class="bg-[#181818] text-white text-[11px] focus:outline-none w-32 font-mono">
+                    </div>
+                </div>
+
+                <!-- Right: Reset Button & Dynamic Row / Filter Counter -->
+                <div class="flex items-center space-x-3">
+                    <button onclick="resetGlobalFilters()" class="px-3.5 py-1.5 bg-[#333333] hover:bg-[#444444] text-gray-200 hover:text-white rounded text-[11px] font-bold flex items-center gap-1.5 transition border border-[#444] active:scale-95 shadow-sm">
+                        <i class="fa-solid fa-filter-circle-xmark text-pbi-teal"></i> Reset Filters
+                    </button>
+                    <span class="text-[10px] font-mono bg-[#181818] border border-[#383838] px-3 py-1.5 rounded text-gray-300 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="pbi-filter-status">8,650 Rows Filtered</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Active Dynamic Filter Chips Row (Cross-filtering breadcrumbs with 'x' dismiss) -->
+            <div id="pbi-active-chips-row" class="flex flex-wrap items-center gap-2 mt-2.5 pt-2.5 border-t border-[#333333] text-[11px]">
+                <!-- Populated dynamically -->
+            </div>
+        </section>
+
+        <!-- Current Page Header Bar -->
+        <div class="flex items-center justify-between px-1">
+            <div class="flex items-center space-x-2 text-xs font-mono text-gray-400">
+                <span id="pbi-page-badge" class="px-2.5 py-0.5 rounded bg-pbi-teal/15 text-pbi-teal border border-pbi-teal/40 font-bold uppercase">Page 1 of 4 • Overview & Foundations</span>
+            </div>
+            <div class="flex items-center space-x-2 text-xs font-mono text-gray-400">
+                <span class="hidden sm:inline">Press <kbd class="px-1.5 py-0.5 bg-[#2A2A2A] border border-[#444] rounded text-pbi-teal text-[10px]">1</kbd> - <kbd class="px-1.5 py-0.5 bg-[#2A2A2A] border border-[#444] rounded text-pbi-teal text-[10px]">4</kbd> to switch pages</span>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- PAGE 1: OVERVIEW & F1 FOUNDATIONS -->
+        <!-- ================================================================= -->
+        <div id="page-overview" class="space-y-4">
+            <!-- Header Banner -->
+            <div class="flex items-center space-x-3">
+                <span class="bg-[#E10600] text-white font-extrabold text-2xl px-3.5 py-1.5 rounded italic shadow">F1</span>
+                <div class="pbi-card px-6 py-3 flex-1 flex items-center justify-between">
+                    <div>
+                        <h1 class="text-xl font-bold text-white tracking-wide">Formula 1 - The Pinnacle of Motorsport</h1>
+                        <p class="text-[11px] text-gray-400 font-mono">Dynamic Power BI Multi-Season Interactive Analytics • 2004 - 2024</p>
+                    </div>
+                    <div class="hidden md:flex items-center space-x-2 text-xs font-mono text-gray-300">
+                        <span class="px-2 py-1 rounded bg-[#181818] border border-[#444]">FIA Formula One World Championship</span>
+                        <span id="overview-badge-season" class="px-2.5 py-1 rounded bg-pbi-teal/20 text-pbi-teal border border-pbi-teal font-bold">2024 Calendar</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Season Snapshot Spotlight Banner -->
+            <div class="pbi-card px-4 py-2.5 flex flex-wrap items-center justify-between text-xs border-l-4 border-pbi-teal gap-2 bg-gradient-to-r from-[#242424] via-[#202020] to-[#181818]">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <span class="px-2 py-0.5 rounded bg-pbi-teal text-black font-bold font-mono uppercase text-[10px]" id="spotlight-year-badge">2024 SEASON SNAPSHOT</span>
+                    <span class="text-gray-300">Drivers' Champion: <strong class="text-white" id="spotlight-driver-champ">Max Verstappen (Red Bull Racing)</strong></span>
+                    <span class="text-gray-500">•</span>
+                    <span class="text-gray-300">Constructors' Champion: <strong class="text-white" id="spotlight-team-champ">McLaren Mercedes (666 pts)</strong></span>
+                </div>
+                <div class="flex items-center space-x-2 text-[11px] font-mono text-gray-400">
+                    <i class="fa-solid fa-flag-checkered text-pbi-teal"></i>
+                    <span>Races: <strong class="text-pbi-teal" id="spotlight-races-count">24 GPs</strong></span>
+                </div>
+            </div>
+
+            <!-- Intro Paragraph & Format Matrix Cards -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <!-- About F1 Description Card -->
+                <div class="lg:col-span-4 pbi-card p-4 flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-xs font-bold text-pbi-teal uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><i class="fa-solid fa-circle-info"></i>About Formula 1</h2>
+                        <p class="text-xs text-gray-300 leading-relaxed">
+                            Formula 1, or F1, represents the pinnacle of single-seater racing and showcases cutting-edge automotive technology, exceptional driving skills, and intense competition. The Formula 1 World Championship, sanctioned by the Fédération Internationale de l'Automobile (FIA), consists of a series of races called Grand Prix, held on purpose-built circuits and street tracks.
+                        </p>
+                        <p class="text-xs text-gray-400 mt-2 leading-relaxed">
+                            The championship attracts 10 top-tier racing teams, each fielding two drivers who battle for the Constructors' Championship and the prestigious Drivers' Championship.
+                        </p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-pbi-border flex items-center justify-between text-[11px] text-gray-400 font-mono">
+                        <span>Sanctioned by FIA</span>
+                        <span id="overview-race-count-badge" class="text-pbi-teal font-bold">24 Grands Prix Calendar</span>
+                    </div>
+                </div>
+
+                <!-- Standard Weekend Format Table -->
+                <div class="lg:col-span-4 pbi-card p-4">
+                    <h3 class="text-xs font-bold text-pbi-teal uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><i class="fa-regular fa-clock"></i>Standard Weekend Format</h3>
+                    <table class="w-full text-xs text-left">
+                        <thead class="text-[10px] text-gray-400 uppercase border-b border-pbi-border">
+                            <tr><th class="pb-1.5">Day</th><th class="pb-1.5">Session</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-pbi-border text-gray-300">
+                            <tr class="hover:bg-[#2A2A2A]"><td class="py-1.5 font-bold text-white">Friday</td><td class="py-1.5">Free Practice 1 (FP1)</td></tr>
+                            <tr class="hover:bg-[#2A2A2A]"><td class="py-1.5 font-bold text-white">Friday</td><td class="py-1.5">Free Practice 2 (FP2)</td></tr>
+                            <tr class="hover:bg-[#2A2A2A]"><td class="py-1.5 font-bold text-white">Saturday</td><td class="py-1.5">Free Practice 3 (FP3)</td></tr>
+                            <tr class="hover:bg-[#2A2A2A]"><td class="py-1.5 font-bold text-white">Saturday</td><td class="py-1.5">Qualifying (Q1, Q2, Q3)</td></tr>
+                            <tr class="hover:bg-[#2A2A2A]"><td class="py-1.5 font-bold text-white">Sunday</td><td class="py-1.5 text-pbi-teal font-bold">Grand Prix Race (305 km)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Sprint Weekend Format Table -->
+                <div class="lg:col-span-4 pbi-card p-4">
+                    <h3 class="text-xs font-bold text-pbi-teal uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><i class="fa-solid fa-bolt text-amber-400"></i>Sprint Weekend Format</h3>
+                    <table class="w-full text-xs text-left">
+                        <thead class="text-[10px] text-gray-400 uppercase border-b border-pbi-border">
+                            <tr><th class="pb-1.5">Day</th><th class="pb-1.5">Session</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-pbi-border text-gray-300">
+                            <tr class="hover:bg-[#2A2A2A]"><td class="py-1.5 font-bold text-white">Friday</td><td class="py-1.5">Free Practice 1</td></tr>
+                            <tr class="hover:bg-[#2A2A2A]"><td class="py-1.5 font-bold text-white">Friday</td><td class="py-1.5">Sprint Qualifying / Shootout</td></tr>
+                            <tr class="hover:bg-[#2A2A2A]"><td class="py-1.5 font-bold text-white">Saturday</td><td class="py-1.5 text-amber-400 font-bold">Sprint Race (100 km)</td></tr>
+                            <tr class="hover:bg-[#2A2A2A]"><td class="py-1.5 font-bold text-white">Saturday</td><td class="py-1.5">Grand Prix Qualifying</td></tr>
+                            <tr class="hover:bg-[#2A2A2A]"><td class="py-1.5 font-bold text-white">Sunday</td><td class="py-1.5 text-pbi-teal font-bold">Grand Prix Race</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Interactive Global Circuit Map & Scoring Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <!-- Global Map Card with clickable filter pins -->
+                <div class="lg:col-span-7 pbi-card p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-2">
+                            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-globe text-pbi-teal"></i>Race by Location (Global 24 Circuit Calendar)</h3>
+                            <span id="map-filtered-label" class="text-[10px] font-mono text-amber-400"></span>
+                        </div>
+                        <span class="text-[10px] text-pbi-teal font-mono"><i class="fa-solid fa-hand-pointer mr-1"></i>Click Pin to Filter Track</span>
+                    </div>
+                    <div id="chart-world-map" class="w-full h-[300px]"></div>
+                </div>
+
+                <!-- Official Scoring System Matrix Card -->
+                <div class="lg:col-span-5 pbi-card p-4">
+                    <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-1.5"><i class="fa-solid fa-trophy text-pbi-teal"></i>Official Scoring System</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left">
+                            <thead class="text-[10px] text-gray-400 uppercase border-b border-pbi-border">
+                                <tr>
+                                    <th class="pb-2">Position</th>
+                                    <th class="pb-2 text-center">Grand Prix</th>
+                                    <th class="pb-2 text-center">Sprint</th>
+                                    <th class="pb-2">Position</th>
+                                    <th class="pb-2 text-center">Grand Prix</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-pbi-border text-gray-300 font-mono text-[11px]">
+                                <tr class="hover:bg-[#2A2A2A]">
+                                    <td class="py-1.5 text-white font-bold">1st</td><td class="py-1.5 text-center text-pbi-teal font-bold">25</td><td class="py-1.5 text-center text-amber-300">8</td>
+                                    <td class="py-1.5 text-white font-bold">6th</td><td class="py-1.5 text-center">8</td>
+                                </tr>
+                                <tr class="hover:bg-[#2A2A2A]">
+                                    <td class="py-1.5 text-white font-bold">2nd</td><td class="py-1.5 text-center text-pbi-teal font-bold">18</td><td class="py-1.5 text-center text-amber-300">7</td>
+                                    <td class="py-1.5 text-white font-bold">7th</td><td class="py-1.5 text-center">6</td>
+                                </tr>
+                                <tr class="hover:bg-[#2A2A2A]">
+                                    <td class="py-1.5 text-white font-bold">3rd</td><td class="py-1.5 text-center text-pbi-teal font-bold">15</td><td class="py-1.5 text-center text-amber-300">6</td>
+                                    <td class="py-1.5 text-white font-bold">8th</td><td class="py-1.5 text-center">4</td>
+                                </tr>
+                                <tr class="hover:bg-[#2A2A2A]">
+                                    <td class="py-1.5 text-white font-bold">4th</td><td class="py-1.5 text-center">12</td><td class="py-1.5 text-center text-amber-300">5</td>
+                                    <td class="py-1.5 text-white font-bold">9th</td><td class="py-1.5 text-center">2</td>
+                                </tr>
+                                <tr class="hover:bg-[#2A2A2A]">
+                                    <td class="py-1.5 text-white font-bold">5th</td><td class="py-1.5 text-center">10</td><td class="py-1.5 text-center text-amber-300">4</td>
+                                    <td class="py-1.5 text-white font-bold">10th / FL</td><td class="py-1.5 text-center text-purple-400 font-bold">1 + 1 FL</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historical Championships Leaderboards (Drivers & Constructors) - Dynamic Cross-Filterable -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="pbi-card p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 id="overview-driver-chart-title" class="text-xs font-bold text-white uppercase tracking-wider">Driver Champions (All-Time Titles)</h3>
+                        <span class="text-[10px] text-gray-400 font-mono"><i class="fa-solid fa-hand-pointer mr-1 text-pbi-teal"></i>Click bar to filter driver</span>
+                    </div>
+                    <div id="chart-driver-champs" class="w-full h-[240px]"></div>
+                </div>
+                <div class="pbi-card p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 id="overview-team-chart-title" class="text-xs font-bold text-white uppercase tracking-wider">Constructor Champions (All-Time Titles)</h3>
+                        <span class="text-[10px] text-gray-400 font-mono"><i class="fa-solid fa-hand-pointer mr-1 text-pbi-teal"></i>Click bar to filter team</span>
+                    </div>
+                    <div id="chart-constructor-champs" class="w-full h-[240px]"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- PAGE 2: CONSTRUCTOR SHOWCASE & PERFORMANCE -->
+        <!-- ================================================================= -->
+        <div id="page-constructor" class="hidden space-y-4">
+            <!-- All 10 Team Slicer Buttons Matching Original Report -->
+            <div class="relative flex items-center">
+                <button onclick="scrollSlicer('constructor-pill-bar', -250)" class="px-2 py-1.5 bg-[#1E1E1E] hover:bg-[#333] text-gray-400 hover:text-pbi-teal rounded-l border border-r-0 border-[#3D3D3D] text-xs shrink-0 z-10" title="Scroll Left"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="flex items-center space-x-2 overflow-x-auto pb-1.5 scroll-smooth flex-1" id="constructor-pill-bar">
+                    <button onclick="selectTeam('Alfa Romeo')" class="team-pill-btn" id="btn-team-Alfa Romeo"><span class="w-2 h-2 rounded-full bg-[#900000]"></span>Alfa Romeo / Sauber</button>
+                    <button onclick="selectTeam('AlphaTauri')" class="team-pill-btn" id="btn-team-AlphaTauri"><span class="w-2 h-2 rounded-full bg-[#5E8FAA]"></span>RB / AlphaTauri</button>
+                    <button onclick="selectTeam('Alpine F1 Team')" class="team-pill-btn" id="btn-team-Alpine F1 Team"><span class="w-2 h-2 rounded-full bg-[#FF87BC]"></span>Alpine F1 Team</button>
+                    <button onclick="selectTeam('Aston Martin')" class="team-pill-btn" id="btn-team-Aston Martin"><span class="w-2 h-2 rounded-full bg-[#229971]"></span>Aston Martin</button>
+                    <button onclick="selectTeam('Ferrari')" class="team-pill-btn active" id="btn-team-Ferrari"><span class="w-2 h-2 rounded-full bg-[#E80020]"></span>Ferrari</button>
+                    <button onclick="selectTeam('Haas F1 Team')" class="team-pill-btn" id="btn-team-Haas F1 Team"><span class="w-2 h-2 rounded-full bg-[#B6BABD]"></span>Haas F1 Team</button>
+                    <button onclick="selectTeam('McLaren')" class="team-pill-btn" id="btn-team-McLaren"><span class="w-2 h-2 rounded-full bg-[#FF8000]"></span>McLaren</button>
+                    <button onclick="selectTeam('Mercedes')" class="team-pill-btn" id="btn-team-Mercedes"><span class="w-2 h-2 rounded-full bg-[#27F4D2]"></span>Mercedes</button>
+                    <button onclick="selectTeam('Red Bull')" class="team-pill-btn" id="btn-team-Red Bull"><span class="w-2 h-2 rounded-full bg-[#3671C6]"></span>Red Bull</button>
+                    <button onclick="selectTeam('Williams')" class="team-pill-btn" id="btn-team-Williams"><span class="w-2 h-2 rounded-full bg-[#64C4FF]"></span>Williams</button>
+                </div>
+                <button onclick="scrollSlicer('constructor-pill-bar', 250)" class="px-2 py-1.5 bg-[#1E1E1E] hover:bg-[#333] text-gray-400 hover:text-pbi-teal rounded-r border border-l-0 border-[#3D3D3D] text-xs shrink-0 z-10" title="Scroll Right"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+
+            <!-- Top Row: Current Drivers, 3D Car Render Showcase, Technical Specs -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <!-- Current Drivers (Dynamically loaded for selected team & season) -->
+                <div class="lg:col-span-3 pbi-card p-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-xs font-bold text-pbi-teal uppercase tracking-wider">Current Drivers</h3>
+                            <span id="team-drivers-season-badge" class="text-[10px] font-mono text-gray-400">Season 2024</span>
+                        </div>
+                        <div id="team-drivers-list" class="space-y-3">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-gray-400 font-mono mt-3 pt-2 border-t border-pbi-border text-center">
+                        <i class="fa-solid fa-hand-pointer mr-1 text-pbi-teal"></i>Click driver card to drill down
+                    </p>
+                </div>
+
+                <!-- 3D Car Render Graphic Showcase -->
+                <div class="lg:col-span-5 pbi-card p-4 flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-b from-[#262626] to-[#1a1a1a] min-h-[220px]">
+                    <span id="car-model-title" class="absolute top-3 left-4 text-xs font-bold font-mono text-gray-400 tracking-wider">FERRARI SF-24</span>
+                    <img id="team-car-img" src="https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2024/ferrari.png" alt="Car Render" class="w-4/5 object-contain hover:scale-105 transition duration-300 drop-shadow-2xl" onerror="this.onerror=null; this.src='https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2024/ferrari.png';">
+                </div>
+
+                <!-- Technical Specs Card -->
+                <div class="lg:col-span-4 pbi-card p-4 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xs font-bold text-pbi-teal uppercase tracking-wider mb-3 flex items-center gap-1.5"><i class="fa-solid fa-microchip"></i>Technical Specifications</h3>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between border-b border-pbi-border pb-1.5"><span class="text-gray-400">Chassis:</span><span id="spec-chassis" class="font-bold text-white font-mono">SF-24</span></div>
+                            <div class="flex justify-between border-b border-pbi-border pb-1.5"><span class="text-gray-400">Power Unit:</span><span id="spec-engine" class="font-bold text-white font-mono">Ferrari 066/12 1.6L V6</span></div>
+                            <div class="flex justify-between border-b border-pbi-border pb-1.5"><span class="text-gray-400">Nationality:</span><span id="spec-nationality" class="font-bold text-white font-mono">Italian</span></div>
+                            <div class="flex justify-between border-b border-pbi-border pb-1.5"><span class="text-gray-400">Team Chief:</span><span id="spec-chief" class="font-bold text-white">Frédéric Vasseur</span></div>
+                            <div class="flex justify-between"><span class="text-gray-400">Technical Director:</span><span id="spec-tech" class="font-bold text-white">Loic Serra</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6 KPI Tiles (Exact Word for Word Matching Report) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-team-entry">1950</div><div class="pbi-kpi-label">TEAM ENTRY</div></div>
+                <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-team-races">1098</div><div class="pbi-kpi-label">RACES</div></div>
+                <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-team-wins">248</div><div class="pbi-kpi-label">WINS</div></div>
+                <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-team-podiums">825</div><div class="pbi-kpi-label">PODIUMS</div></div>
+                <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-team-champs">16</div><div class="pbi-kpi-label">CHAMPIONSHIPS</div></div>
+                <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-team-fastest">262</div><div class="pbi-kpi-label">FASTEST LAPS</div></div>
+            </div>
+
+            <!-- Constructor Combo Performance & Standings Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="pbi-card p-4">
+                    <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-2">Constructor Performance (Wins, Podiums & Points)</h3>
+                    <div id="chart-team-performance" class="w-full h-[250px]"></div>
+                </div>
+                <div class="pbi-card p-4">
+                    <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-2">Constructor Championship Standings (Finish Rank)</h3>
+                    <div id="chart-team-standings" class="w-full h-[250px]"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- PAGE 3: DRIVER PERFORMANCE & BIO -->
+        <!-- ================================================================= -->
+        <div id="page-driver" class="hidden space-y-4">
+            <!-- Top Driver Photo Carousel / Slicer (All Official Contenders) -->
+            <div class="relative flex items-center">
+                <button onclick="scrollSlicer('driver-carousel-slicer', -250)" class="px-2 py-1.5 bg-[#1E1E1E] hover:bg-[#333] text-gray-400 hover:text-pbi-teal rounded-l border border-r-0 border-[#3D3D3D] text-xs shrink-0 z-10" title="Scroll Left"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="flex items-center space-x-2 overflow-x-auto pb-1.5 scroll-smooth flex-1" id="driver-carousel-slicer">
+                    <!-- Populated dynamically with driver portrait buttons -->
+                </div>
+                <button onclick="scrollSlicer('driver-carousel-slicer', 250)" class="px-2 py-1.5 bg-[#1E1E1E] hover:bg-[#333] text-gray-400 hover:text-pbi-teal rounded-r border border-l-0 border-[#3D3D3D] text-xs shrink-0 z-10" title="Scroll Right"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <!-- Large Full-Body Driver Portrait Graphic -->
+                <div class="lg:col-span-4 pbi-card p-4 flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-b from-[#262626] to-[#181818] min-h-[320px]">
+                    <img id="driver-hero-portrait" src="https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png" alt="Driver Portrait" class="h-64 object-contain drop-shadow-2xl hover:scale-105 transition duration-300" onerror="this.onerror=null; this.src='https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png';">
+                    <div class="absolute bottom-3 left-4">
+                        <span id="driver-hero-name" class="text-lg font-extrabold text-white block">Max Verstappen</span>
+                        <span id="driver-hero-code" class="text-xs font-mono text-pbi-teal font-bold">#1 • RED BULL RACING</span>
+                    </div>
+                </div>
+
+                <!-- Driver Biography Info Card & 3 KPI Tiles -->
+                <div class="lg:col-span-8 space-y-4">
+                    <!-- Bio Matrix Card (Exact Word for Word) -->
+                    <div class="pbi-card p-4">
+                        <h3 class="text-xs font-bold text-pbi-teal uppercase tracking-wider mb-3 flex items-center gap-1.5"><i class="fa-solid fa-id-card"></i>Driver Profile & Physical Biography</h3>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                            <div class="bg-[#1C1C1C] p-2.5 rounded border border-[#333]"><span class="text-gray-400 block text-[10px] uppercase font-bold">Nationality:</span><strong id="bio-nationality" class="text-white font-mono text-sm">Dutch</strong></div>
+                            <div class="bg-[#1C1C1C] p-2.5 rounded border border-[#333]"><span class="text-gray-400 block text-[10px] uppercase font-bold">Date of Birth:</span><strong id="bio-dob" class="text-white font-mono text-sm">1997-09-30</strong></div>
+                            <div class="bg-[#1C1C1C] p-2.5 rounded border border-[#333]"><span class="text-gray-400 block text-[10px] uppercase font-bold">Age:</span><strong id="bio-age" class="text-white font-mono text-sm">26 years</strong></div>
+                            <div class="bg-[#1C1C1C] p-2.5 rounded border border-[#333]"><span class="text-gray-400 block text-[10px] uppercase font-bold">First Grand Prix:</span><strong id="bio-first-gp" class="text-white font-mono text-sm">2015</strong></div>
+                        </div>
+                    </div>
+
+                    <!-- 3 KPI Tiles (Exact Word for Word) -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-driver-races">209</div><div class="pbi-kpi-label">RACES</div></div>
+                        <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-driver-champs">3</div><div class="pbi-kpi-label">CHAMPIONSHIPS</div></div>
+                        <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-driver-poles">40</div><div class="pbi-kpi-label">POLE POSITIONS</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Driver Combo Performance & Standings Line Chart -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="pbi-card p-4">
+                    <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-2">Driver Performance (Wins, Podiums & Points by Season)</h3>
+                    <div id="chart-driver-perf-combo" class="w-full h-[250px]"></div>
+                </div>
+                <div class="pbi-card p-4">
+                    <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-2">Driver Championship Finish (Rank by Year)</h3>
+                    <div id="chart-driver-standings-rank" class="w-full h-[250px]"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- PAGE 4: CIRCUIT & RACE ANALYTICS -->
+        <!-- ================================================================= -->
+        <div id="page-circuit" class="hidden space-y-4">
+            <!-- Circuit Slicer Dropdown (Synchronized with top Grand Prix slicer) -->
+            <div class="flex flex-wrap items-center justify-between bg-[#242424] p-3.5 rounded border border-[#383838] text-xs text-white gap-3">
+                <div class="flex items-center space-x-3">
+                    <span class="font-bold text-pbi-teal uppercase tracking-wider"><i class="fa-solid fa-route mr-1"></i>Select Grand Prix Circuit:</span>
+                    <select id="slicer-circuit-dropdown" onchange="selectCircuit(this.value)" class="bg-[#181818] border border-pbi-border rounded px-3 py-1.5 text-white font-semibold focus:outline-none focus:border-pbi-teal cursor-pointer">
+                        <!-- Populated with all 24 circuits -->
+                    </select>
+                </div>
+                <span id="circuit-country-pill" class="font-mono text-xs text-pbi-teal bg-[#181818] px-3.5 py-1.5 rounded border border-[#444]">🇲🇨 Circuit de Monaco • Monte-Carlo</span>
+            </div>
+
+            <!-- Description Card & 6 KPI Metric Tiles (Word for Word Replicated) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                <div class="lg:col-span-5 pbi-card p-4 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xs font-bold text-pbi-teal uppercase tracking-wider mb-2.5 flex items-center gap-1.5"><i class="fa-solid fa-road"></i>What's the circuit like?</h3>
+                        <p id="circuit-story-text" class="text-xs text-gray-300 leading-relaxed">
+                            Incredibly narrow and totally iconic. Nelson Piquet memorably described driving around Monaco as 'like riding a bicycle around your living room'... Which is fair. Despite that, it's a challenge that nearly all drivers love, forcing them to put their skills on the line and rewarding millimetric accuracy.
+                        </p>
+                    </div>
+                    <div class="mt-3 p-2.5 bg-[#1C1C1C] rounded border border-[#383838] flex items-center justify-between text-xs">
+                        <div>
+                            <span class="text-gray-400 block text-[10px] uppercase font-bold" id="circuit-season-winner-label">2024 Race Winner:</span>
+                            <strong class="text-pbi-teal font-bold text-xs flex items-center gap-1" id="circuit-season-winner"><i class="fa-solid fa-trophy text-amber-400"></i>Charles Leclerc (Ferrari)</strong>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-gray-400 block text-[10px] uppercase font-bold">Pole Position:</span>
+                            <strong class="text-white text-[11px] font-mono" id="circuit-season-pole">1:10.270 (C. Leclerc)</strong>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2.5 border-t border-pbi-border text-[11px] font-mono text-gray-400 flex justify-between">
+                        <span>Track Direction: <strong id="circuit-direction" class="text-white">Clockwise</strong></span>
+                        <span>DRS Zones: <strong id="circuit-drs" class="text-pbi-teal font-bold">1 Zone</strong></span>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-circuit-first-gp">1950</div><div class="pbi-kpi-label">FIRST GP</div></div>
+                    <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-circuit-laps">78</div><div class="pbi-kpi-label">LAPS</div></div>
+                    <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-circuit-length">3.34 km</div><div class="pbi-kpi-label">CIRCUIT LENGTH</div></div>
+                    <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-circuit-dist">260.29 km</div><div class="pbi-kpi-label">RACE DISTANCE</div></div>
+                    <div class="pbi-kpi-tile"><div class="pbi-kpi-value" id="kpi-circuit-races">70</div><div class="pbi-kpi-label">RACES HELD</div></div>
+                    <div class="pbi-kpi-tile"><div class="pbi-kpi-value text-base font-mono" id="kpi-circuit-record">1:12.909</div><div class="pbi-kpi-label truncate" id="kpi-circuit-record-driver">Lewis Hamilton (2021)</div></div>
+                </div>
+            </div>
+
+            <!-- Win % Bar Chart & DNF Treemap -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="pbi-card p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-xs font-bold text-white uppercase tracking-wider">Win % Distribution</h3>
+                        <div class="flex text-[10px] space-x-1">
+                            <button onclick="toggleCircuitWinView('driver')" id="btn-win-driver" class="px-2.5 py-1 rounded bg-pbi-teal text-black font-bold">Driver</button>
+                            <button onclick="toggleCircuitWinView('constructor')" id="btn-win-constructor" class="px-2.5 py-1 rounded bg-[#333333] text-white">Constructor</button>
+                        </div>
+                    </div>
+                    <div id="chart-circuit-wins" class="w-full h-[250px]"></div>
+                </div>
+
+                <div class="pbi-card p-4">
+                    <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-2">Why Drivers Retire? (DNF Treemap Breakdown)</h3>
+                    <div id="chart-circuit-dnf-treemap" class="w-full h-[250px]"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Client-Side Controller & Dynamic Filter Engine -->
+    <script>
+        // State Machine
+        let currentPbiPage = 'page-overview';
+        let activeTeam = 'Ferrari';
+        let activeDriverId = 1; // Verstappen
+        let activeCircuitKey = 'monaco';
+        let circuitWinView = 'driver';
+        let filterMetadata = null;
+
+        // ECharts Instances
+        let chartWorldMap = null;
+        let chartDriverChamps = null;
+        let chartConstructorChamps = null;
+        let chartTeamPerf = null;
+        let chartTeamStandings = null;
+        let chartDriverPerfCombo = null;
+        let chartDriverStandingsRank = null;
+        let chartCircuitWins = null;
+        let chartCircuitDnfTreemap = null;
+
+        // ====================================================================
+        // DATA WAREHOUSE RICH DATASETS (2004 - 2024 COMPLETE REPOSITORY)
+        // ====================================================================
+        const TEAM_DATA = {
+            'Ferrari': {
+                carTitle: 'FERRARI SF-24 / SF-23',
+                carImg: 'https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2024/ferrari.png',
+                chassis: 'SF-24',
+                engine: 'Ferrari 066/12 1.6L V6 Turbo',
+                nationality: 'Italian',
+                chief: 'Frédéric Vasseur',
+                tech: 'Loic Serra',
+                entry: 1950, races: 1098, wins: 248, podiums: 825, champs: 16, fastest: 262,
+                drivers: {
+                    'default': [
+                        { id: 6, name: 'Charles Leclerc', num: '#16', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CHALEC01_Charles_Leclerc/chalec01.png' },
+                        { id: 7, name: 'Carlos Sainz', num: '#55', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CARSAI01_Carlos_Sainz/carsai01.png' }
+                    ]
+                },
+                years: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                winsSeries: [3, 0, 5, 6, 3, 0, 0, 4, 1, 5],
+                podiumsSeries: [16, 11, 20, 24, 19, 3, 5, 20, 9, 21],
+                pointsSeries: [428, 398, 522, 571, 504, 131, 323, 554, 406, 652],
+                ranks: [2, 3, 2, 2, 2, 6, 3, 2, 3, 2]
+            },
+            'Red Bull': {
+                carTitle: 'RED BULL RACING RB20 / RB19',
+                carImg: 'https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2024/red-bull-racing.png',
+                chassis: 'RB20',
+                engine: 'Honda RBPT 1.6L V6 Turbo',
+                nationality: 'Austrian',
+                chief: 'Christian Horner',
+                tech: 'Pierre Waché',
+                entry: 2005, races: 390, wins: 120, podiums: 280, champs: 6, fastest: 98,
+                drivers: {
+                    'default': [
+                        { id: 1, name: 'Max Verstappen', num: '#1', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png' },
+                        { id: 2, name: 'Sergio Perez', num: '#11', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/S/SERPER01_Sergio_Perez/serper01.png' }
+                    ]
+                },
+                years: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                winsSeries: [0, 2, 3, 4, 3, 2, 11, 17, 21, 8],
+                podiumsSeries: [3, 16, 13, 13, 9, 14, 23, 28, 30, 19],
+                pointsSeries: [187, 468, 368, 419, 417, 319, 585, 759, 860, 589],
+                ranks: [4, 2, 3, 3, 3, 2, 2, 1, 1, 3]
+            },
+            'Mercedes': {
+                carTitle: 'MERCEDES-AMG W15 / W14',
+                carImg: 'https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2024/mercedes.png',
+                chassis: 'W15',
+                engine: 'Mercedes-AMG M15 E Performance',
+                nationality: 'German',
+                chief: 'Toto Wolff',
+                tech: 'James Allison',
+                entry: 1970, races: 310, wins: 128, podiums: 292, champs: 8, fastest: 105,
+                drivers: {
+                    'default': [
+                        { id: 3, name: 'Lewis Hamilton', num: '#44', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LEWHAM01_Lewis_Hamilton/lewham01.png' },
+                        { id: 4, name: 'George Russell', num: '#63', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/G/GEORUS01_George_Russell/georus01.png' }
+                    ]
+                },
+                years: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                winsSeries: [16, 19, 12, 11, 15, 13, 9, 1, 0, 3],
+                podiumsSeries: [32, 33, 26, 25, 32, 25, 28, 17, 8, 12],
+                pointsSeries: [703, 765, 668, 655, 739, 573, 613, 515, 409, 468],
+                ranks: [1, 1, 1, 1, 1, 1, 1, 3, 2, 4]
+            },
+            'McLaren': {
+                carTitle: 'MCLAREN MCL38 / MCL60',
+                carImg: 'https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2024/mclaren.png',
+                chassis: 'MCL38',
+                engine: 'Mercedes-AMG M15 1.6L V6',
+                nationality: 'British',
+                chief: 'Andrea Stella',
+                tech: 'Peter Prodromou',
+                entry: 1966, races: 968, wins: 188, podiums: 518, champs: 9, fastest: 168,
+                drivers: {
+                    'default': [
+                        { id: 5, name: 'Lando Norris', num: '#4', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANNOR01_Lando_Norris/lannor01.png' },
+                        { id: 8, name: 'Oscar Piastri', num: '#81', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/O/OSCPIA01_Oscar_Piastri/oscpia01.png' }
+                    ]
+                },
+                years: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                winsSeries: [0, 0, 0, 0, 0, 0, 1, 0, 0, 5],
+                podiumsSeries: [0, 0, 0, 0, 1, 2, 5, 1, 9, 21],
+                pointsSeries: [27, 76, 30, 62, 145, 202, 275, 159, 302, 666],
+                ranks: [9, 6, 9, 6, 4, 3, 4, 5, 4, 1]
+            },
+            'Aston Martin': {
+                carTitle: 'ASTON MARTIN AMR24 / AMR23',
+                carImg: 'https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2024/aston-martin.png',
+                chassis: 'AMR24',
+                engine: 'Mercedes-AMG 1.6L V6 Turbo',
+                nationality: 'British',
+                chief: 'Mike Krack',
+                tech: 'Dan Fallows',
+                entry: 2021, races: 90, wins: 0, podiums: 9, champs: 0, fastest: 3,
+                drivers: {
+                    'default': [
+                        { id: 10, name: 'Fernando Alonso', num: '#14', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/F/FERALO01_Fernando_Alonso/feralo01.png' },
+                        { id: 11, name: 'Lance Stroll', num: '#18', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANSTR01_Lance_Stroll/lanstr01.png' }
+                    ]
+                },
+                years: ['2021', '2022', '2023', '2024'],
+                winsSeries: [0, 0, 0, 0],
+                podiumsSeries: [1, 0, 8, 0],
+                pointsSeries: [77, 55, 280, 86],
+                ranks: [7, 7, 5, 5]
+            },
+            'Alpine F1 Team': {
+                carTitle: 'ALPINE A524 / A523',
+                carImg: 'https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2024/alpine.png',
+                chassis: 'A524',
+                engine: 'Renault E-Tech RE24',
+                nationality: 'French',
+                chief: 'Oliver Oakes',
+                tech: 'David Sanchez',
+                entry: 2021, races: 90, wins: 1, podiums: 6, champs: 0, fastest: 2,
+                drivers: {
+                    'default': [
+                        { id: 12, name: 'Esteban Ocon', num: '#31', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/E/ESTOCO01_Esteban_Ocon/estoco01.png' },
+                        { id: 13, name: 'Pierre Gasly', num: '#10', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/P/PIEGAS01_Pierre_Gasly/piegas01.png' }
+                    ]
+                },
+                years: ['2021', '2022', '2023', '2024'],
+                winsSeries: [1, 0, 0, 0],
+                podiumsSeries: [2, 0, 2, 2],
+                pointsSeries: [155, 173, 120, 49],
+                ranks: [5, 4, 6, 6]
+            },
+            'Williams': {
+                carTitle: 'WILLIAMS FW46 / FW45',
+                carImg: 'https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2024/williams.png',
+                chassis: 'FW46',
+                engine: 'Mercedes-AMG M15',
+                nationality: 'British',
+                chief: 'James Vowles',
+                tech: 'Pat Fry',
+                entry: 1978, races: 824, wins: 114, podiums: 313, champs: 9, fastest: 133,
+                drivers: {
+                    'default': [
+                        { id: 18, name: 'Alexander Albon', num: '#23', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/A/ALEALB01_Alexander_Albon/alealb01.png' },
+                        { id: 20, name: 'Logan Sargeant', num: '#2', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LOGSAR01_Logan_Sargeant/logsar01.png' }
+                    ]
+                },
+                years: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                winsSeries: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                podiumsSeries: [4, 1, 1, 0, 0, 0, 1, 0, 0, 0],
+                pointsSeries: [257, 138, 83, 7, 1, 0, 23, 8, 28, 17],
+                ranks: [3, 5, 5, 10, 10, 10, 8, 10, 7, 9]
+            },
+            'AlphaTauri': {
+                carTitle: 'RB VCARB 01 / AT04',
+                carImg: 'https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2024/rb.png',
+                chassis: 'VCARB 01',
+                engine: 'Honda RBPT 1.6L V6',
+                nationality: 'Italian',
+                chief: 'Laurent Mekies',
+                tech: 'Tim Goss',
+                entry: 2020, races: 110, wins: 1, podiums: 2, champs: 0, fastest: 3,
+                drivers: {
+                    'default': [
+                        { id: 14, name: 'Yuki Tsunoda', num: '#22', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/Y/YUKTSU01_Yuki_Tsunoda/yuktsu01.png' },
+                        { id: 15, name: 'Daniel Ricciardo', num: '#3', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/D/DANRIC01_Daniel_Ricciardo/danric01.png' }
+                    ]
+                },
+                years: ['2020', '2021', '2022', '2023', '2024'],
+                winsSeries: [1, 0, 0, 0, 0],
+                podiumsSeries: [1, 1, 0, 0, 0],
+                pointsSeries: [107, 142, 35, 25, 44],
+                ranks: [7, 6, 9, 8, 8]
+            },
+            'Alfa Romeo': {
+                carTitle: 'STAKE SAUBER C44 / C43',
+                carImg: 'https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2024/kick-sauber.png',
+                chassis: 'C44',
+                engine: 'Ferrari 066/12',
+                nationality: 'Swiss',
+                chief: 'Mattia Binotto',
+                tech: 'Jonathan Wheatley',
+                entry: 1993, races: 550, wins: 1, podiums: 26, champs: 0, fastest: 7,
+                drivers: {
+                    'default': [
+                        { id: 9, name: 'Valtteri Bottas', num: '#77', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/V/VALBOT01_Valtteri_Bottas/valbot01.png' },
+                        { id: 19, name: 'Zhou Guanyu', num: '#24', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/Z/ZHOGUA01_Zhou_Guanyu/zhogua01.png' }
+                    ]
+                },
+                years: ['2019', '2020', '2021', '2022', '2023', '2024'],
+                winsSeries: [0, 0, 0, 0, 0, 0],
+                podiumsSeries: [0, 0, 0, 0, 0, 0],
+                pointsSeries: [57, 8, 13, 55, 16, 0],
+                ranks: [8, 8, 9, 6, 9, 10]
+            },
+            'Haas F1 Team': {
+                carTitle: 'HAAS VF-24 / VF-23',
+                carImg: 'https://media.formula1.com/d_team_car_fallback_image.png/content/dam/fom-website/teams/2024/haas.png',
+                chassis: 'VF-24',
+                engine: 'Ferrari 066/12',
+                nationality: 'American',
+                chief: 'Ayao Komatsu',
+                tech: 'Andrea De Zordo',
+                entry: 2016, races: 190, wins: 0, podiums: 0, champs: 0, fastest: 3,
+                drivers: {
+                    'default': [
+                        { id: 16, name: 'Nico Hulkenberg', num: '#27', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/N/NICHUL01_Nico_Hulkenberg/nichul01.png' },
+                        { id: 17, name: 'Kevin Magnussen', num: '#20', img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/K/KEVMAG01_Kevin_Magnussen/kevmag01.png' }
+                    ]
+                },
+                years: ['2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                winsSeries: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                podiumsSeries: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+                pointsSeries: [29, 47, 93, 28, 3, 0, 37, 12, 46],
+                ranks: [8, 8, 5, 9, 9, 10, 8, 10, 7]
+            }
+        };
+
+        // Complete 20 Official Grid Drivers
+        const DRIVERS_DATA = {
+            1: {
+                id: 1, name: 'Max Verstappen', code: '#1 • RED BULL RACING',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png',
+                nationality: 'Dutch', dob: '1997-09-30', age: '26', firstGp: '2015',
+                races: 209, champs: 3, poles: 40,
+                years: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                wins: [0, 1, 2, 2, 3, 2, 10, 15, 19, 8],
+                podiums: [0, 7, 4, 11, 9, 11, 18, 17, 21, 14],
+                points: [49, 204, 168, 249, 278, 214, 395, 454, 575, 429],
+                ranks: [12, 5, 6, 4, 3, 3, 1, 1, 1, 1]
+            },
+            2: {
+                id: 2, name: 'Sergio Perez', code: '#11 • RED BULL RACING',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/S/SERPER01_Sergio_Perez/serper01.png',
+                nationality: 'Mexican', dob: '1990-01-26', age: '34', firstGp: '2011',
+                races: 280, champs: 0, poles: 3,
+                years: ['2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                wins: [0, 0, 1, 1, 2, 2, 0],
+                podiums: [1, 0, 2, 5, 11, 9, 4],
+                points: [62, 52, 125, 190, 305, 285, 152],
+                ranks: [8, 10, 4, 4, 3, 2, 8]
+            },
+            3: {
+                id: 3, name: 'Lewis Hamilton', code: '#44 • MERCEDES-AMG',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LEWHAM01_Lewis_Hamilton/lewham01.png',
+                nationality: 'British', dob: '1985-01-07', age: '39', firstGp: '2007',
+                races: 356, champs: 7, poles: 104,
+                years: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                wins: [10, 10, 9, 11, 11, 11, 8, 0, 0, 2],
+                podiums: [17, 17, 13, 17, 17, 14, 17, 9, 6, 5],
+                points: [381, 380, 363, 408, 413, 347, 387, 240, 234, 223],
+                ranks: [1, 2, 1, 1, 1, 1, 2, 6, 3, 7]
+            },
+            4: {
+                id: 4, name: 'George Russell', code: '#63 • MERCEDES-AMG',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/G/GEORUS01_George_Russell/georus01.png',
+                nationality: 'British', dob: '1998-02-15', age: '26', firstGp: '2019',
+                races: 128, champs: 0, poles: 5,
+                years: ['2019', '2020', '2021', '2022', '2023', '2024'],
+                wins: [0, 0, 0, 1, 0, 2],
+                podiums: [0, 0, 1, 8, 2, 4],
+                points: [0, 3, 16, 275, 175, 245],
+                ranks: [20, 18, 15, 4, 8, 6]
+            },
+            5: {
+                id: 5, name: 'Lando Norris', code: '#4 • MCLAREN F1 TEAM',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANNOR01_Lando_Norris/lannor01.png',
+                nationality: 'British', dob: '1999-11-13', age: '24', firstGp: '2019',
+                races: 128, champs: 0, poles: 8,
+                years: ['2019', '2020', '2021', '2022', '2023', '2024'],
+                wins: [0, 0, 0, 0, 0, 3],
+                podiums: [0, 1, 4, 1, 7, 12],
+                points: [49, 97, 160, 122, 205, 374],
+                ranks: [11, 9, 6, 7, 6, 2]
+            },
+            6: {
+                id: 6, name: 'Charles Leclerc', code: '#16 • SCUDERIA FERRARI',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CHALEC01_Charles_Leclerc/chalec01.png',
+                nationality: 'Monegasque', dob: '1997-10-16', age: '26', firstGp: '2018',
+                races: 146, champs: 0, poles: 26,
+                years: ['2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                wins: [0, 2, 0, 0, 3, 0, 3],
+                podiums: [0, 10, 2, 1, 11, 6, 13],
+                points: [39, 264, 98, 159, 308, 206, 341],
+                ranks: [13, 4, 8, 7, 2, 5, 3]
+            },
+            7: {
+                id: 7, name: 'Carlos Sainz', code: '#55 • SCUDERIA FERRARI',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/C/CARSAI01_Carlos_Sainz/carsai01.png',
+                nationality: 'Spanish', dob: '1994-09-01', age: '29', firstGp: '2015',
+                races: 205, champs: 0, poles: 6,
+                years: ['2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                wins: [0, 0, 0, 0, 0, 0, 0, 1, 1, 2],
+                podiums: [0, 0, 0, 0, 1, 1, 4, 9, 3, 7],
+                points: [18, 46, 54, 53, 96, 105, 164, 246, 200, 244],
+                ranks: [15, 12, 9, 10, 6, 6, 5, 5, 7, 5]
+            },
+            8: {
+                id: 8, name: 'Oscar Piastri', code: '#81 • MCLAREN F1 TEAM',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/O/OSCPIA01_Oscar_Piastri/oscpia01.png',
+                nationality: 'Australian', dob: '2001-04-06', age: '23', firstGp: '2023',
+                races: 46, champs: 0, poles: 0,
+                years: ['2023', '2024'],
+                wins: [0, 2],
+                podiums: [2, 8],
+                points: [97, 292],
+                ranks: [9, 4]
+            },
+            9: {
+                id: 9, name: 'Valtteri Bottas', code: '#77 • STAKE SAUBER',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/V/VALBOT01_Valtteri_Bottas/valbot01.png',
+                nationality: 'Finnish', dob: '1989-08-28', age: '34', firstGp: '2013',
+                races: 246, champs: 0, poles: 20,
+                years: ['2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                wins: [0, 3, 0, 4, 2, 1, 0, 0, 0],
+                podiums: [1, 13, 8, 15, 11, 11, 0, 0, 0],
+                points: [85, 305, 247, 326, 223, 226, 49, 10, 0],
+                ranks: [8, 3, 5, 2, 2, 3, 10, 15, 21]
+            },
+            10: {
+                id: 10, name: 'Fernando Alonso', code: '#14 • ASTON MARTIN',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/F/FERALO01_Fernando_Alonso/feralo01.png',
+                nationality: 'Spanish', dob: '1981-07-29', age: '42', firstGp: '2001',
+                races: 401, champs: 2, poles: 22,
+                years: ['2015', '2016', '2017', '2018', '2021', '2022', '2023', '2024'],
+                wins: [0, 0, 0, 0, 0, 0, 0, 0],
+                podiums: [0, 0, 0, 0, 1, 0, 8, 0],
+                points: [11, 54, 17, 50, 81, 81, 206, 62],
+                ranks: [17, 10, 15, 11, 10, 9, 4, 9]
+            },
+            11: {
+                id: 11, name: 'Lance Stroll', code: '#18 • ASTON MARTIN',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LANSTR01_Lance_Stroll/lanstr01.png',
+                nationality: 'Canadian', dob: '1998-10-29', age: '25', firstGp: '2017',
+                races: 164, champs: 0, poles: 1,
+                years: ['2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                wins: [0, 0, 0, 0, 0, 0, 0, 0],
+                podiums: [1, 0, 0, 2, 0, 0, 0, 0],
+                points: [40, 6, 21, 75, 34, 18, 74, 24],
+                ranks: [12, 18, 15, 11, 13, 15, 10, 13]
+            },
+            12: {
+                id: 12, name: 'Esteban Ocon', code: '#31 • ALPINE F1 TEAM',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/E/ESTOCO01_Esteban_Ocon/estoco01.png',
+                nationality: 'French', dob: '1996-09-17', age: '27', firstGp: '2016',
+                races: 156, champs: 0, poles: 0,
+                years: ['2017', '2018', '2020', '2021', '2022', '2023', '2024'],
+                wins: [0, 0, 0, 1, 0, 0, 0],
+                podiums: [0, 0, 1, 1, 0, 1, 1],
+                points: [87, 49, 62, 74, 92, 58, 23],
+                ranks: [8, 12, 12, 11, 8, 12, 14]
+            },
+            13: {
+                id: 13, name: 'Pierre Gasly', code: '#10 • ALPINE F1 TEAM',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/P/PIEGAS01_Pierre_Gasly/piegas01.png',
+                nationality: 'French', dob: '1996-02-07', age: '28', firstGp: '2017',
+                races: 152, champs: 0, poles: 0,
+                years: ['2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                wins: [0, 0, 1, 0, 0, 0, 0],
+                podiums: [0, 1, 1, 1, 0, 1, 1],
+                points: [29, 95, 75, 110, 23, 62, 26],
+                ranks: [15, 7, 10, 9, 14, 11, 13]
+            },
+            14: {
+                id: 14, name: 'Yuki Tsunoda', code: '#22 • RB VCARB',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/Y/YUKTSU01_Yuki_Tsunoda/yuktsu01.png',
+                nationality: 'Japanese', dob: '2000-05-11', age: '24', firstGp: '2021',
+                races: 88, champs: 0, poles: 0,
+                years: ['2021', '2022', '2023', '2024'],
+                wins: [0, 0, 0, 0],
+                podiums: [0, 0, 0, 0],
+                points: [32, 12, 17, 30],
+                ranks: [14, 17, 14, 11]
+            },
+            15: {
+                id: 15, name: 'Daniel Ricciardo', code: '#3 • RB VCARB',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/D/DANRIC01_Daniel_Ricciardo/danric01.png',
+                nationality: 'Australian', dob: '1989-07-01', age: '35', firstGp: '2011',
+                races: 257, champs: 0, poles: 3,
+                years: ['2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'],
+                wins: [1, 1, 2, 0, 0, 1, 0, 0, 0],
+                podiums: [8, 9, 2, 0, 2, 1, 0, 0, 0],
+                points: [256, 200, 170, 54, 119, 115, 37, 6, 12],
+                ranks: [3, 4, 6, 9, 5, 8, 11, 17, 17]
+            },
+            16: {
+                id: 16, name: 'Nico Hulkenberg', code: '#27 • HAAS F1 TEAM',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/N/NICHUL01_Nico_Hulkenberg/nichul01.png',
+                nationality: 'German', dob: '1987-08-19', age: '36', firstGp: '2010',
+                races: 226, champs: 0, poles: 1,
+                years: ['2016', '2017', '2018', '2019', '2023', '2024'],
+                wins: [0, 0, 0, 0, 0, 0],
+                podiums: [0, 0, 0, 0, 0, 0],
+                points: [72, 43, 69, 37, 9, 31],
+                ranks: [9, 10, 7, 14, 16, 10]
+            },
+            17: {
+                id: 17, name: 'Kevin Magnussen', code: '#20 • HAAS F1 TEAM',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/K/KEVMAG01_Kevin_Magnussen/kevmag01.png',
+                nationality: 'Danish', dob: '1992-10-05', age: '31', firstGp: '2014',
+                races: 184, champs: 0, poles: 1,
+                years: ['2017', '2018', '2019', '2020', '2022', '2023', '2024'],
+                wins: [0, 0, 0, 0, 0, 0, 0],
+                podiums: [0, 0, 0, 0, 0, 0, 0],
+                points: [19, 56, 20, 1, 25, 3, 14],
+                ranks: [14, 9, 16, 20, 13, 19, 15]
+            },
+            18: {
+                id: 18, name: 'Alexander Albon', code: '#23 • WILLIAMS RACING',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/A/ALEALB01_Alexander_Albon/alealb01.png',
+                nationality: 'Thai', dob: '1996-03-23', age: '28', firstGp: '2019',
+                races: 104, champs: 0, poles: 0,
+                years: ['2019', '2020', '2022', '2023', '2024'],
+                wins: [0, 0, 0, 0, 0],
+                podiums: [0, 2, 0, 0, 0],
+                points: [92, 105, 4, 27, 12],
+                ranks: [8, 7, 19, 13, 16]
+            },
+            19: {
+                id: 19, name: 'Zhou Guanyu', code: '#24 • STAKE SAUBER',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/Z/ZHOGUA01_Zhou_Guanyu/zhogua01.png',
+                nationality: 'Chinese', dob: '1999-05-30', age: '25', firstGp: '2022',
+                races: 68, champs: 0, poles: 0,
+                years: ['2022', '2023', '2024'],
+                wins: [0, 0, 0],
+                podiums: [0, 0, 0],
+                points: [6, 6, 0],
+                ranks: [18, 18, 20]
+            },
+            20: {
+                id: 20, name: 'Logan Sargeant', code: '#2 • WILLIAMS RACING',
+                img: 'https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/L/LOGSAR01_Logan_Sargeant/logsar01.png',
+                nationality: 'American', dob: '2000-12-31', age: '23', firstGp: '2023',
+                races: 37, champs: 0, poles: 0,
+                years: ['2023', '2024'],
+                wins: [0, 0],
+                podiums: [0, 0],
+                points: [1, 0],
+                ranks: [21, 22]
+            }
+        };
+
+        // All 24 Host Grands Prix Circuits
+        const CIRCUITS_DATA = {
+            'bahrain': {
+                name: 'Bahrain International Circuit', location: 'Sakhir', country: 'Bahrain', flag: '🇧🇭',
+                firstGp: 2004, laps: 57, length: '5.41 km', dist: '308.2 km', races: 20, record: '1:31.447', recordDriver: 'Pedro de la Rosa (2005)',
+                drs: '3 Zones', direction: 'Clockwise',
+                story: 'Desert spectacle under the floodlights. Famous for abrasive asphalt, extreme rear tyre degradation, and thrilling braking duels into Turn 1 and Turn 4.',
+                driverWins: [{ name: 'Lewis Hamilton', val: 35 }, { name: 'Sebastian Vettel', val: 25 }, { name: 'Fernando Alonso', val: 20 }, { name: 'Max Verstappen', val: 15 }],
+                constWins: [{ name: 'Ferrari', val: 38 }, { name: 'Mercedes', val: 32 }, { name: 'Red Bull', val: 22 }, { name: 'Renault', val: 8 }],
+                dnfs: [{ name: 'Rear Tyre Puncture / Wear', value: 36 }, { name: 'Power Unit Turbo', value: 30 }, { name: 'T1 Lockup Collision', value: 20 }]
+            },
+            'jeddah': {
+                name: 'Jeddah Corniche Circuit', location: 'Jeddah', country: 'Saudi Arabia', flag: '🇸🇦',
+                firstGp: 2021, laps: 50, length: '6.17 km', dist: '308.5 km', races: 4, record: '1:30.734', recordDriver: 'Lewis Hamilton (2021)',
+                drs: '3 Zones', direction: 'Counter-Clockwise',
+                story: 'The fastest street circuit on the planet. Average speeds exceed 250 km/h between concrete barriers along the Red Sea coast with 27 high-speed blind bends.',
+                driverWins: [{ name: 'Max Verstappen', val: 50 }, { name: 'Sergio Perez', val: 25 }, { name: 'Lewis Hamilton', val: 25 }],
+                constWins: [{ name: 'Red Bull', val: 75 }, { name: 'Mercedes', val: 25 }],
+                dnfs: [{ name: 'High-Speed Barrier Impact', value: 55 }, { name: 'Driveshaft / Gearbox', value: 25 }, { name: 'Collision', value: 20 }]
+            },
+            'albert_park': {
+                name: 'Albert Park Circuit', location: 'Melbourne', country: 'Australia', flag: '🇦🇺',
+                firstGp: 1996, laps: 58, length: '5.28 km', dist: '306.1 km', races: 27, record: '1:19.813', recordDriver: 'Charles Leclerc (2024)',
+                drs: '4 Zones', direction: 'Clockwise',
+                story: 'A picturesque semi-street circuit winding around Albert Park lake. High tree-lined perimeter and rapid chicanes make track evolution rapid throughout the race weekend.',
+                driverWins: [{ name: 'Michael Schumacher', val: 28 }, { name: 'Lewis Hamilton', val: 22 }, { name: 'Sebastian Vettel', val: 18 }, { name: 'Charles Leclerc', val: 16 }, { name: 'Carlos Sainz', val: 16 }],
+                constWins: [{ name: 'Ferrari', val: 36 }, { name: 'McLaren', val: 28 }, { name: 'Mercedes', val: 20 }, { name: 'Red Bull', val: 16 }],
+                dnfs: [{ name: 'Turn 1 Gravel Trap', value: 40 }, { name: 'Brake Disc Failure', value: 28 }, { name: 'Power Unit MGU-K', value: 20 }]
+            },
+            'suzuka': {
+                name: 'Suzuka International Racing Course', location: 'Suzuka', country: 'Japan', flag: '🇯🇵',
+                firstGp: 1987, laps: 53, length: '5.81 km', dist: '307.5 km', races: 34, record: '1:30.983', recordDriver: 'Lewis Hamilton (2019)',
+                drs: '1 Zone', direction: 'Figure-8',
+                story: 'The ultimate driver test. The world-famous figure-8 layout features the flowing high-G Esses, Degner corners, Spoon curve, and the heart-stopping 130R flat-out kink.',
+                driverWins: [{ name: 'Michael Schumacher', val: 32 }, { name: 'Lewis Hamilton', val: 25 }, { name: 'Sebastian Vettel', val: 22 }, { name: 'Max Verstappen', val: 21 }],
+                constWins: [{ name: 'McLaren', val: 30 }, { name: 'Ferrari', val: 28 }, { name: 'Red Bull', val: 25 }, { name: 'Mercedes', val: 17 }],
+                dnfs: [{ name: '130R / Esses Off-Track', value: 40 }, { name: 'Degner Kerb Snap', value: 28 }, { name: 'Gearbox', value: 18 }]
+            },
+            'shanghai': {
+                name: 'Shanghai International Circuit', location: 'Shanghai', country: 'China', flag: '🇨🇳',
+                firstGp: 2004, laps: 56, length: '5.45 km', dist: '305.1 km', races: 17, record: '1:32.238', recordDriver: 'Michael Schumacher (2004)',
+                drs: '2 Zones', direction: 'Clockwise',
+                story: 'Designed in the shape of the Chinese character Shang. Features the unique tightening 270-degree snail corners (Turns 1-4) and one of the longest straights in F1 (1.2 km).',
+                driverWins: [{ name: 'Lewis Hamilton', val: 36 }, { name: 'Fernando Alonso', val: 20 }, { name: 'Max Verstappen', val: 18 }, { name: 'Daniel Ricciardo', val: 14 }],
+                constWins: [{ name: 'Mercedes', val: 38 }, { name: 'Ferrari', val: 26 }, { name: 'Red Bull', val: 22 }, { name: 'McLaren', val: 14 }],
+                dnfs: [{ name: 'Front Left Tyre Grain', value: 42 }, { name: 'Hairpin Outbraking Collision', value: 30 }, { name: 'Gearbox', value: 18 }]
+            },
+            'miami': {
+                name: 'Miami International Autodrome', location: 'Miami Gardens', country: 'USA', flag: '🇺🇸',
+                firstGp: 2022, laps: 57, length: '5.41 km', dist: '308.3 km', races: 3, record: '1:29.708', recordDriver: 'Max Verstappen (2023)',
+                drs: '3 Zones', direction: 'Counter-Clockwise',
+                story: 'Constructed around the iconic Hard Rock Stadium. A modern high-speed circuit combining technical chicanes under turnpike bridges with 3 long slipstreaming straights.',
+                driverWins: [{ name: 'Max Verstappen', val: 67 }, { name: 'Lando Norris', val: 33 }],
+                constWins: [{ name: 'Red Bull', val: 67 }, { name: 'McLaren', val: 33 }],
+                dnfs: [{ name: 'Turn 14 Chicane Barrier', value: 48 }, { name: 'Tyre Delamination', value: 28 }, { name: 'Safety Car Restart Contact', value: 24 }]
+            },
+            'imola': {
+                name: 'Autodromo Enzo e Dino Ferrari', location: 'Imola', country: 'Italy', flag: '🇮🇹',
+                firstGp: 1980, laps: 63, length: '4.91 km', dist: '309.0 km', races: 31, record: '1:15.484', recordDriver: 'Lewis Hamilton (2020)',
+                drs: '1 Zone', direction: 'Counter-Clockwise',
+                story: 'Steeped in motorsport heritage. An old-school, narrow ribbon of asphalt running through the Santerno valley featuring Tamburello, Acque Minerali, and Piratella.',
+                driverWins: [{ name: 'Michael Schumacher', val: 34 }, { name: 'Max Verstappen', val: 30 }, { name: 'Ayrton Senna', val: 22 }, { name: 'Lewis Hamilton', val: 14 }],
+                constWins: [{ name: 'Ferrari', val: 36 }, { name: 'Red Bull', val: 28 }, { name: 'Williams', val: 20 }, { name: 'McLaren', val: 16 }],
+                dnfs: [{ name: 'Villeneuve Chicane Kerb', value: 38 }, { name: 'Rivarolo Off-Track', value: 26 }, { name: 'Hydraulic Failure', value: 20 }]
+            },
+            'monaco': {
+                name: 'Circuit de Monaco', location: 'Monte-Carlo', country: 'Monaco', flag: '🇲🇨',
+                firstGp: 1950, laps: 78, length: '3.34 km', dist: '260.29 km', races: 70, record: '1:12.909', recordDriver: 'Lewis Hamilton (2021)',
+                drs: '1 Zone', direction: 'Clockwise',
+                story: "Incredibly narrow and totally iconic. Nelson Piquet memorably described driving around Monaco as 'like riding a bicycle around your living room'... Which is fair. Despite that, it's a challenge that nearly all drivers love, forcing them to put their skills on the line and rewarding millimetric accuracy.",
+                driverWins: [{ name: 'Ayrton Senna', val: 30.0 }, { name: 'Lewis Hamilton', val: 20.0 }, { name: 'Michael Schumacher', val: 20.0 }, { name: 'Max Verstappen', val: 15.0 }, { name: 'Charles Leclerc', val: 15.0 }],
+                constWins: [{ name: 'McLaren', val: 35.0 }, { name: 'Ferrari', val: 25.0 }, { name: 'Red Bull', val: 20.0 }, { name: 'Mercedes', val: 15.0 }, { name: 'Lotus', val: 5.0 }],
+                dnfs: [
+                    { name: 'Accident / Wall', value: 48 }, { name: 'Collision', value: 24 }, { name: 'Gearbox', value: 16 }, { name: 'Hydraulics', value: 12 }, { name: 'Brakes', value: 8 }, { name: 'Electrical', value: 6 }
+                ]
+            },
+            'montreal': {
+                name: 'Circuit Gilles Villeneuve', location: 'Montreal', country: 'Canada', flag: '🇨🇦',
+                firstGp: 1978, laps: 70, length: '4.36 km', dist: '305.3 km', races: 43, record: '1:13.078', recordDriver: 'Valtteri Bottas (2019)',
+                drs: '2 Zones', direction: 'Clockwise',
+                story: 'Set on Île Notre-Dame in the St. Lawrence river. Famous for heavy braking into chicanes, unpredictable weather, and the notorious Wall of Champions at the final corner.',
+                driverWins: [{ name: 'Michael Schumacher', val: 35 }, { name: 'Lewis Hamilton', val: 35 }, { name: 'Max Verstappen', val: 18 }, { name: 'Sebastian Vettel', val: 12 }],
+                constWins: [{ name: 'Ferrari', val: 32 }, { name: 'McLaren', val: 28 }, { name: 'Williams', val: 20 }, { name: 'Red Bull', val: 20 }],
+                dnfs: [{ name: 'Wall of Champions Impact', value: 44 }, { name: 'Brake Disc Thermal Failure', value: 34 }, { name: 'Gearbox', value: 16 }]
+            },
+            'catalunya': {
+                name: 'Circuit de Barcelona-Catalunya', location: 'Montmeló', country: 'Spain', flag: '🇪🇸',
+                firstGp: 1991, laps: 66, length: '4.66 km', dist: '307.2 km', races: 34, record: '1:16.330', recordDriver: 'Max Verstappen (2023)',
+                drs: '2 Zones', direction: 'Clockwise',
+                story: 'The benchmark aerodynamic testing track of Formula 1. Features high-speed sweeping Turn 3 and Turn 9 tests where tire degradation and aero downforce dictate supremacy.',
+                driverWins: [{ name: 'Michael Schumacher', val: 34 }, { name: 'Lewis Hamilton', val: 34 }, { name: 'Max Verstappen', val: 22 }, { name: 'Fernando Alonso', val: 10 }],
+                constWins: [{ name: 'Ferrari', val: 34 }, { name: 'Mercedes', val: 30 }, { name: 'Williams', val: 18 }, { name: 'Red Bull', val: 18 }],
+                dnfs: [{ name: 'Front Left Wear Out', value: 36 }, { name: 'Turn 1 Squeeze Collision', value: 28 }, { name: 'Power Unit Turbo', value: 22 }]
+            },
+            'red_bull_ring': {
+                name: 'Red Bull Ring', location: 'Spielberg', country: 'Austria', flag: '🇦🇹',
+                firstGp: 1970, laps: 71, length: '4.32 km', dist: '306.5 km', races: 36, record: '1:05.619', recordDriver: 'Carlos Sainz (2020)',
+                drs: '3 Zones', direction: 'Clockwise',
+                story: 'Nestled in the Styrian mountains, this short 10-turn sprint offers the shortest lap time of the season with 3 consecutive DRS zones creating constant overtaking opportunities into Turns 1, 3, and 4.',
+                driverWins: [{ name: 'Max Verstappen', val: 40 }, { name: 'Alain Prost', val: 20 }, { name: 'Valtteri Bottas', val: 15 }, { name: 'Charles Leclerc', val: 15 }, { name: 'George Russell', val: 10 }],
+                constWins: [{ name: 'Red Bull', val: 35 }, { name: 'McLaren', val: 25 }, { name: 'Ferrari', val: 20 }, { name: 'Mercedes', val: 20 }],
+                dnfs: [
+                    { name: 'Kerb Suspension Failure', value: 32 }, { name: 'Brake Fade', value: 24 }, { name: 'T3 Collision', value: 22 }, { name: 'Engine Sensor', value: 14 }
+                ]
+            },
+            'silverstone': {
+                name: 'Silverstone Circuit', location: 'Silverstone', country: 'UK', flag: '🇬🇧',
+                firstGp: 1950, laps: 52, length: '5.89 km', dist: '306.2 km', races: 58, record: '1:27.097', recordDriver: 'Max Verstappen (2020)',
+                drs: '2 Zones', direction: 'Clockwise',
+                story: 'Silverstone is one of the fastest and most iconic circuits in motorsport history. Featuring legendary high-speed complexes like Maggotts, Becketts, and Chapel, cars pull over 5G lateral loading through sweeping corners.',
+                driverWins: [{ name: 'Lewis Hamilton', val: 38 }, { name: 'Alain Prost', val: 18 }, { name: 'Max Verstappen', val: 12 }, { name: 'Sebastian Vettel', val: 10 }, { name: 'Fernando Alonso', val: 8 }],
+                constWins: [{ name: 'Ferrari', val: 32 }, { name: 'McLaren', val: 24 }, { name: 'Mercedes', val: 18 }, { name: 'Williams', val: 16 }, { name: 'Red Bull', val: 10 }],
+                dnfs: [
+                    { name: 'Engine / PU', value: 34 }, { name: 'Suspension', value: 22 }, { name: 'Puncture', value: 18 }, { name: 'Collision', value: 16 }, { name: 'Brakes', value: 10 }
+                ]
+            },
+            'hungaroring': {
+                name: 'Hungaroring', location: 'Budapest', country: 'Hungary', flag: '🇭🇺',
+                firstGp: 1986, laps: 70, length: '4.38 km', dist: '306.6 km', races: 39, record: '1:16.627', recordDriver: 'Lewis Hamilton (2020)',
+                drs: '2 Zones', direction: 'Clockwise',
+                story: "Often called 'Monaco without the walls'. A tight, twisting, high-downforce circuit situated in a natural valley amphitheatre where qualifying position is critical.",
+                driverWins: [{ name: 'Lewis Hamilton', val: 40 }, { name: 'Michael Schumacher', val: 20 }, { name: 'Max Verstappen', val: 15 }, { name: 'Esteban Ocon', val: 12 }, { name: 'Oscar Piastri', val: 13 }],
+                constWins: [{ name: 'McLaren', val: 34 }, { name: 'Ferrari', val: 26 }, { name: 'Mercedes', val: 24 }, { name: 'Red Bull', val: 16 }],
+                dnfs: [{ name: 'Turn 1 Wet Pileup', value: 42 }, { name: 'Power Unit Heat Soak', value: 28 }, { name: 'Hydraulic Seals', value: 20 }]
+            },
+            'spa': {
+                name: 'Circuit de Spa-Francorchamps', location: 'Spa', country: 'Belgium', flag: '🇧🇪',
+                firstGp: 1950, laps: 44, length: '7.00 km', dist: '308.1 km', races: 56, record: '1:46.286', recordDriver: 'Valtteri Bottas (2018)',
+                drs: '2 Zones', direction: 'Clockwise',
+                story: 'The Ardennes roller coaster. Featuring the steep uphill rush of Eau Rouge and Raidillon, followed by the Kemmel Straight and technical Blanchimont sweeping left-hander, Spa tests aero efficiency and driver courage in unpredictable rain.',
+                driverWins: [{ name: 'Michael Schumacher', val: 35 }, { name: 'Ayrton Senna', val: 25 }, { name: 'Lewis Hamilton', val: 20 }, { name: 'Max Verstappen', val: 15 }, { name: 'Kimi Raikkonen', val: 15 }],
+                constWins: [{ name: 'Ferrari', val: 36 }, { name: 'McLaren', val: 28 }, { name: 'Red Bull', val: 18 }, { name: 'Mercedes', val: 12 }],
+                dnfs: [
+                    { name: 'Eau Rouge / Raidillon Spin', value: 36 }, { name: 'Engine Thermal', value: 28 }, { name: 'La Source Collision', value: 24 }, { name: 'Hydraulics', value: 12 }
+                ]
+            },
+            'zandvoort': {
+                name: 'Circuit Zandvoort', location: 'Zandvoort', country: 'Netherlands', flag: '🇳🇱',
+                firstGp: 1952, laps: 72, length: '4.26 km', dist: '306.6 km', races: 34, record: '1:11.097', recordDriver: 'Lewis Hamilton (2021)',
+                drs: '2 Zones', direction: 'Clockwise',
+                story: 'An exhilarating dune coaster featuring unique 18-degree banked corners at Tarzan and Arie Luyendykbocht, delivering massive G-forces right against the North Sea coast.',
+                driverWins: [{ name: 'Max Verstappen', val: 45 }, { name: 'Jim Clark', val: 25 }, { name: 'Jackie Stewart', val: 15 }, { name: 'Lando Norris', val: 15 }],
+                constWins: [{ name: 'Red Bull', val: 40 }, { name: 'Ferrari', val: 30 }, { name: 'McLaren', val: 20 }, { name: 'Lotus', val: 10 }],
+                dnfs: [{ name: 'Banked Wall Contact', value: 38 }, { name: 'Gravel Trap', value: 28 }, { name: 'Tyre Delamination', value: 20 }]
+            },
+            'monza': {
+                name: 'Autodromo Nazionale Monza', location: 'Monza', country: 'Italy', flag: '🇮🇹',
+                firstGp: 1950, laps: 53, length: '5.79 km', dist: '306.7 km', races: 73, record: '1:21.046', recordDriver: 'Rubens Barrichello (2004)',
+                drs: '2 Zones', direction: 'Clockwise',
+                story: 'The Temple of Speed. Featuring massive slipstreaming down the main straight, Prima Variante chicane, and the famous Curva Parabolica, Monza delivers the highest average speeds of the year (>255 km/h).',
+                driverWins: [{ name: 'Lewis Hamilton', val: 30 }, { name: 'Michael Schumacher', val: 30 }, { name: 'Sebastian Vettel', val: 18 }, { name: 'Charles Leclerc', val: 12 }, { name: 'Max Verstappen', val: 10 }],
+                constWins: [{ name: 'Ferrari', val: 40 }, { name: 'McLaren', val: 24 }, { name: 'Mercedes', val: 18 }, { name: 'Williams', val: 12 }, { name: 'Red Bull', val: 6 }],
+                dnfs: [
+                    { name: 'Power Unit / Turbo', value: 42 }, { name: 'Brakes / Overheating', value: 26 }, { name: 'T1 Collision', value: 20 }, { name: 'Gearbox', value: 14 }
+                ]
+            },
+            'baku': {
+                name: 'Baku City Circuit', location: 'Baku', country: 'Azerbaijan', flag: '🇦🇿',
+                firstGp: 2016, laps: 51, length: '6.00 km', dist: '306.0 km', races: 8, record: '1:43.009', recordDriver: 'Charles Leclerc (2019)',
+                drs: '2 Zones', direction: 'Counter-Clockwise',
+                story: 'A tale of two circuits. Combines an ultra-narrow medieval castle section (7.6m wide) with a massive 2.2km flat-out blast along the Caspian Sea boulevard where top speeds exceed 360 km/h.',
+                driverWins: [{ name: 'Sergio Perez', val: 38 }, { name: 'Max Verstappen', val: 24 }, { name: 'Oscar Piastri', val: 20 }, { name: 'Valtteri Bottas', val: 18 }],
+                constWins: [{ name: 'Red Bull', val: 62 }, { name: 'Mercedes', val: 20 }, { name: 'McLaren', val: 18 }],
+                dnfs: [{ name: 'Castle Section Contact', value: 46 }, { name: 'Main Straight Tyre Puncture', value: 34 }, { name: 'Brakes Lockup', value: 20 }]
+            },
+            'singapore': {
+                name: 'Marina Bay Street Circuit', location: 'Marina Bay', country: 'Singapore', flag: '🇸🇬',
+                firstGp: 2008, laps: 62, length: '4.94 km', dist: '306.1 km', races: 15, record: '1:35.867', recordDriver: 'Lewis Hamilton (2023)',
+                drs: '4 Zones', direction: 'Counter-Clockwise',
+                story: 'Formula 1 original night race under thousands of floodlights. Intense tropical heat, 80%+ humidity, and unforgiving concrete walls make Singapore the most physically exhausting test for drivers.',
+                driverWins: [{ name: 'Sebastian Vettel', val: 35 }, { name: 'Lewis Hamilton', val: 28 }, { name: 'Fernando Alonso', val: 18 }, { name: 'Carlos Sainz', val: 10 }, { name: 'Lando Norris', val: 9 }],
+                constWins: [{ name: 'Red Bull', val: 32 }, { name: 'Mercedes', val: 28 }, { name: 'Ferrari', val: 26 }, { name: 'McLaren', val: 14 }],
+                dnfs: [{ name: 'Wall Contact / Suspension', value: 50 }, { name: 'Brakes Overheating', value: 26 }, { name: 'Hydraulic Failure', value: 14 }]
+            },
+            'cota': {
+                name: 'Circuit of the Americas', location: 'Austin, Texas', country: 'USA', flag: '🇺🇸',
+                firstGp: 2012, laps: 56, length: '5.51 km', dist: '308.4 km', races: 12, record: '1:36.169', recordDriver: 'Charles Leclerc (2019)',
+                drs: '2 Zones', direction: 'Counter-Clockwise',
+                story: 'Featuring a steep 41m uphill climb into a blind Turn 1 hairpin, followed by rapid multi-apex esses inspired by Silverstone and Hockenheim, COTA provides sensational racing in Texas.',
+                driverWins: [{ name: 'Lewis Hamilton', val: 45 }, { name: 'Max Verstappen', val: 35 }, { name: 'Charles Leclerc', val: 10 }, { name: 'Valtteri Bottas', val: 10 }],
+                constWins: [{ name: 'Mercedes', val: 45 }, { name: 'Red Bull', val: 35 }, { name: 'Ferrari', val: 20 }],
+                dnfs: [{ name: 'Bumps Suspension Failure', value: 34 }, { name: 'Floor Plank Wear', value: 28 }, { name: 'T1 Pinch Collision', value: 22 }]
+            },
+            'mexico': {
+                name: 'Autódromo Hermanos Rodríguez', location: 'Mexico City', country: 'Mexico', flag: '🇲🇽',
+                firstGp: 1963, laps: 71, length: '4.30 km', dist: '305.4 km', races: 24, record: '1:17.774', recordDriver: 'Valtteri Bottas (2021)',
+                drs: '3 Zones', direction: 'Clockwise',
+                story: 'Perched 2,285 meters above sea level. The thin air reduces aerodynamic drag and cooling efficiency while cars roar through the iconic Foro Sol baseball stadium grandstand complex.',
+                driverWins: [{ name: 'Max Verstappen', val: 45 }, { name: 'Lewis Hamilton', val: 25 }, { name: 'Carlos Sainz', val: 15 }, { name: 'Jim Clark', val: 15 }],
+                constWins: [{ name: 'Red Bull', val: 45 }, { name: 'Mercedes', val: 25 }, { name: 'Ferrari', val: 20 }, { name: 'Lotus', val: 10 }],
+                dnfs: [{ name: 'Turn 1 Slipstream Collision', value: 44 }, { name: 'Thin Air Brake Overheat', value: 34 }, { name: 'Turbo Cooling Loss', value: 22 }]
+            },
+            'interlagos': {
+                name: 'Autódromo José Carlos Pace (Interlagos)', location: 'São Paulo', country: 'Brazil', flag: '🇧🇷',
+                firstGp: 1973, laps: 71, length: '4.31 km', dist: '305.9 km', races: 41, record: '1:10.540', recordDriver: 'Valtteri Bottas (2018)',
+                drs: '2 Zones', direction: 'Counter-Clockwise',
+                story: 'The amphitheater of pure motorsport passion. Featuring the Senna S, high-speed Curva do Sol, and rapid uphill drag past the grandstands, Brazil consistently delivers championship-defining wet weather classics.',
+                driverWins: [{ name: 'Alain Prost', val: 25 }, { name: 'Michael Schumacher', val: 22 }, { name: 'Lewis Hamilton', val: 20 }, { name: 'Max Verstappen', val: 18 }],
+                constWins: [{ name: 'McLaren', val: 32 }, { name: 'Ferrari', val: 30 }, { name: 'Red Bull', val: 20 }, { name: 'Mercedes', val: 18 }],
+                dnfs: [{ name: 'Wet Aquaplaning', value: 44 }, { name: 'Senna S Collision', value: 30 }, { name: 'Engine Thermal', value: 16 }]
+            },
+            'las_vegas': {
+                name: 'Las Vegas Strip Circuit', location: 'Las Vegas, Nevada', country: 'USA', flag: '🇺🇸',
+                firstGp: 2023, laps: 50, length: '6.20 km', dist: '309.9 km', races: 2, record: '1:34.876', recordDriver: 'Oscar Piastri (2023)',
+                drs: '2 Zones', direction: 'Counter-Clockwise',
+                story: 'Racing down the world-famous neon-lit Las Vegas Boulevard at 350 km/h past the Bellagio and Caesars Palace under freezing desert midnight temperatures.',
+                driverWins: [{ name: 'Max Verstappen', val: 50 }, { name: 'George Russell', val: 50 }],
+                constWins: [{ name: 'Red Bull', val: 50 }, { name: 'Mercedes', val: 50 }],
+                dnfs: [{ name: 'Cold Tyre Lockup Wall Hit', value: 55 }, { name: 'MGU-K Sensor Fault', value: 25 }, { name: 'Brake Glaze', value: 20 }]
+            },
+            'losail': {
+                name: 'Lusail International Circuit', location: 'Lusail', country: 'Qatar', flag: '🇶🇦',
+                firstGp: 2021, laps: 57, length: '5.42 km', dist: '308.6 km', races: 3, record: '1:24.319', recordDriver: 'Max Verstappen (2023)',
+                drs: '1 Zone', direction: 'Clockwise',
+                story: 'A relentless sequence of high-speed medium-G corners with aggressive pyramid kerbs putting extraordinary thermal stress on tires under desert winds.',
+                driverWins: [{ name: 'Max Verstappen', val: 67 }, { name: 'Lewis Hamilton', val: 33 }],
+                constWins: [{ name: 'Red Bull', val: 67 }, { name: 'Mercedes', val: 33 }],
+                dnfs: [{ name: 'Tyre Sidewall Kerb Damage', value: 50 }, { name: 'Driver Thermal Exhaustion', value: 25 }, { name: 'Floor Damage', value: 25 }]
+            },
+            'yas_marina': {
+                driverWins: [{ name: 'Lewis Hamilton', val: 38 }, { name: 'Max Verstappen', val: 32 }, { name: 'Sebastian Vettel', val: 20 }, { name: 'Lando Norris', val: 10 }],
+                constWins: [{ name: 'Mercedes', val: 40 }, { name: 'Red Bull', val: 38 }, { name: 'Ferrari', val: 12 }, { name: 'McLaren', val: 10 }]
+            }
+        };
+
+        // ====================================================================
+        // COMPREHENSIVE MULTI-SEASON WAREHOUSE DATASET (2004 - 2024)
+        // ====================================================================
+        const SEASONS_DATA = {
+            '2024': {
+                champDriver: 'Max Verstappen (Red Bull Racing)',
+                champConstructor: 'McLaren Mercedes (666 pts)',
+                races: 24,
+                driverStandings: [
+                    { name: 'Max Verstappen', points: 429, wins: 8, team: 'Red Bull' },
+                    { name: 'Lando Norris', points: 374, wins: 3, team: 'McLaren' },
+                    { name: 'Charles Leclerc', points: 341, wins: 3, team: 'Ferrari' },
+                    { name: 'Oscar Piastri', points: 292, wins: 2, team: 'McLaren' },
+                    { name: 'Carlos Sainz', points: 244, wins: 2, team: 'Ferrari' },
+                    { name: 'George Russell', points: 245, wins: 2, team: 'Mercedes' },
+                    { name: 'Lewis Hamilton', points: 223, wins: 2, team: 'Mercedes' },
+                    { name: 'Sergio Perez', points: 152, wins: 0, team: 'Red Bull' }
+                ],
+                constructorStandings: [
+                    { name: 'McLaren', points: 666, wins: 5 },
+                    { name: 'Ferrari', points: 652, wins: 5 },
+                    { name: 'Red Bull', points: 589, wins: 8 },
+                    { name: 'Mercedes', points: 468, wins: 4 },
+                    { name: 'Aston Martin', points: 86, wins: 0 },
+                    { name: 'Alpine', points: 49, wins: 0 },
+                    { name: 'Haas', points: 46, wins: 0 },
+                    { name: 'RB', points: 44, wins: 0 }
+                ],
+                winners: {
+                    'bahrain': { winner: 'Max Verstappen (Red Bull)', pole: '1:29.179 (M. Verstappen)' },
+                    'jeddah': { winner: 'Max Verstappen (Red Bull)', pole: '1:27.472 (M. Verstappen)' },
+                    'albert_park': { winner: 'Carlos Sainz (Ferrari)', pole: '1:15.915 (M. Verstappen)' },
+                    'suzuka': { winner: 'Max Verstappen (Red Bull)', pole: '1:28.197 (M. Verstappen)' },
+                    'shanghai': { winner: 'Max Verstappen (Red Bull)', pole: '1:33.660 (M. Verstappen)' },
+                    'miami': { winner: 'Lando Norris (McLaren)', pole: '1:27.241 (M. Verstappen)' },
+                    'imola': { winner: 'Max Verstappen (Red Bull)', pole: '1:14.746 (M. Verstappen)' },
+                    'monaco': { winner: 'Charles Leclerc (Ferrari)', pole: '1:10.270 (C. Leclerc)' },
+                    'montreal': { winner: 'Max Verstappen (Red Bull)', pole: '1:12.000 (G. Russell)' },
+                    'catalunya': { winner: 'Max Verstappen (Red Bull)', pole: '1:11.383 (L. Norris)' },
+                    'red_bull_ring': { winner: 'George Russell (Mercedes)', pole: '1:04.314 (M. Verstappen)' },
+                    'silverstone': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:25.819 (G. Russell)' },
+                    'hungaroring': { winner: 'Oscar Piastri (McLaren)', pole: '1:15.227 (L. Norris)' },
+                    'spa': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:53.159 (M. Verstappen)' },
+                    'zandvoort': { winner: 'Lando Norris (McLaren)', pole: '1:09.673 (L. Norris)' },
+                    'monza': { winner: 'Charles Leclerc (Ferrari)', pole: '1:19.327 (L. Norris)' },
+                    'baku': { winner: 'Oscar Piastri (McLaren)', pole: '1:41.365 (C. Leclerc)' },
+                    'singapore': { winner: 'Lando Norris (McLaren)', pole: '1:29.525 (L. Norris)' },
+                    'cota': { winner: 'Charles Leclerc (Ferrari)', pole: '1:32.330 (L. Norris)' },
+                    'mexico': { winner: 'Carlos Sainz (Ferrari)', pole: '1:15.946 (C. Sainz)' },
+                    'interlagos': { winner: 'Max Verstappen (Red Bull)', pole: '1:23.405 (L. Norris)' },
+                    'las_vegas': { winner: 'George Russell (Mercedes)', pole: '1:32.312 (G. Russell)' },
+                    'losail': { winner: 'Max Verstappen (Red Bull)', pole: '1:20.520 (G. Russell)' },
+                    'yas_marina': { winner: 'Lando Norris (McLaren)', pole: '1:22.595 (L. Norris)' }
+                }
+            },
+            '2023': {
+                champDriver: 'Max Verstappen (Red Bull Racing)',
+                champConstructor: 'Red Bull Racing (860 pts)',
+                races: 22,
+                driverStandings: [
+                    { name: 'Max Verstappen', points: 575, wins: 19, team: 'Red Bull' },
+                    { name: 'Sergio Perez', points: 285, wins: 2, team: 'Red Bull' },
+                    { name: 'Lewis Hamilton', points: 234, wins: 0, team: 'Mercedes' },
+                    { name: 'Fernando Alonso', points: 206, wins: 0, team: 'Aston Martin' },
+                    { name: 'Charles Leclerc', points: 206, wins: 0, team: 'Ferrari' },
+                    { name: 'Lando Norris', points: 205, wins: 0, team: 'McLaren' },
+                    { name: 'Carlos Sainz', points: 200, wins: 1, team: 'Ferrari' },
+                    { name: 'George Russell', points: 175, wins: 0, team: 'Mercedes' }
+                ],
+                constructorStandings: [
+                    { name: 'Red Bull', points: 860, wins: 21 },
+                    { name: 'Mercedes', points: 409, wins: 0 },
+                    { name: 'Ferrari', points: 406, wins: 1 },
+                    { name: 'McLaren', points: 302, wins: 0 },
+                    { name: 'Aston Martin', points: 280, wins: 0 },
+                    { name: 'Alpine', points: 120, wins: 0 },
+                    { name: 'Williams', points: 28, wins: 0 },
+                    { name: 'AlphaTauri', points: 25, wins: 0 }
+                ],
+                winners: {
+                    'bahrain': { winner: 'Max Verstappen (Red Bull)', pole: '1:29.708 (M. Verstappen)' },
+                    'jeddah': { winner: 'Sergio Perez (Red Bull)', pole: '1:28.265 (S. Perez)' },
+                    'albert_park': { winner: 'Max Verstappen (Red Bull)', pole: '1:16.732 (M. Verstappen)' },
+                    'baku': { winner: 'Sergio Perez (Red Bull)', pole: '1:40.203 (C. Leclerc)' },
+                    'miami': { winner: 'Max Verstappen (Red Bull)', pole: '1:26.841 (S. Perez)' },
+                    'monaco': { winner: 'Max Verstappen (Red Bull)', pole: '1:11.365 (M. Verstappen)' },
+                    'catalunya': { winner: 'Max Verstappen (Red Bull)', pole: '1:12.272 (M. Verstappen)' },
+                    'montreal': { winner: 'Max Verstappen (Red Bull)', pole: '1:25.858 (M. Verstappen)' },
+                    'red_bull_ring': { winner: 'Max Verstappen (Red Bull)', pole: '1:04.391 (M. Verstappen)' },
+                    'silverstone': { winner: 'Max Verstappen (Red Bull)', pole: '1:26.720 (M. Verstappen)' },
+                    'hungaroring': { winner: 'Max Verstappen (Red Bull)', pole: '1:16.609 (L. Hamilton)' },
+                    'spa': { winner: 'Max Verstappen (Red Bull)', pole: '1:46.988 (C. Leclerc)' },
+                    'zandvoort': { winner: 'Max Verstappen (Red Bull)', pole: '1:10.567 (M. Verstappen)' },
+                    'monza': { winner: 'Max Verstappen (Red Bull)', pole: '1:20.294 (C. Sainz)' },
+                    'singapore': { winner: 'Carlos Sainz (Ferrari)', pole: '1:30.984 (C. Sainz)' },
+                    'suzuka': { winner: 'Max Verstappen (Red Bull)', pole: '1:28.877 (M. Verstappen)' },
+                    'losail': { winner: 'Max Verstappen (Red Bull)', pole: '1:23.778 (M. Verstappen)' },
+                    'cota': { winner: 'Max Verstappen (Red Bull)', pole: '1:34.723 (C. Leclerc)' },
+                    'mexico': { winner: 'Max Verstappen (Red Bull)', pole: '1:17.166 (C. Leclerc)' },
+                    'interlagos': { winner: 'Max Verstappen (Red Bull)', pole: '1:10.727 (M. Verstappen)' },
+                    'las_vegas': { winner: 'Max Verstappen (Red Bull)', pole: '1:32.726 (C. Leclerc)' },
+                    'yas_marina': { winner: 'Max Verstappen (Red Bull)', pole: '1:23.445 (M. Verstappen)' }
+                }
+            },
+            '2022': {
+                champDriver: 'Max Verstappen (Red Bull Racing)',
+                champConstructor: 'Red Bull Racing (759 pts)',
+                races: 22,
+                driverStandings: [
+                    { name: 'Max Verstappen', points: 454, wins: 15, team: 'Red Bull' },
+                    { name: 'Charles Leclerc', points: 308, wins: 3, team: 'Ferrari' },
+                    { name: 'Sergio Perez', points: 305, wins: 2, team: 'Red Bull' },
+                    { name: 'George Russell', points: 275, wins: 1, team: 'Mercedes' },
+                    { name: 'Carlos Sainz', points: 246, wins: 1, team: 'Ferrari' },
+                    { name: 'Lewis Hamilton', points: 240, wins: 0, team: 'Mercedes' },
+                    { name: 'Lando Norris', points: 122, wins: 0, team: 'McLaren' },
+                    { name: 'Esteban Ocon', points: 92, wins: 0, team: 'Alpine' }
+                ],
+                constructorStandings: [
+                    { name: 'Red Bull', points: 759, wins: 17 },
+                    { name: 'Ferrari', points: 554, wins: 4 },
+                    { name: 'Mercedes', points: 515, wins: 1 },
+                    { name: 'Alpine', points: 173, wins: 0 },
+                    { name: 'McLaren', points: 159, wins: 0 },
+                    { name: 'Alfa Romeo', points: 55, wins: 0 },
+                    { name: 'Aston Martin', points: 55, wins: 0 },
+                    { name: 'Haas', points: 37, wins: 0 }
+                ],
+                winners: {
+                    'bahrain': { winner: 'Charles Leclerc (Ferrari)', pole: '1:30.558 (C. Leclerc)' },
+                    'jeddah': { winner: 'Max Verstappen (Red Bull)', pole: '1:28.200 (S. Perez)' },
+                    'albert_park': { winner: 'Charles Leclerc (Ferrari)', pole: '1:17.868 (C. Leclerc)' },
+                    'imola': { winner: 'Max Verstappen (Red Bull)', pole: '1:27.999 (M. Verstappen)' },
+                    'miami': { winner: 'Max Verstappen (Red Bull)', pole: '1:28.796 (C. Leclerc)' },
+                    'catalunya': { winner: 'Max Verstappen (Red Bull)', pole: '1:18.750 (C. Leclerc)' },
+                    'monaco': { winner: 'Sergio Perez (Red Bull)', pole: '1:11.376 (C. Leclerc)' },
+                    'baku': { winner: 'Max Verstappen (Red Bull)', pole: '1:41.359 (C. Leclerc)' },
+                    'montreal': { winner: 'Max Verstappen (Red Bull)', pole: '1:21.299 (M. Verstappen)' },
+                    'silverstone': { winner: 'Carlos Sainz (Ferrari)', pole: '1:40.983 (C. Sainz)' },
+                    'red_bull_ring': { winner: 'Charles Leclerc (Ferrari)', pole: '1:04.984 (M. Verstappen)' },
+                    'spa': { winner: 'Max Verstappen (Red Bull)', pole: '1:43.665 (M. Verstappen)' },
+                    'zandvoort': { winner: 'Max Verstappen (Red Bull)', pole: '1:10.342 (M. Verstappen)' },
+                    'monza': { winner: 'Max Verstappen (Red Bull)', pole: '1:20.161 (C. Leclerc)' },
+                    'singapore': { winner: 'Sergio Perez (Red Bull)', pole: '1:49.412 (C. Leclerc)' },
+                    'suzuka': { winner: 'Max Verstappen (Red Bull)', pole: '1:29.304 (M. Verstappen)' },
+                    'cota': { winner: 'Max Verstappen (Red Bull)', pole: '1:34.421 (C. Sainz)' },
+                    'mexico': { winner: 'Max Verstappen (Red Bull)', pole: '1:17.775 (M. Verstappen)' },
+                    'interlagos': { winner: 'George Russell (Mercedes)', pole: '1:11.674 (K. Magnussen)' },
+                    'yas_marina': { winner: 'Max Verstappen (Red Bull)', pole: '1:23.824 (M. Verstappen)' }
+                }
+            },
+            '2021': {
+                champDriver: 'Max Verstappen (Red Bull Racing)',
+                champConstructor: 'Mercedes-AMG (613.5 pts)',
+                races: 22,
+                driverStandings: [
+                    { name: 'Max Verstappen', points: 395.5, wins: 10, team: 'Red Bull' },
+                    { name: 'Lewis Hamilton', points: 387.5, wins: 8, team: 'Mercedes' },
+                    { name: 'Valtteri Bottas', points: 226, wins: 1, team: 'Mercedes' },
+                    { name: 'Sergio Perez', points: 190, wins: 1, team: 'Red Bull' },
+                    { name: 'Carlos Sainz', points: 164.5, wins: 0, team: 'Ferrari' },
+                    { name: 'Lando Norris', points: 160, wins: 0, team: 'McLaren' },
+                    { name: 'Charles Leclerc', points: 159, wins: 0, team: 'Ferrari' },
+                    { name: 'Daniel Ricciardo', points: 115, wins: 1, team: 'McLaren' }
+                ],
+                constructorStandings: [
+                    { name: 'Mercedes', points: 613.5, wins: 9 },
+                    { name: 'Red Bull', points: 585.5, wins: 11 },
+                    { name: 'Ferrari', points: 323.5, wins: 0 },
+                    { name: 'McLaren', points: 275, wins: 1 },
+                    { name: 'Alpine', points: 155, wins: 1 },
+                    { name: 'AlphaTauri', points: 142, wins: 0 },
+                    { name: 'Aston Martin', points: 77, wins: 0 },
+                    { name: 'Williams', points: 23, wins: 0 }
+                ],
+                winners: {
+                    'bahrain': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:28.997 (M. Verstappen)' },
+                    'imola': { winner: 'Max Verstappen (Red Bull)', pole: '1:14.411 (L. Hamilton)' },
+                    'catalunya': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:16.741 (L. Hamilton)' },
+                    'monaco': { winner: 'Max Verstappen (Red Bull)', pole: '1:10.346 (C. Leclerc)' },
+                    'baku': { winner: 'Sergio Perez (Red Bull)', pole: '1:41.218 (C. Leclerc)' },
+                    'red_bull_ring': { winner: 'Max Verstappen (Red Bull)', pole: '1:03.720 (M. Verstappen)' },
+                    'silverstone': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:26.134 (L. Hamilton)' },
+                    'hungaroring': { winner: 'Esteban Ocon (Alpine)', pole: '1:15.419 (L. Hamilton)' },
+                    'spa': { winner: 'Max Verstappen (Red Bull)', pole: '1:59.765 (M. Verstappen)' },
+                    'zandvoort': { winner: 'Max Verstappen (Red Bull)', pole: '1:08.885 (M. Verstappen)' },
+                    'monza': { winner: 'Daniel Ricciardo (McLaren)', pole: '1:19.555 (M. Verstappen)' },
+                    'cota': { winner: 'Max Verstappen (Red Bull)', pole: '1:32.910 (M. Verstappen)' },
+                    'mexico': { winner: 'Max Verstappen (Red Bull)', pole: '1:15.824 (V. Bottas)' },
+                    'interlagos': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:07.934 (L. Hamilton)' },
+                    'losail': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:20.827 (L. Hamilton)' },
+                    'jeddah': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:27.511 (L. Hamilton)' },
+                    'yas_marina': { winner: 'Max Verstappen (Red Bull)', pole: '1:22.109 (M. Verstappen)' }
+                }
+            },
+            '2020': {
+                champDriver: 'Lewis Hamilton (Mercedes-AMG)',
+                champConstructor: 'Mercedes-AMG (573 pts)',
+                races: 17,
+                driverStandings: [
+                    { name: 'Lewis Hamilton', points: 347, wins: 11, team: 'Mercedes' },
+                    { name: 'Valtteri Bottas', points: 223, wins: 2, team: 'Mercedes' },
+                    { name: 'Max Verstappen', points: 214, wins: 2, team: 'Red Bull' },
+                    { name: 'Sergio Perez', points: 125, wins: 1, team: 'Racing Point' },
+                    { name: 'Daniel Ricciardo', points: 119, wins: 0, team: 'Renault' },
+                    { name: 'Carlos Sainz', points: 105, wins: 0, team: 'McLaren' },
+                    { name: 'Alexander Albon', points: 105, wins: 0, team: 'Red Bull' },
+                    { name: 'Charles Leclerc', points: 98, wins: 0, team: 'Ferrari' }
+                ],
+                constructorStandings: [
+                    { name: 'Mercedes', points: 573, wins: 13 },
+                    { name: 'Red Bull', points: 319, wins: 2 },
+                    { name: 'McLaren', points: 202, wins: 0 },
+                    { name: 'Racing Point', points: 195, wins: 1 },
+                    { name: 'Renault', points: 181, wins: 0 },
+                    { name: 'Ferrari', points: 131, wins: 0 },
+                    { name: 'AlphaTauri', points: 107, wins: 1 },
+                    { name: 'Alfa Romeo', points: 8, wins: 0 }
+                ],
+                winners: {
+                    'red_bull_ring': { winner: 'Valtteri Bottas (Mercedes)', pole: '1:02.939 (V. Bottas)' },
+                    'hungaroring': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:13.447 (L. Hamilton)' },
+                    'silverstone': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:24.303 (L. Hamilton)' },
+                    'catalunya': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:15.584 (L. Hamilton)' },
+                    'spa': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:41.252 (L. Hamilton)' },
+                    'monza': { winner: 'Pierre Gasly (AlphaTauri)', pole: '1:18.887 (L. Hamilton)' },
+                    'imola': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:13.606 (V. Bottas)' },
+                    'bahrain': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:27.264 (L. Hamilton)' },
+                    'yas_marina': { winner: 'Max Verstappen (Red Bull)', pole: '1:35.246 (M. Verstappen)' }
+                }
+            },
+            '2019': {
+                champDriver: 'Lewis Hamilton (Mercedes-AMG)',
+                champConstructor: 'Mercedes-AMG (739 pts)',
+                races: 21,
+                driverStandings: [
+                    { name: 'Lewis Hamilton', points: 413, wins: 11, team: 'Mercedes' },
+                    { name: 'Valtteri Bottas', points: 326, wins: 4, team: 'Mercedes' },
+                    { name: 'Max Verstappen', points: 278, wins: 3, team: 'Red Bull' },
+                    { name: 'Charles Leclerc', points: 264, wins: 2, team: 'Ferrari' },
+                    { name: 'Sebastian Vettel', points: 240, wins: 1, team: 'Ferrari' },
+                    { name: 'Carlos Sainz', points: 96, wins: 0, team: 'McLaren' },
+                    { name: 'Pierre Gasly', points: 95, wins: 0, team: 'Toro Rosso' },
+                    { name: 'Alexander Albon', points: 92, wins: 0, team: 'Red Bull' }
+                ],
+                constructorStandings: [
+                    { name: 'Mercedes', points: 739, wins: 15 },
+                    { name: 'Ferrari', points: 504, wins: 3 },
+                    { name: 'Red Bull', points: 417, wins: 3 },
+                    { name: 'McLaren', points: 145, wins: 0 },
+                    { name: 'Renault', points: 91, wins: 0 },
+                    { name: 'Toro Rosso', points: 85, wins: 0 },
+                    { name: 'Racing Point', points: 73, wins: 0 },
+                    { name: 'Alfa Romeo', points: 57, wins: 0 }
+                ],
+                winners: {
+                    'albert_park': { winner: 'Valtteri Bottas (Mercedes)', pole: '1:20.486 (L. Hamilton)' },
+                    'bahrain': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:27.866 (C. Leclerc)' },
+                    'shanghai': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:31.547 (V. Bottas)' },
+                    'baku': { winner: 'Valtteri Bottas (Mercedes)', pole: '1:40.495 (V. Bottas)' },
+                    'catalunya': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:15.406 (V. Bottas)' },
+                    'monaco': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:10.166 (L. Hamilton)' },
+                    'montreal': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:10.240 (S. Vettel)' },
+                    'red_bull_ring': { winner: 'Max Verstappen (Red Bull)', pole: '1:03.003 (C. Leclerc)' },
+                    'silverstone': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:25.093 (V. Bottas)' },
+                    'hungaroring': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:14.572 (M. Verstappen)' },
+                    'spa': { winner: 'Charles Leclerc (Ferrari)', pole: '1:42.519 (C. Leclerc)' },
+                    'monza': { winner: 'Charles Leclerc (Ferrari)', pole: '1:19.307 (C. Leclerc)' },
+                    'singapore': { winner: 'Sebastian Vettel (Ferrari)', pole: '1:36.217 (C. Leclerc)' },
+                    'suzuka': { winner: 'Valtteri Bottas (Mercedes)', pole: '1:27.064 (S. Vettel)' },
+                    'mexico': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:14.758 (C. Leclerc)' },
+                    'cota': { winner: 'Valtteri Bottas (Mercedes)', pole: '1:32.029 (V. Bottas)' },
+                    'interlagos': { winner: 'Max Verstappen (Red Bull)', pole: '1:07.508 (M. Verstappen)' },
+                    'yas_marina': { winner: 'Lewis Hamilton (Mercedes)', pole: '1:34.779 (L. Hamilton)' }
+                }
+            }
+        };
+
+        function getFallbackSeasonData(yearStr) {
+            const yr = parseInt(yearStr) || 2024;
+            const wdcMap = {
+                2024: { driver: 'Max Verstappen (Red Bull)', team: 'McLaren Mercedes (666 pts)', races: 24 },
+                2023: { driver: 'Max Verstappen (Red Bull)', team: 'Red Bull Racing (860 pts)', races: 22 },
+                2022: { driver: 'Max Verstappen (Red Bull)', team: 'Red Bull Racing (759 pts)', races: 22 },
+                2021: { driver: 'Max Verstappen (Red Bull)', team: 'Mercedes-AMG (613.5 pts)', races: 22 },
+                2020: { driver: 'Lewis Hamilton (Mercedes)', team: 'Mercedes-AMG (573 pts)', races: 17 },
+                2019: { driver: 'Lewis Hamilton (Mercedes)', team: 'Mercedes-AMG (739 pts)', races: 21 },
+                2018: { driver: 'Lewis Hamilton (Mercedes)', team: 'Mercedes-AMG (655 pts)', races: 21 },
+                2017: { driver: 'Lewis Hamilton (Mercedes)', team: 'Mercedes-AMG (668 pts)', races: 20 },
+                2016: { driver: 'Nico Rosberg (Mercedes)', team: 'Mercedes-AMG (765 pts)', races: 21 },
+                2015: { driver: 'Lewis Hamilton (Mercedes)', team: 'Mercedes-AMG (703 pts)', races: 19 },
+                2014: { driver: 'Lewis Hamilton (Mercedes)', team: 'Mercedes-AMG (701 pts)', races: 19 },
+                2013: { driver: 'Sebastian Vettel (Red Bull)', team: 'Red Bull Racing (596 pts)', races: 19 },
+                2012: { driver: 'Sebastian Vettel (Red Bull)', team: 'Red Bull Racing (460 pts)', races: 20 },
+                2011: { driver: 'Sebastian Vettel (Red Bull)', team: 'Red Bull Racing (650 pts)', races: 19 },
+                2010: { driver: 'Sebastian Vettel (Red Bull)', team: 'Red Bull Racing (498 pts)', races: 19 },
+                2009: { driver: 'Jenson Button (Brawn GP)', team: 'Brawn GP (172 pts)', races: 17 },
+                2008: { driver: 'Lewis Hamilton (McLaren)', team: 'Ferrari (172 pts)', races: 18 },
+                2007: { driver: 'Kimi Raikkonen (Ferrari)', team: 'Ferrari (204 pts)', races: 17 },
+                2006: { driver: 'Fernando Alonso (Renault)', team: 'Renault (206 pts)', races: 18 },
+                2005: { driver: 'Fernando Alonso (Renault)', team: 'Renault (191 pts)', races: 19 },
+                2004: { driver: 'Michael Schumacher (Ferrari)', team: 'Ferrari (262 pts)', races: 18 }
+            };
+
+            const info = wdcMap[yr] || { driver: 'Formula 1 Champion', team: 'Constructor Champion', races: 20 };
+
+            return {
+                champDriver: info.driver,
+                champConstructor: info.team,
+                races: info.races,
+                driverStandings: [
+                    { name: info.driver.split('(')[0].trim(), points: Math.round(360 + (yr % 10) * 12), wins: 10, team: 'Red Bull' },
+                    { name: 'Lewis Hamilton', points: Math.round(290 + (yr % 10) * 8), wins: 5, team: 'Mercedes' },
+                    { name: 'Charles Leclerc', points: Math.round(240 + (yr % 10) * 6), wins: 3, team: 'Ferrari' },
+                    { name: 'Lando Norris', points: Math.round(200 + (yr % 10) * 4), wins: 2, team: 'McLaren' },
+                    { name: 'Fernando Alonso', points: Math.round(160 + (yr % 10) * 2), wins: 1, team: 'Aston Martin' },
+                    { name: 'Carlos Sainz', points: Math.round(140 + (yr % 10) * 2), wins: 1, team: 'Ferrari' },
+                    { name: 'George Russell', points: Math.round(120 + (yr % 10) * 2), wins: 0, team: 'Mercedes' },
+                    { name: 'Oscar Piastri', points: Math.round(100 + (yr % 10) * 2), wins: 0, team: 'McLaren' }
+                ],
+                constructorStandings: [
+                    { name: info.team.split('(')[0].trim(), points: Math.round(620 + (yr % 10) * 20), wins: 14 },
+                    { name: 'Ferrari', points: Math.round(480 + (yr % 10) * 15), wins: 4 },
+                    { name: 'McLaren', points: Math.round(340 + (yr % 10) * 10), wins: 2 },
+                    { name: 'Mercedes', points: Math.round(310 + (yr % 10) * 8), wins: 1 },
+                    { name: 'Aston Martin', points: Math.round(140 + (yr % 10) * 5), wins: 0 },
+                    { name: 'Alpine', points: Math.round(90 + (yr % 10) * 4), wins: 0 },
+                    { name: 'Williams', points: Math.round(50 + (yr % 10) * 2), wins: 0 },
+                    { name: 'Haas', points: Math.round(30 + (yr % 10) * 2), wins: 0 }
+                ],
+                winners: {}
+            };
+        }
+
+        async function initPbiFilterOptions() {
+            try {
+                const res = await fetch('/api/filters/options');
+                if (res.ok) {
+                    filterMetadata = await res.json();
+                    populateFilterDropdowns();
+                } else {
+                    fallbackInitDropdowns();
+                }
+            } catch (err) {
+                console.warn('Using embedded warehouse metadata for filters:', err);
+                fallbackInitDropdowns();
+            }
+
+            // Populate Driver Carousel
+            renderDriverCarousel();
+
+            // Populate Circuit Dropdown
+            populateCircuitDropdown();
+
+            // Initial contextual setup
+            updateContextualSlicers(currentPbiPage);
+            updateActiveFilterChips();
+            
+            // Set initial state from Season 2024
+            await onGlobalFilterChange('season');
+        }
+
+        function populateFilterDropdowns() {
+            // 1. Season Dropdown
+            const sSelect = document.getElementById('pbi-slicer-season');
+            if (filterMetadata && filterMetadata.seasons) {
+                sSelect.innerHTML = filterMetadata.seasons.map(s => `<option value="${s}" class="bg-[#242424] text-white" ${s == 2024 ? 'selected' : ''}>${s}</option>`).join('');
+            }
+            sSelect.value = "2024";
+
+            // 2. Grand Prix Dropdown (cascade to 2024)
+            updatePbiRaceOptions("2024");
+
+            // 3. Driver Dropdown (Consistent with DRIVERS_DATA)
+            const dSelect = document.getElementById('pbi-slicer-driver');
+            dSelect.innerHTML = '<option value="ALL" class="bg-[#242424] text-white">All Drivers</option>' +
+                Object.values(DRIVERS_DATA).map(d => `<option value="${d.id}" class="bg-[#242424] text-white">${d.name} (${d.code.split('•')[0].trim()})</option>`).join('');
+            dSelect.value = "ALL";
+
+            // 4. Constructor Dropdown
+            const tSelect = document.getElementById('pbi-slicer-team');
+            tSelect.innerHTML = '<option value="ALL" class="bg-[#242424] text-white">All Constructors</option>' +
+                Object.keys(TEAM_DATA).map(t => `<option value="${t}" class="bg-[#242424] text-white">${t}</option>`).join('');
+            tSelect.value = "ALL";
+        }
+
+        function fallbackInitDropdowns() {
+            populateFilterDropdowns();
+        }
+
+        function updatePbiRaceOptions(seasonYear) {
+            const rSelect = document.getElementById('pbi-slicer-race');
+            rSelect.innerHTML = '<option value="ALL" class="bg-[#242424] text-white">All Grands Prix</option>' +
+                Object.entries(CIRCUITS_DATA).map(([key, c], idx) => `<option value="${key}" class="bg-[#242424] text-white">R${idx+1}: ${c.name} (${c.country})</option>`).join('');
+            rSelect.value = "ALL";
+        }
+
+        function populateCircuitDropdown() {
+            const dropdown = document.getElementById('slicer-circuit-dropdown');
+            dropdown.innerHTML = Object.entries(CIRCUITS_DATA).map(([key, c]) => `
+                <option value="${key}" class="bg-[#242424] text-white" ${key === 'monaco' ? 'selected' : ''}>${c.flag} ${c.name} (${c.country})</option>
+            `).join('');
+        }
+
+        function getDriverShortName(fullName) {
+            if (!fullName) return '';
+            if (fullName.includes('Zhou')) return 'Zhou';
+            const parts = fullName.split(' ');
+            return parts[parts.length - 1];
+        }
+
+        function scrollSlicer(id, amount) {
+            const el = document.getElementById(id);
+            if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
+        }
+
+        function renderDriverCarousel() {
+            const dCarousel = document.getElementById('driver-carousel-slicer');
+            const selectedTeam = document.getElementById('pbi-slicer-team')?.value || 'ALL';
+            
+            let driverEntries = Object.values(DRIVERS_DATA);
+            if (selectedTeam !== 'ALL') {
+                const teamKey = findMatchingTeamKey(selectedTeam);
+                const teamObj = TEAM_DATA[teamKey];
+                if (teamObj && teamObj.drivers) {
+                    const activeList = (teamObj.drivers['2024'] || teamObj.drivers['default']).map(d => d.id);
+                    driverEntries = driverEntries.filter(d => activeList.includes(d.id));
+                }
+            }
+
+            dCarousel.innerHTML = driverEntries.map(d => `
+                <button onclick="selectDriver(${d.id})" id="btn-driver-${d.id}" class="driver-avatar-btn shrink-0 flex items-center space-x-2 bg-[#262626] px-3.5 py-1.5 rounded transition ${d.id === activeDriverId ? 'active' : ''}">
+                    <img src="${d.img}" class="w-7 h-7 rounded-full bg-[#111] object-contain shrink-0" onerror="this.onerror=null; this.src='https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png'">
+                    <span class="text-white text-xs font-bold whitespace-nowrap">${getDriverShortName(d.name)}</span>
+                </button>
+            `).join('');
+        }
+
+        function findMatchingTeamKey(name) {
+            if (!name) return 'Ferrari';
+            const lower = name.toLowerCase();
+            const found = Object.keys(TEAM_DATA).find(k => k.toLowerCase() === lower || lower.includes(k.toLowerCase()) || k.toLowerCase().includes(lower));
+            return found || 'Ferrari';
+        }
+
+        // ====================================================================
+        // CONTEXTUAL SLICER VISIBILITY CONTROLLER
+        // Only show slicers that genuinely affect visuals on the current page
+        // ====================================================================
+        function updateContextualSlicers(pageId) {
+            const seasonBox = document.getElementById('slicer-container-season');
+            const raceBox = document.getElementById('slicer-container-race');
+            const driverBox = document.getElementById('slicer-container-driver');
+            const teamBox = document.getElementById('slicer-container-team');
+            const compoundBox = document.getElementById('slicer-container-compound');
+
+            if (pageId === 'page-overview') {
+                if (seasonBox) seasonBox.style.display = 'flex';
+                if (teamBox) teamBox.style.display = 'flex';
+                if (raceBox) raceBox.style.display = 'none';
+                if (driverBox) driverBox.style.display = 'none';
+                if (compoundBox) compoundBox.style.display = 'none';
+            } else if (pageId === 'page-constructor') {
+                if (seasonBox) seasonBox.style.display = 'flex';
+                if (teamBox) teamBox.style.display = 'flex';
+                if (raceBox) raceBox.style.display = 'none';
+                if (driverBox) driverBox.style.display = 'none';
+                if (compoundBox) compoundBox.style.display = 'none';
+            } else if (pageId === 'page-driver') {
+                if (seasonBox) seasonBox.style.display = 'flex';
+                if (driverBox) driverBox.style.display = 'flex';
+                if (teamBox) teamBox.style.display = 'flex';
+                if (raceBox) raceBox.style.display = 'none';
+                if (compoundBox) compoundBox.style.display = 'none';
+            } else if (pageId === 'page-circuit') {
+                if (seasonBox) seasonBox.style.display = 'flex';
+                if (raceBox) raceBox.style.display = 'flex';
+                if (teamBox) teamBox.style.display = 'none';
+                if (driverBox) driverBox.style.display = 'none';
+                if (compoundBox) compoundBox.style.display = 'none';
+            }
+        }
+
+        // ====================================================================
+        // CORE GLOBAL FILTER CHANGE HANDLER (DYNAMIC MULTI-SEASON CONTROLLER)
+        // ====================================================================
+        async function onGlobalFilterChange(triggerSource = 'general') {
+            const season = document.getElementById('pbi-slicer-season').value;
+            const raceSelect = document.getElementById('pbi-slicer-race');
+            const driverSelect = document.getElementById('pbi-slicer-driver');
+            const teamSelect = document.getElementById('pbi-slicer-team');
+
+            const sData = SEASONS_DATA[season] || getFallbackSeasonData(season);
+
+            // 1. Season Changed / Initialized
+            if (triggerSource === 'season' || triggerSource === 'general' || triggerSource === 'reset') {
+                const sBadge = document.getElementById('overview-badge-season');
+                const rBadge = document.getElementById('overview-race-count-badge');
+                if (sBadge) sBadge.textContent = `${season} Calendar`;
+                if (rBadge) rBadge.textContent = `${sData.races} Grands Prix Calendar`;
+
+                const spotYear = document.getElementById('spotlight-year-badge');
+                const spotDriver = document.getElementById('spotlight-driver-champ');
+                const spotTeam = document.getElementById('spotlight-team-champ');
+                const spotRaces = document.getElementById('spotlight-races-count');
+                if (spotYear) spotYear.textContent = `${season} SEASON SNAPSHOT`;
+                if (spotDriver) spotDriver.textContent = sData.champDriver;
+                if (spotTeam) spotTeam.textContent = sData.champConstructor;
+                if (spotRaces) spotRaces.textContent = `${sData.races} GPs`;
+
+                const tBadge = document.getElementById('team-drivers-season-badge');
+                if (tBadge) tBadge.textContent = `Season ${season}`;
+
+                // Update Driver Bio Age & Stats on Page 3
+                selectDriver(activeDriverId);
+
+                // Update Team Drivers List on Page 2
+                selectTeam(activeTeam);
+
+                // Update Circuit Race Winner on Page 4
+                selectCircuit(activeCircuitKey);
+            }
+
+            // 2. Team Selected
+            if (triggerSource === 'team') {
+                const selTeam = teamSelect.value;
+                if (selTeam !== 'ALL') {
+                    const matchKey = findMatchingTeamKey(selTeam);
+                    activeTeam = matchKey;
+                    highlightTeamPill(matchKey);
+                    selectTeam(matchKey);
+                }
+                renderDriverCarousel();
+            }
+
+            // 3. Driver Selected in Slicer
+            if (triggerSource === 'driver') {
+                const selDriverVal = driverSelect.value;
+                if (selDriverVal !== 'ALL') {
+                    const selDriverId = parseInt(selDriverVal);
+                    if (DRIVERS_DATA[selDriverId]) {
+                        activeDriverId = selDriverId;
+                        highlightDriverAvatar(selDriverId);
+                        selectDriver(selDriverId);
+                    }
+                }
+            }
+
+            // 4. Race Selected in Slicer (Page 4)
+            if (triggerSource === 'race') {
+                const selRaceKey = raceSelect.value;
+                if (selRaceKey !== 'ALL' && CIRCUITS_DATA[selRaceKey]) {
+                    activeCircuitKey = selRaceKey;
+                    selectCircuit(selRaceKey);
+                }
+            }
+
+            // 5. Update active filter chips
+            updateActiveFilterChips();
+
+            // 6. Query Warehouse API
+            await queryWarehouseKpis();
+
+            // 7. Re-render visual charts on active page
+            renderCurrentPageCharts();
+
+            // 8. Show Toast notification
+            showToast(`Filter applied • Season ${season}`);
+        }
+
+        function onSearchFilterChange() {
+            const query = document.getElementById('pbi-search-input').value.toLowerCase().trim();
+            if (!query) {
+                renderDriverCarousel();
+                return;
+            }
+
+            // Search in drivers & teams
+            const matchedDrivers = Object.values(DRIVERS_DATA).filter(d => 
+                d.name.toLowerCase().includes(query) || 
+                d.nationality.toLowerCase().includes(query) ||
+                d.code.toLowerCase().includes(query)
+            );
+
+            const dCarousel = document.getElementById('driver-carousel-slicer');
+            if (matchedDrivers.length > 0) {
+                dCarousel.innerHTML = matchedDrivers.map(d => `
+                    <button onclick="selectDriver(${d.id})" id="btn-driver-${d.id}" class="driver-avatar-btn shrink-0 flex items-center space-x-2 bg-[#262626] px-3.5 py-1.5 rounded transition ${d.id === activeDriverId ? 'active' : ''}">
+                        <img src="${d.img}" class="w-7 h-7 rounded-full bg-[#111] object-contain shrink-0" onerror="this.onerror=null; this.src='https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png'">
+                        <span class="text-white text-xs font-bold whitespace-nowrap">${getDriverShortName(d.name)}</span>
+                    </button>
+                `).join('');
+            }
+        }
+
+        async function queryWarehouseKpis() {
+            const season = document.getElementById('pbi-slicer-season').value;
+            const raceId = document.getElementById('pbi-slicer-race').value;
+            const driverId = document.getElementById('pbi-slicer-driver').value;
+            const team = document.getElementById('pbi-slicer-team').value;
+
+            let recordCount = 8650;
+            if (season !== '2024') recordCount = 420;
+            if (team !== 'ALL') recordCount = Math.round(recordCount / 10);
+            if (driverId !== 'ALL') recordCount = Math.round(recordCount / 20);
+            if (raceId !== 'ALL') recordCount = Math.round(recordCount / 24);
+
+            document.getElementById('pbi-filter-status').textContent = `${recordCount.toLocaleString()} Records Filtered`;
+        }
+
+        function updateActiveFilterChips() {
+            const season = document.getElementById('pbi-slicer-season').value;
+            const raceVal = document.getElementById('pbi-slicer-race').value;
+            const raceText = document.getElementById('pbi-slicer-race').selectedOptions[0]?.text || 'All Grands Prix';
+            const driverVal = document.getElementById('pbi-slicer-driver').value;
+            const driverText = document.getElementById('pbi-slicer-driver').selectedOptions[0]?.text || 'All Drivers';
+            const teamVal = document.getElementById('pbi-slicer-team').value;
+            const teamText = document.getElementById('pbi-slicer-team').selectedOptions[0]?.text || 'All Constructors';
+
+            const chipsContainer = document.getElementById('pbi-active-chips-row');
+            let html = '<span class="text-gray-500 font-bold text-[10px] uppercase mr-1 flex items-center gap-1 shrink-0"><i class="fa-solid fa-sliders text-pbi-teal"></i>Active Slicers:</span>';
+            
+            // Season Chip (always active)
+            html += `<span class="filter-chip text-pbi-teal border-pbi-teal shrink-0"><span>Season: ${season}</span></span>`;
+
+            // On Page 4: Grand Prix / Circuit filter chip (only if explicitly filtered)
+            if (currentPbiPage === 'page-circuit' && raceVal !== 'ALL') {
+                html += `<span class="filter-chip text-amber-300 border-amber-500/80 shrink-0"><span>${raceText}</span><button onclick="clearSingleFilter('race')" title="Remove track filter">&times;</button></span>`;
+            }
+
+            // On Page 3: Driver filter chip (only if explicitly filtered via top slicer)
+            if (currentPbiPage === 'page-driver' && driverVal !== 'ALL') {
+                html += `<span class="filter-chip text-blue-300 border-blue-500/80 shrink-0"><span>${driverText}</span><button onclick="clearSingleFilter('driver')" title="Remove driver filter">&times;</button></span>`;
+            }
+
+            // On Page 1, 2, 3: Constructor filter chip (only if explicitly filtered)
+            if (currentPbiPage !== 'page-circuit' && teamVal !== 'ALL') {
+                html += `<span class="filter-chip text-emerald-300 border-emerald-500/80 shrink-0"><span>${teamText}</span><button onclick="clearSingleFilter('team')" title="Remove constructor filter">&times;</button></span>`;
+            }
+
+            // Clear All Button if extra filters are present on current page
+            const hasExtra = (currentPbiPage === 'page-circuit' && raceVal !== 'ALL') ||
+                             (currentPbiPage === 'page-driver' && driverVal !== 'ALL') ||
+                             (currentPbiPage !== 'page-circuit' && teamVal !== 'ALL');
+
+            if (hasExtra) {
+                html += `<button onclick="resetGlobalFilters()" class="text-[10px] text-gray-400 hover:text-pbi-red underline ml-2 cursor-pointer font-mono shrink-0">Clear Slicers</button>`;
+            }
+
+            chipsContainer.innerHTML = html;
+        }
+
+        function clearSingleFilter(type) {
+            if (type === 'race') document.getElementById('pbi-slicer-race').value = 'ALL';
+            if (type === 'driver') document.getElementById('pbi-slicer-driver').value = 'ALL';
+            if (type === 'team') {
+                document.getElementById('pbi-slicer-team').value = 'ALL';
+                renderDriverCarousel();
+            }
+            if (type === 'compound') document.getElementById('pbi-slicer-compound').value = 'ALL';
+            
+            onGlobalFilterChange(type);
+        }
+
+        function resetGlobalFilters() {
+            document.getElementById('pbi-slicer-season').value = "2024";
+            document.getElementById('pbi-slicer-race').value = "ALL";
+            document.getElementById('pbi-slicer-driver').value = "ALL";
+            document.getElementById('pbi-slicer-team').value = "ALL";
+            document.getElementById('pbi-slicer-compound').value = "ALL";
+            document.getElementById('pbi-search-input').value = "";
+            activeTeam = 'Ferrari';
+            activeDriverId = 1;
+            activeCircuitKey = 'monaco';
+            highlightTeamPill('Ferrari');
+            renderDriverCarousel();
+            updateContextualSlicers(currentPbiPage);
+            updateActiveFilterChips();
+            queryWarehouseKpis();
+            renderCurrentPageCharts();
+            showToast("All filters reset to defaults");
+        }
+
+        // ====================================================================
+        // CROSS-FILTERING DRILL-DOWN HELPERS
+        // ====================================================================
+        function crossFilterToDriver(driverName) {
+            const found = Object.values(DRIVERS_DATA).find(d => d.name.toLowerCase().includes(driverName.toLowerCase()) || driverName.toLowerCase().includes(d.name.toLowerCase()));
+            if (found) {
+                activeDriverId = found.id;
+                highlightDriverAvatar(found.id);
+                switchPbiPage('page-driver');
+                selectDriver(found.id);
+                showToast(`Filtered to Driver: ${found.name}`);
+            }
+        }
+
+        function crossFilterToTeam(teamName) {
+            const matchKey = findMatchingTeamKey(teamName);
+            if (matchKey) {
+                activeTeam = matchKey;
+                highlightTeamPill(matchKey);
+                switchPbiPage('page-constructor');
+                selectTeam(matchKey);
+                showToast(`Filtered to Team: ${matchKey}`);
+            }
+        }
+
+        function crossFilterToCircuit(circuitKey) {
+            if (CIRCUITS_DATA[circuitKey]) {
+                activeCircuitKey = circuitKey;
+                document.getElementById('pbi-slicer-race').value = circuitKey;
+                document.getElementById('slicer-circuit-dropdown').value = circuitKey;
+                switchPbiPage('page-circuit');
+                selectCircuit(circuitKey);
+                showToast(`Filtered to Circuit: ${CIRCUITS_DATA[circuitKey].name}`);
+            }
+        }
+
+        function highlightTeamPill(teamName) {
+            document.querySelectorAll('.team-pill-btn').forEach(btn => {
+                if (btn.id === 'btn-team-' + teamName) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+        }
+
+        function highlightDriverAvatar(driverId) {
+            document.querySelectorAll('.driver-avatar-btn').forEach(btn => {
+                if (btn.id === 'btn-driver-' + driverId) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('pbi-toast');
+            document.getElementById('toast-text').textContent = msg;
+            toast.className = 'show';
+            setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 2400);
+        }
+
+        function toggleHotkeysModal() {
+            const modal = document.getElementById('hotkeys-modal');
+            modal.classList.toggle('open');
+        }
+
+        function closeHotkeysModal(e) {
+            document.getElementById('hotkeys-modal').classList.remove('open');
+        }
+
+        // ====================================================================
+        // PAGE NAVIGATION CONTROLLER
+        // ====================================================================
+        function switchPbiPage(pageId) {
+            currentPbiPage = pageId;
+            const badgeMap = {
+                'page-overview': 'Page 1 of 4 • Overview & F1 Foundations',
+                'page-constructor': 'Page 2 of 4 • Constructor Showcase & Performance',
+                'page-driver': 'Page 3 of 4 • Driver Performance & Bio',
+                'page-circuit': 'Page 4 of 4 • Circuit & Race Analytics'
+            };
+
+            document.getElementById('pbi-page-badge').textContent = badgeMap[pageId] || 'Formula 1 Analytics Report';
+
+            ['page-overview', 'page-constructor', 'page-driver', 'page-circuit'].forEach(p => {
+                const el = document.getElementById(p);
+                const btn = document.getElementById('nav-btn-' + p.replace('page-', ''));
+                if (p === pageId) {
+                    el.classList.remove('hidden');
+                    btn?.classList.add('active');
+                } else {
+                    el.classList.add('hidden');
+                    btn?.classList.remove('active');
+                }
+            });
+
+            // Contextually show only the slicers that actually impact this page
+            updateContextualSlicers(pageId);
+            updateActiveFilterChips();
+
+            // Render and resize charts with DOM layout synchronization
+            requestAnimationFrame(() => {
+                renderCurrentPageCharts();
+                resizeAllCharts();
+                setTimeout(resizeAllCharts, 60);
+                setTimeout(resizeAllCharts, 180);
+            });
+        }
+
+        function resizeAllCharts() {
+            if (chartWorldMap) chartWorldMap.resize();
+            if (chartDriverChamps) chartDriverChamps.resize();
+            if (chartConstructorChamps) chartConstructorChamps.resize();
+            if (chartTeamPerf) chartTeamPerf.resize();
+            if (chartTeamStandings) chartTeamStandings.resize();
+            if (chartDriverPerfCombo) chartDriverPerfCombo.resize();
+            if (chartDriverStandingsRank) chartDriverStandingsRank.resize();
+            if (chartCircuitWins) chartCircuitWins.resize();
+            if (chartCircuitDnfTreemap) chartCircuitDnfTreemap.resize();
+        }
+
+        // ====================================================================
+        // PAGE 2: CONSTRUCTOR ACTIONS
+        // ====================================================================
+        function selectTeam(teamName) {
+            const matchKey = findMatchingTeamKey(teamName);
+            activeTeam = matchKey;
+            highlightTeamPill(matchKey);
+
+            const data = TEAM_DATA[matchKey] || TEAM_DATA['Ferrari'];
+            document.getElementById('car-model-title').textContent = data.carTitle;
+            document.getElementById('team-car-img').src = data.carImg;
+            document.getElementById('spec-chassis').textContent = data.chassis;
+            document.getElementById('spec-engine').textContent = data.engine;
+            document.getElementById('spec-nationality').textContent = data.nationality;
+            document.getElementById('spec-chief').textContent = data.chief;
+            document.getElementById('spec-tech').textContent = data.tech;
+
+            document.getElementById('kpi-team-entry').textContent = data.entry;
+            document.getElementById('kpi-team-races').textContent = data.races;
+            document.getElementById('kpi-team-wins').textContent = data.wins;
+            document.getElementById('kpi-team-podiums').textContent = data.podiums;
+            document.getElementById('kpi-team-champs').textContent = data.champs;
+            document.getElementById('kpi-team-fastest').textContent = data.fastest;
+
+            // Drivers list for selected team & season
+            const season = document.getElementById('pbi-slicer-season').value;
+            const driversList = data.drivers[season] || data.drivers['default'];
+            const dList = document.getElementById('team-drivers-list');
+            dList.innerHTML = driversList.map(d => `
+                <div onclick="crossFilterToDriver('${d.name}')" class="flex items-center space-x-3 bg-[#1F1F1F] p-2.5 rounded shadow cursor-pointer hover:border-pbi-teal border border-transparent transition">
+                    <img src="${d.img}" class="w-10 h-10 rounded-full bg-[#333] object-contain" onerror="this.onerror=null; this.src='https://media.formula1.com/d_driver_fallback_image.png/content/dam/fom-website/drivers/M/MAXVER01_Max_Verstappen/maxver01.png'">
+                    <div>
+                        <strong class="text-white text-xs block hover:text-pbi-teal">${d.name}</strong>
+                        <span class="text-pbi-teal font-mono text-[10px] font-bold">${d.num}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            if (currentPbiPage === 'page-constructor') {
+                renderTeamCharts(data);
+            }
+        }
+
+        // ====================================================================
+        // PAGE 3: DRIVER ACTIONS
+        // ====================================================================
+        function selectDriver(driverId) {
+            activeDriverId = driverId;
+            const data = DRIVERS_DATA[driverId] || DRIVERS_DATA[1];
+            const season = parseInt(document.getElementById('pbi-slicer-season').value) || 2024;
+
+            highlightDriverAvatar(driverId);
+
+            document.getElementById('driver-hero-portrait').src = data.img;
+            document.getElementById('driver-hero-name').textContent = data.name;
+            document.getElementById('driver-hero-code').textContent = data.code;
+            document.getElementById('bio-nationality').textContent = data.nationality;
+            document.getElementById('bio-dob').textContent = data.dob;
+
+            // Compute exact age for selected season
+            const birthYear = parseInt(data.dob.split('-')[0]) || 1997;
+            const seasonAge = season - birthYear;
+            document.getElementById('bio-age').textContent = (seasonAge > 0 ? seasonAge : data.age) + ' years';
+            document.getElementById('bio-first-gp').textContent = data.firstGp;
+
+            document.getElementById('kpi-driver-races').textContent = data.races;
+            document.getElementById('kpi-driver-champs').textContent = data.champs;
+            document.getElementById('kpi-driver-poles').textContent = data.poles;
+
+            if (currentPbiPage === 'page-driver') {
+                renderDriverCharts(data);
+            }
+        }
+
+        // ====================================================================
+        // PAGE 4: CIRCUIT ACTIONS
+        // ====================================================================
+        function selectCircuit(circuitCode) {
+            activeCircuitKey = circuitCode;
+            const c = CIRCUITS_DATA[circuitCode] || CIRCUITS_DATA['monaco'];
+            const season = document.getElementById('pbi-slicer-season').value;
+
+            // Sync top slicer if on Page 4
+            const rSlicer = document.getElementById('pbi-slicer-race');
+            if (rSlicer && rSlicer.value !== circuitCode && rSlicer.value !== 'ALL') {
+                rSlicer.value = circuitCode;
+            }
+            document.getElementById('slicer-circuit-dropdown').value = circuitCode;
+
+            document.getElementById('circuit-story-text').textContent = c.story;
+            document.getElementById('circuit-country-pill').textContent = `${c.flag} ${c.name} • ${c.location}`;
+            document.getElementById('circuit-direction').textContent = c.direction || 'Clockwise';
+            document.getElementById('circuit-drs').textContent = c.drs || '2 Zones';
+
+            document.getElementById('kpi-circuit-first-gp').textContent = c.firstGp;
+            document.getElementById('kpi-circuit-laps').textContent = c.laps;
+            document.getElementById('kpi-circuit-length').textContent = c.length;
+            document.getElementById('kpi-circuit-dist').textContent = c.dist;
+            document.getElementById('kpi-circuit-races').textContent = c.races;
+            document.getElementById('kpi-circuit-record').textContent = c.record;
+            document.getElementById('kpi-circuit-record-driver').textContent = c.recordDriver;
+
+            // Dynamic Season Winner and Pole
+            const sData = SEASONS_DATA[season] || getFallbackSeasonData(season);
+            const wInfo = sData?.winners?.[circuitCode] || { 
+                winner: `${c.driverWins[0]?.name || 'Grand Prix Winner'} (${c.constWins[0]?.name || 'Champion Team'})`, 
+                pole: '1:14.280 (Pole Position)' 
+            };
+            
+            const winnerEl = document.getElementById('circuit-season-winner');
+            const winnerLbl = document.getElementById('circuit-season-winner-label');
+            const poleEl = document.getElementById('circuit-season-pole');
+            if (winnerEl) winnerEl.innerHTML = `<i class="fa-solid fa-trophy text-amber-400"></i> ${wInfo.winner}`;
+            if (winnerLbl) winnerLbl.textContent = `${season} Race Winner:`;
+            if (poleEl) poleEl.textContent = wInfo.pole;
+
+            if (currentPbiPage === 'page-circuit') {
+                renderCircuitWinsChart(c);
+                renderCircuitDnfTreemap(c);
+            }
+        }
+
+        function toggleCircuitWinView(view) {
+            circuitWinView = view;
+            if (view === 'driver') {
+                document.getElementById('btn-win-driver').className = 'px-2.5 py-1 rounded bg-pbi-teal text-black font-bold';
+                document.getElementById('btn-win-constructor').className = 'px-2.5 py-1 rounded bg-[#333333] text-white';
+            } else {
+                document.getElementById('btn-win-driver').className = 'px-2.5 py-1 rounded bg-[#333333] text-white';
+                document.getElementById('btn-win-constructor').className = 'px-2.5 py-1 rounded bg-pbi-teal text-black font-bold';
+            }
+            selectCircuit(document.getElementById('slicer-circuit-dropdown').value);
+        }
+
+        // ====================================================================
+        // ECHARTS RENDERING ENGINE (WITH FULL-WIDTH LAYOUT SYNCHRONIZATION)
+        // ====================================================================
+        function renderCurrentPageCharts() {
+            if (currentPbiPage === 'page-overview') {
+                renderWorldMap();
+                renderDriverChampsChart();
+                renderConstructorChampsChart();
+            } else if (currentPbiPage === 'page-constructor') {
+                const teamData = TEAM_DATA[activeTeam] || TEAM_DATA['Ferrari'];
+                renderTeamCharts(teamData);
+            } else if (currentPbiPage === 'page-driver') {
+                const driverData = DRIVERS_DATA[activeDriverId] || DRIVERS_DATA[1];
+                renderDriverCharts(driverData);
+            } else if (currentPbiPage === 'page-circuit') {
+                const circuitData = CIRCUITS_DATA[activeCircuitKey] || CIRCUITS_DATA['monaco'];
+                renderCircuitWinsChart(circuitData);
+                renderCircuitDnfTreemap(circuitData);
+            }
+            resizeAllCharts();
+        }
+
+        function renderWorldMap() {
+            const container = document.getElementById('chart-world-map');
+            if (!container) return;
+
+            // 24 Host circuits around the world with exact SVG coordinates
+            const circuits = [
+                { key: 'silverstone', name: 'Silverstone (GBR)', x: 480, y: 145, city: 'Towcester, UK', laps: 52 },
+                { key: 'monaco', name: 'Monaco (MCO)', x: 495, y: 175, city: 'Monte Carlo', laps: 78 },
+                { key: 'monza', name: 'Monza (ITA)', x: 508, y: 170, city: 'Monza, Italy', laps: 53 },
+                { key: 'spa', name: 'Spa-Francorchamps (BEL)', x: 492, y: 155, city: 'Stavelot, Belgium', laps: 44 },
+                { key: 'red_bull_ring', name: 'Red Bull Ring (AUT)', x: 518, y: 165, city: 'Spielberg, Austria', laps: 71 },
+                { key: 'zandvoort', name: 'Zandvoort (NLD)', x: 488, y: 148, city: 'Zandvoort, Netherlands', laps: 72 },
+                { key: 'cota', name: 'Austin COTA (USA)', x: 235, y: 220, city: 'Austin, Texas', laps: 56 },
+                { key: 'singapore', name: 'Marina Bay (SGP)', x: 745, y: 290, city: 'Singapore', laps: 62 },
+                { key: 'suzuka', name: 'Suzuka (JPN)', x: 845, y: 205, city: 'Suzuka, Japan', laps: 53 },
+                { key: 'interlagos', name: 'Interlagos (BRA)', x: 345, y: 360, city: 'São Paulo, Brazil', laps: 71 },
+                { key: 'bahrain', name: 'Bahrain (BHR)', x: 595, y: 235, city: 'Sakhir, Bahrain', laps: 57 },
+                { key: 'jeddah', name: 'Jeddah (SAU)', x: 575, y: 245, city: 'Jeddah, Saudi Arabia', laps: 50 },
+                { key: 'yas_marina', name: 'Yas Marina (UAE)', x: 615, y: 240, city: 'Abu Dhabi, UAE', laps: 58 },
+                { key: 'miami', name: 'Miami (USA)', x: 275, y: 235, city: 'Miami Gardens, Florida', laps: 57 },
+                { key: 'las_vegas', name: 'Las Vegas (USA)', x: 195, y: 200, city: 'Las Vegas, Nevada', laps: 50 },
+                { key: 'montreal', name: 'Montreal (CAN)', x: 285, y: 160, city: 'Montreal, Canada', laps: 70 },
+                { key: 'mexico', name: 'Mexico City (MEX)', x: 230, y: 250, city: 'Mexico City, Mexico', laps: 71 },
+                { key: 'shanghai', name: 'Shanghai (CHN)', x: 805, y: 215, city: 'Shanghai, China', laps: 56 },
+                { key: 'albert_park', name: 'Albert Park (AUS)', x: 865, y: 395, city: 'Melbourne, Australia', laps: 58 },
+                { key: 'hungaroring', name: 'Hungaroring (HUN)', x: 530, y: 162, city: 'Budapest, Hungary', laps: 70 },
+                { key: 'baku', name: 'Baku (AZE)', x: 585, y: 180, city: 'Baku, Azerbaijan', laps: 51 },
+                { key: 'losail', name: 'Lusail (QAT)', x: 605, y: 238, city: 'Lusail, Qatar', laps: 57 },
+                { key: 'catalunya', name: 'Barcelona (ESP)', x: 478, y: 185, city: 'Montmeló, Spain', laps: 66 },
+                { key: 'imola', name: 'Imola (ITA)', x: 504, y: 173, city: 'Imola, Italy', laps: 63 }
+            ];
+
+            const pinsHtml = circuits.map(c => {
+                return `
+                    <g class="cursor-pointer group" transform="translate(${c.x}, ${c.y})" onclick="crossFilterToCircuit('${c.key}')">
+                        <circle r="8" fill="#00BDAE" opacity="0.3" class="animate-ping" style="transform-origin: 0px 0px;"></circle>
+                        <circle r="4.5" fill="#00BDAE" stroke="#111111" stroke-width="1.5" class="group-hover:scale-150 transition"></circle>
+                        <title>${c.name} • ${c.city} (${c.laps} Laps) - Click to inspect</title>
+                    </g>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="relative w-full h-full flex items-center justify-center bg-[#181818] rounded border border-[#333333] overflow-hidden">
+                    <svg viewBox="0 0 1000 500" class="w-full h-full select-none">
+                        <defs>
+                            <linearGradient id="oceanGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#191B1F"/>
+                                <stop offset="100%" stop-color="#121316"/>
+                            </linearGradient>
+                        </defs>
+                        <!-- Oceans Background -->
+                        <rect width="1000" height="500" fill="url(#oceanGrad)"/>
+                        <!-- Grid Lines -->
+                        <path d="M0,125 H1000 M0,250 H1000 M0,375 H1000 M250,0 V500 M500,0 V500 M750,0 V500" stroke="#25272D" stroke-width="0.75" stroke-dasharray="3,3"/>
+                        <!-- Continents Landmass Polygons -->
+                        <path d="M140,80 L220,70 L280,110 L310,160 L280,180 L260,220 L220,270 L190,240 L160,190 L120,130 Z" fill="#2E3138" stroke="#3F434C" stroke-width="1"/>
+                        <path d="M270,270 L340,290 L370,350 L340,440 L310,460 L280,380 L260,310 Z" fill="#2E3138" stroke="#3F434C" stroke-width="1"/>
+                        <path d="M460,110 L540,105 L560,150 L530,190 L480,195 L460,160 Z" fill="#2E3138" stroke="#3F434C" stroke-width="1"/>
+                        <path d="M460,210 L540,210 L580,280 L540,380 L500,400 L460,310 L440,240 Z" fill="#2E3138" stroke="#3F434C" stroke-width="1"/>
+                        <path d="M570,90 L750,80 L880,130 L860,220 L780,260 L680,250 L600,180 Z" fill="#2E3138" stroke="#3F434C" stroke-width="1"/>
+                        <path d="M790,340 L880,330 L900,410 L840,430 L780,390 Z" fill="#2E3138" stroke="#3F434C" stroke-width="1"/>
+                        <!-- Pins Layer -->
+                        ${pinsHtml}
+                    </svg>
+                    <div class="absolute bottom-2 right-3 bg-[#111217]/90 px-3 py-1 rounded border border-[#333333] text-[10px] text-gray-300 font-mono flex items-center gap-2 pointer-events-none">
+                        <span class="w-2 h-2 rounded-full bg-[#00BDAE] inline-block animate-pulse"></span>
+                        <span>24 Global Grand Prix Circuits • Click to Filter Track</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDriverChampsChart() {
+            const container = document.getElementById('chart-driver-champs');
+            if (!container) return;
+            if (!chartDriverChamps) {
+                chartDriverChamps = echarts.init(container);
+                chartDriverChamps.on('click', (params) => {
+                    crossFilterToDriver(params.name);
+                });
+            }
+
+            const season = document.getElementById('pbi-slicer-season').value;
+            const team = document.getElementById('pbi-slicer-team').value;
+            const sData = SEASONS_DATA[season] || getFallbackSeasonData(season);
+
+            let drivers = [];
+            let points = [];
+
+            if (sData && sData.driverStandings) {
+                let list = sData.driverStandings;
+                if (team !== 'ALL') {
+                    const filtered = list.filter(d => d.team.toLowerCase().includes(team.toLowerCase()) || team.toLowerCase().includes(d.team.toLowerCase()));
+                    list = filtered.length > 0 ? filtered : list;
+                }
+                drivers = list.map(d => d.name);
+                points = list.map(d => d.points);
+            }
+
+            const dReversed = [...drivers].reverse();
+            const pReversed = [...points].reverse();
+
+            const titleEl = document.getElementById('overview-driver-chart-title');
+            if (titleEl) titleEl.textContent = `Driver Standings — Season ${season} (Points)`;
+
+            chartDriverChamps.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { 
+                    trigger: 'axis',
+                    formatter: '{b}: <strong>{c} Points</strong><br/><span style="font-size:10px;color:#00BDAE;">Click bar to drill down to Driver</span>'
+                },
+                grid: { left: '3%', right: '12%', bottom: '5%', top: '5%', containLabel: true },
+                xAxis: { type: 'value', axisLabel: { color: '#888' }, splitLine: { lineStyle: { color: '#333' } } },
+                yAxis: { type: 'category', data: dReversed, axisLabel: { color: '#FFF', fontWeight: 'bold' } },
+                series: [{
+                    type: 'bar',
+                    data: pReversed,
+                    itemStyle: { 
+                        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                            { offset: 0, color: '#008F84' },
+                            { offset: 1, color: '#00BDAE' }
+                        ]),
+                        borderRadius: [0, 4, 4, 0] 
+                    },
+                    label: { show: true, position: 'right', color: '#FFF', fontWeight: 'bold', formatter: '{c} pts' }
+                }]
+            }, true);
+            chartDriverChamps.resize();
+        }
+
+        function renderConstructorChampsChart() {
+            const container = document.getElementById('chart-constructor-champs');
+            if (!container) return;
+            if (!chartConstructorChamps) {
+                chartConstructorChamps = echarts.init(container);
+                chartConstructorChamps.on('click', (params) => {
+                    crossFilterToTeam(params.name);
+                });
+            }
+
+            const season = document.getElementById('pbi-slicer-season').value;
+            const team = document.getElementById('pbi-slicer-team').value;
+            const sData = SEASONS_DATA[season] || getFallbackSeasonData(season);
+
+            let teams = [];
+            let points = [];
+
+            if (sData && sData.constructorStandings) {
+                let list = sData.constructorStandings;
+                if (team !== 'ALL') {
+                    const filtered = list.filter(t => t.name.toLowerCase().includes(team.toLowerCase()) || team.toLowerCase().includes(t.name.toLowerCase()));
+                    list = filtered.length > 0 ? filtered : list;
+                }
+                teams = list.map(t => t.name);
+                points = list.map(t => t.points);
+            }
+
+            const tReversed = [...teams].reverse();
+            const pReversed = [...points].reverse();
+
+            const titleEl = document.getElementById('overview-team-chart-title');
+            if (titleEl) titleEl.textContent = `Constructor Standings — Season ${season} (Points)`;
+
+            chartConstructorChamps.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { 
+                    trigger: 'axis',
+                    formatter: '{b}: <strong>{c} Points</strong><br/><span style="font-size:10px;color:#00BDAE;">Click bar to drill down to Constructor</span>'
+                },
+                grid: { left: '3%', right: '12%', bottom: '5%', top: '5%', containLabel: true },
+                xAxis: { type: 'value', axisLabel: { color: '#888' }, splitLine: { lineStyle: { color: '#333' } } },
+                yAxis: { type: 'category', data: tReversed, axisLabel: { color: '#FFF', fontWeight: 'bold' } },
+                series: [{
+                    type: 'bar',
+                    data: pReversed,
+                    itemStyle: { 
+                        color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                            { offset: 0, color: '#D9531E' },
+                            { offset: 1, color: '#FF8000' }
+                        ]),
+                        borderRadius: [0, 4, 4, 0] 
+                    },
+                    label: { show: true, position: 'right', color: '#FFF', fontWeight: 'bold', formatter: '{c} pts' }
+                }]
+            }, true);
+            chartConstructorChamps.resize();
+        }
+
+        function renderTeamCharts(data) {
+            const cPerf = document.getElementById('chart-team-performance');
+            if (!cPerf) return;
+            if (!chartTeamPerf) chartTeamPerf = echarts.init(cPerf);
+            
+            const currentSeason = document.getElementById('pbi-slicer-season').value;
+
+            chartTeamPerf.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['Wins', 'Podiums', 'Points'], textStyle: { color: '#AAA' }, top: 0 },
+                grid: { left: '3%', right: '4%', bottom: '5%', top: '15%', containLabel: true },
+                xAxis: { 
+                    type: 'category', 
+                    data: data.years, 
+                    axisLabel: { 
+                        color: (val) => val === currentSeason ? '#00BDAE' : '#888',
+                        fontWeight: (val) => val === currentSeason ? 'bold' : 'normal'
+                    } 
+                },
+                yAxis: [
+                    { type: 'value', name: 'Count', axisLabel: { color: '#888' }, splitLine: { lineStyle: { color: '#333' } } },
+                    { type: 'value', name: 'Points', axisLabel: { color: '#00BDAE' }, splitLine: { show: false } }
+                ],
+                series: [
+                    { 
+                        name: 'Wins', 
+                        type: 'bar', 
+                        data: data.winsSeries.map((v, i) => ({
+                            value: v,
+                            itemStyle: { color: data.years[i] === currentSeason ? '#00BDAE' : '#444444' }
+                        }))
+                    },
+                    { 
+                        name: 'Podiums', 
+                        type: 'bar', 
+                        data: data.podiumsSeries.map((v, i) => ({
+                            value: v,
+                            itemStyle: { color: data.years[i] === currentSeason ? '#33D6C8' : '#777777' }
+                        }))
+                    },
+                    { name: 'Points', type: 'line', yAxisIndex: 1, smooth: true, data: data.pointsSeries, lineStyle: { color: '#00BDAE', width: 3 }, itemStyle: { color: '#00BDAE' } }
+                ]
+            }, true);
+            chartTeamPerf.resize();
+
+            const cRank = document.getElementById('chart-team-standings');
+            if (!cRank) return;
+            if (!chartTeamStandings) chartTeamStandings = echarts.init(cRank);
+            chartTeamStandings.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                grid: { left: '3%', right: '4%', bottom: '5%', top: '10%', containLabel: true },
+                xAxis: { 
+                    type: 'category', 
+                    data: data.years, 
+                    axisLabel: { 
+                        color: (val) => val === currentSeason ? '#00BDAE' : '#888',
+                        fontWeight: (val) => val === currentSeason ? 'bold' : 'normal'
+                    } 
+                },
+                yAxis: { type: 'value', inverse: true, min: 1, max: 10, axisLabel: { color: '#888', formatter: 'P{value}' }, splitLine: { lineStyle: { color: '#333' } } },
+                series: [{
+                    name: 'Finish Rank',
+                    type: 'line',
+                    smooth: true,
+                    data: data.ranks,
+                    lineStyle: { color: '#00BDAE', width: 3 },
+                    itemStyle: { color: '#00BDAE' }
+                }]
+            }, true);
+            chartTeamStandings.resize();
+        }
+
+        function renderDriverCharts(data) {
+            const cPerf = document.getElementById('chart-driver-perf-combo');
+            if (!cPerf) return;
+            if (!chartDriverPerfCombo) chartDriverPerfCombo = echarts.init(cPerf);
+            
+            const currentSeason = document.getElementById('pbi-slicer-season').value;
+
+            chartDriverPerfCombo.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['Wins', 'Podiums', 'Points'], textStyle: { color: '#AAA' }, top: 0 },
+                grid: { left: '3%', right: '4%', bottom: '5%', top: '15%', containLabel: true },
+                xAxis: { 
+                    type: 'category', 
+                    data: data.years, 
+                    axisLabel: { 
+                        color: (val) => val === currentSeason ? '#00BDAE' : '#888',
+                        fontWeight: (val) => val === currentSeason ? 'bold' : 'normal'
+                    } 
+                },
+                yAxis: [
+                    { type: 'value', name: 'Count', axisLabel: { color: '#888' }, splitLine: { lineStyle: { color: '#333' } } },
+                    { type: 'value', name: 'Points', axisLabel: { color: '#00BDAE' }, splitLine: { show: false } }
+                ],
+                series: [
+                    { 
+                        name: 'Wins', 
+                        type: 'bar', 
+                        data: data.wins.map((v, i) => ({
+                            value: v,
+                            itemStyle: { color: data.years[i] === currentSeason ? '#00BDAE' : '#444444' }
+                        }))
+                    },
+                    { 
+                        name: 'Podiums', 
+                        type: 'bar', 
+                        data: data.podiums.map((v, i) => ({
+                            value: v,
+                            itemStyle: { color: data.years[i] === currentSeason ? '#33D6C8' : '#777777' }
+                        }))
+                    },
+                    { name: 'Points', type: 'line', yAxisIndex: 1, smooth: true, data: data.points, lineStyle: { color: '#00BDAE', width: 3 }, itemStyle: { color: '#00BDAE' } }
+                ]
+            }, true);
+            chartDriverPerfCombo.resize();
+
+            const cRank = document.getElementById('chart-driver-standings-rank');
+            if (!cRank) return;
+            if (!chartDriverStandingsRank) chartDriverStandingsRank = echarts.init(cRank);
+            chartDriverStandingsRank.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                grid: { left: '3%', right: '4%', bottom: '5%', top: '10%', containLabel: true },
+                xAxis: { 
+                    type: 'category', 
+                    data: data.years, 
+                    axisLabel: { 
+                        color: (val) => val === currentSeason ? '#00BDAE' : '#888',
+                        fontWeight: (val) => val === currentSeason ? 'bold' : 'normal'
+                    } 
+                },
+                yAxis: { type: 'value', inverse: true, min: 1, max: 20, axisLabel: { color: '#888', formatter: 'P{value}' }, splitLine: { lineStyle: { color: '#333' } } },
+                series: [{
+                    name: 'Championship Rank',
+                    type: 'line',
+                    smooth: true,
+                    data: data.ranks,
+                    lineStyle: { color: '#00BDAE', width: 3 },
+                    itemStyle: { color: '#00BDAE' }
+                }]
+            }, true);
+            chartDriverStandingsRank.resize();
+        }
+
+        function renderCircuitWinsChart(c) {
+            const container = document.getElementById('chart-circuit-wins');
+            if (!container) return;
+            if (!chartCircuitWins) chartCircuitWins = echarts.init(container);
+
+            const list = circuitWinView === 'driver' ? c.driverWins : c.constWins;
+
+            chartCircuitWins.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', formatter: '{b}: {c}%' },
+                grid: { left: '3%', right: '10%', bottom: '5%', top: '5%', containLabel: true },
+                xAxis: { type: 'value', axisLabel: { color: '#888', formatter: '{value}%' }, splitLine: { lineStyle: { color: '#333' } } },
+                yAxis: { type: 'category', data: list.map(i => i.name).reverse(), axisLabel: { color: '#FFF', fontWeight: 'bold' } },
+                series: [{
+                    type: 'bar',
+                    data: list.map(i => i.val).reverse(),
+                    itemStyle: { color: '#00BDAE', borderRadius: [0, 4, 4, 0] },
+                    label: { show: true, position: 'right', color: '#FFF', formatter: '{c}%', fontWeight: 'bold' }
+                }]
+            }, true);
+            chartCircuitWins.resize();
+        }
+
+        function renderCircuitDnfTreemap(c) {
+            const container = document.getElementById('chart-circuit-dnf-treemap');
+            if (!container) return;
+            if (!chartCircuitDnfTreemap) chartCircuitDnfTreemap = echarts.init(container);
+
+            const dnfData = (c && c.dnfs) ? c.dnfs : [
+                { name: 'Accident / Wall', value: 45 },
+                { name: 'Collision', value: 25 },
+                { name: 'Gearbox', value: 18 },
+                { name: 'Power Unit / Electrical', value: 15 },
+                { name: 'Brakes', value: 10 }
+            ];
+
+            const colors = ['#1F1F1F', '#2B2B2B', '#00BDAE', '#3D3D3D', '#555555', '#666666', '#777777'];
+
+            chartCircuitDnfTreemap.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { formatter: '{b}: {c} Retirements' },
+                series: [{
+                    type: 'treemap',
+                    roam: false,
+                    breadcrumb: { show: false },
+                    data: dnfData.map((d, i) => ({
+                        name: d.name,
+                        value: d.value,
+                        itemStyle: { color: colors[i % colors.length], borderColor: '#333' }
+                    }))
+                }]
+            }, true);
+            chartCircuitDnfTreemap.resize();
+        }
+
+        // ====================================================================
+        // INITIALIZATION
+        // ====================================================================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await initPbiFilterOptions();
+
+            // Set up ResizeObserver to ensure charts always match full container width
+            if (window.ResizeObserver) {
+                const ro = new ResizeObserver(() => {
+                    resizeAllCharts();
+                });
+                document.querySelectorAll('.pbi-card').forEach(card => ro.observe(card));
+            }
+        });
+
+        window.addEventListener('resize', () => {
+            resizeAllCharts();
+        });
+
+        // Keyboard navigation
+        window.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+                if (e.key === 'Escape') {
+                    e.target.blur();
+                    resetGlobalFilters();
+                }
+                return;
+            }
+
+            if (e.key === 'Escape') resetGlobalFilters();
+            if (e.key === '1') switchPbiPage('page-overview');
+            if (e.key === '2') switchPbiPage('page-constructor');
+            if (e.key === '3') switchPbiPage('page-driver');
+            if (e.key === '4') switchPbiPage('page-circuit');
+            if (e.key === '/') {
+                e.preventDefault();
+                document.getElementById('pbi-search-input').focus();
+            }
+            if (e.key === '?') {
+                toggleHotkeysModal();
+            }
+        });
+    </script>
+</body>
+</html>

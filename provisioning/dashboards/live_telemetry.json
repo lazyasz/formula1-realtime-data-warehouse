@@ -1,0 +1,149 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 401,
+      "title": "Status Indicator",
+      "type": "text",
+      "options": {
+        "content": "<div style=\"display:flex; align-items:center; justify-content:space-between; padding:8px 16px; background:linear-gradient(90deg, rgba(225,6,0,0.2) 0%, rgba(18,20,23,0.8) 100%); border:1px solid #E10600; border-radius:8px;\">\n  <div style=\"display:flex; align-items:center; gap:12px;\">\n    <span style=\"height:14px; width:14px; background:#00FF66; border-radius:50%; display:inline-block; box-shadow:0 0 10px #00FF66; animation:pulse 1.5s infinite;\"></span>\n    <span style=\"font-family:'Titillium Web', sans-serif; font-weight:800; font-size:18px; color:#FFFFFF; letter-spacing:1px;\">LIVE RACE TELEMETRY STREAM ACTIVE</span>\n  </div>\n  <div style=\"font-family:monospace; font-size:13px; color:#AAAAAA;\">\n    FEED: <span style=\"color:#00FF66;\">SIM_FEEDER_ONLINE</span> • REFRESH: <span style=\"color:#E10600;\">1000ms</span> • AUTO-INGESTION: <span style=\"color:#00FF66;\">ENABLED</span>\n  </div>\n</div>",
+        "mode": "html"
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 3 },
+      "id": 402,
+      "title": "⚡ Real-Time Live Lap Times & Speed Traps",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+      "gridPos": { "h": 10, "w": 16, "x": 0, "y": 4 },
+      "id": 403,
+      "title": "Live Lap Time Stream (Last 15 Minutes)",
+      "type": "timeseries",
+      "options": {
+        "legend": { "calcs": ["lastNotNull", "min"], "displayMode": "table", "placement": "right", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "asc" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "always"
+          },
+          "unit": "s"
+        },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "VER" }, "properties": [{ "id": "color", "value": { "fixedColor": "#3671C6", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "NOR" }, "properties": [{ "id": "color", "value": { "fixedColor": "#FF8000", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "LEC" }, "properties": [{ "id": "color", "value": { "fixedColor": "#E8002D", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "HAM" }, "properties": [{ "id": "color", "value": { "fixedColor": "#27F4D2", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "RUS" }, "properties": [{ "id": "color", "value": { "fixedColor": "#27F4D2", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "PIA" }, "properties": [{ "id": "color", "value": { "fixedColor": "#FF8000", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "SAI" }, "properties": [{ "id": "color", "value": { "fixedColor": "#E8002D", "mode": "fixed" } }] }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+          "format": "time_series",
+          "rawSql": "SELECT flt.recorded_at AS \"time\", flt.lap_time_ms / 1000.0 AS \"value\", d.driver_code AS \"metric\"\nFROM fact_lap_times flt\nJOIN dim_driver d ON flt.driver_id = d.driver_id\nWHERE flt.recorded_at >= NOW() - INTERVAL '15 minutes'\nORDER BY flt.recorded_at ASC;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+      "gridPos": { "h": 10, "w": 8, "x": 16, "y": 4 },
+      "id": 404,
+      "title": "Live Speed Trap Radar (km/h)",
+      "type": "gauge",
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "max": 360,
+          "min": 250,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "green", "value": 300 },
+              { "color": "yellow", "value": 325 },
+              { "color": "#9B51E0", "value": 340 }
+            ]
+          },
+          "unit": "velocitykmh"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+          "format": "table",
+          "rawSql": "SELECT d.driver_code || ' Top Speed' AS \"metric\", MAX(flt.speed_trap_kmh) AS \"value\"\nFROM fact_lap_times flt\nJOIN dim_driver d ON flt.driver_id = d.driver_id\nWHERE flt.recorded_at >= NOW() - INTERVAL '15 minutes'\nGROUP BY d.driver_code\nORDER BY \"value\" DESC\nLIMIT 6;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 405,
+      "title": "⏱️ Real-Time Sector Splits (Last Ingested Laps)",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
+      "id": 406,
+      "title": "Real-Time Lap Ingestion Log (Live Stream)",
+      "type": "table",
+      "options": {
+        "footer": { "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Ingested At" }]
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto" } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "F1-PostgreSQL" },
+          "format": "table",
+          "rawSql": "SELECT \n  TO_CHAR(flt.recorded_at, 'HH24:MI:SS') AS \"Ingested At\",\n  flt.lap_number AS \"Lap\",\n  d.driver_code AS \"Driver\",\n  t.team_name AS \"Constructor\",\n  ROUND(flt.sector1_ms / 1000.0, 3) AS \"S1 (s)\",\n  ROUND(flt.sector2_ms / 1000.0, 3) AS \"S2 (s)\",\n  ROUND(flt.sector3_ms / 1000.0, 3) AS \"S3 (s)\",\n  ROUND(flt.lap_time_ms / 1000.0, 3) AS \"Lap Time (s)\",\n  flt.speed_trap_kmh AS \"Speed (km/h)\",\n  flt.tyre_age_laps AS \"Tyre Age\",\n  CASE WHEN flt.is_pit_lap = 1 THEN 'BOX BOX' ELSE 'ON TRACK' END AS \"Pit State\"\nFROM fact_lap_times flt\nJOIN dim_driver d ON flt.driver_id = d.driver_id\nJOIN dim_team t ON flt.team_id = t.team_id\nORDER BY flt.recorded_at DESC\nLIMIT 20;",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "2s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["f1", "live", "telemetry"],
+  "templating": { "list": [] },
+  "time": { "from": "now-5m", "to": "now" },
+  "timepicker": { "refresh_intervals": ["500ms", "1s", "2s", "5s", "10s"] },
+  "timezone": "browser",
+  "title": "Formula 1 — Live Race Telemetry & Stream",
+  "uid": "f1-live-telemetry",
+  "version": 1
+}

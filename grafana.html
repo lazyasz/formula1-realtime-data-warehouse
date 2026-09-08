@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formula 1 — Grafana Analytics Suite</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        grafana: {
+                            bg: '#111217',
+                            panel: '#181B1F',
+                            panelHeader: '#202226',
+                            border: '#2A2C32',
+                            text: '#CCCCDC',
+                            muted: '#8E8E9E',
+                            orange: '#FF780A',
+                            blue: '#3274D9',
+                            green: '#73BF69',
+                            red: '#F2495C',
+                            purple: '#B877D9',
+                            yellow: '#FADE2A'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Menlo', 'Monaco', 'Courier New', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Apache ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+    <style>
+        body {
+            background-color: #111217;
+            color: #CCCCDC;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+        .grafana-card {
+            background-color: #181B1F;
+            border: 1px solid #2A2C32;
+            border-radius: 4px;
+        }
+        .grafana-header-bar {
+            background-color: #181B1F;
+            border-bottom: 1px solid #2A2C32;
+        }
+        .grafana-panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #CCCCDC;
+            letter-spacing: 0.2px;
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111217; }
+        ::-webkit-scrollbar-thumb { background: #2A2C32; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3A3D45; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Top Navigation Bar (Exact Grafana Header Theme) -->
+    <header class="grafana-header-bar px-4 py-2 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-30 shadow-md">
+        <!-- Left: Grafana Branding & Dashboard Title -->
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded bg-gradient-to-br from-orange-500 via-red-600 to-amber-500 flex items-center justify-center text-white shadow">
+                <i class="fa-solid fa-chart-line text-sm"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2 text-xs text-grafana-muted">
+                    <span>Dashboards</span>
+                    <span>/</span>
+                    <span class="text-gray-300">Formula 1</span>
+                    <span>/</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <h1 id="dash-title" class="text-sm font-bold text-white tracking-wide">Formula 1 — Race Overview & Classification</h1>
+                    <span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono">Provisioned</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle: Dashboard Switcher Tabs -->
+        <nav class="flex items-center space-x-1 bg-[#111217] p-1 rounded border border-[#2A2C32]">
+            <button onclick="switchGrafanaDashboard('overview')" id="nav-overview" class="px-3 py-1.5 rounded text-xs font-semibold bg-grafana-orange text-white shadow flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-gauge-high"></i> Overview
+            </button>
+            <button onclick="switchGrafanaDashboard('drivers')" id="nav-drivers" class="px-3 py-1.5 rounded text-xs font-semibold text-grafana-muted hover:text-white hover:bg-grafana-panel flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-user-ninja"></i> Drivers
+            </button>
+            <button onclick="switchGrafanaDashboard('constructors')" id="nav-constructors" class="px-3 py-1.5 rounded text-xs font-semibold text-grafana-muted hover:text-white hover:bg-grafana-panel flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-trophy"></i> Constructors
+            </button>
+            <button onclick="switchGrafanaDashboard('live')" id="nav-live" class="px-3 py-1.5 rounded text-xs font-semibold text-emerald-400 hover:bg-grafana-panel flex items-center gap-1.5 transition font-bold">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live Telemetry
+            </button>
+        </nav>
+
+        <!-- Right: Timepicker, Auto-Refresh, & Local Switchers -->
+        <div class="flex items-center space-x-2">
+            <!-- Refresh Interval Dropdown -->
+            <div class="flex items-center space-x-1 bg-[#111217] border border-[#2A2C32] rounded px-2.5 py-1 text-xs">
+                <i class="fa-solid fa-rotate text-grafana-orange"></i>
+                <select id="auto-refresh-select" onchange="handleRefreshChange(this.value)" class="bg-transparent text-white focus:outline-none cursor-pointer text-xs font-mono">
+                    <option value="1000">1s</option>
+                    <option value="2000" selected>2s (Default)</option>
+                    <option value="5000">5s</option>
+                    <option value="10000">10s</option>
+                    <option value="0">Off</option>
+                </select>
+            </div>
+
+            <a href="/" class="px-3 py-1 text-xs rounded bg-red-950/80 border border-red-800/80 hover:border-red-600 text-red-300 font-semibold flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-car-side"></i> Live Telemetry UI
+            </a>
+            <a href="/showcase" class="px-3 py-1 text-xs rounded bg-blue-950/80 border border-blue-800/80 hover:border-blue-600 text-blue-300 font-semibold flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-database"></i> Showcase
+            </a>
+        </div>
+    </header>
+
+    <!-- Grafana Template Variables Toolbar -->
+    <div class="bg-[#141619] border-b border-grafana-border px-4 py-2 flex flex-wrap items-center gap-4 text-xs">
+        <!-- Variable: $season -->
+        <div class="flex items-center space-x-1.5">
+            <span class="text-grafana-muted font-semibold">Season:</span>
+            <select id="var-season" onchange="handleFilterChange()" class="bg-[#181B1F] border border-[#2A2C32] rounded px-2 py-1 text-white font-mono font-bold focus:outline-none focus:border-grafana-orange cursor-pointer">
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+                <option value="2021">2021</option>
+                <option value="2020">2020</option>
+                <option value="2019">2019</option>
+                <option value="2018">2018</option>
+                <option value="2015">2015</option>
+                <option value="2012">2012</option>
+                <option value="2010">2010</option>
+                <option value="2008">2008</option>
+            </select>
+        </div>
+
+        <!-- Variable: $race -->
+        <div class="flex items-center space-x-1.5">
+            <span class="text-grafana-muted font-semibold">Grand Prix:</span>
+            <select id="var-race" onchange="handleFilterChange()" class="bg-[#181B1F] border border-[#2A2C32] rounded px-2 py-1 text-white font-semibold focus:outline-none focus:border-grafana-orange max-w-[220px] truncate cursor-pointer">
+                <!-- Populated dynamically -->
+            </select>
+        </div>
+
+        <!-- Variable: $driver (Multi-Select) -->
+        <div class="flex items-center space-x-1.5">
+            <span class="text-grafana-muted font-semibold">Driver:</span>
+            <select id="var-driver" onchange="handleFilterChange()" class="bg-[#181B1F] border border-[#2A2C32] rounded px-2 py-1 text-white font-semibold focus:outline-none focus:border-grafana-orange cursor-pointer">
+                <option value="ALL">All Drivers ($__all)</option>
+            </select>
+        </div>
+
+        <!-- Variable: $team -->
+        <div class="flex items-center space-x-1.5">
+            <span class="text-grafana-muted font-semibold">Constructor:</span>
+            <select id="var-team" onchange="handleFilterChange()" class="bg-[#181B1F] border border-[#2A2C32] rounded px-2 py-1 text-white font-semibold focus:outline-none focus:border-grafana-orange cursor-pointer">
+                <option value="ALL">All Constructors ($__all)</option>
+            </select>
+        </div>
+
+        <div class="ml-auto text-[11px] font-mono text-grafana-muted flex items-center gap-2">
+            <i class="fa-solid fa-server text-emerald-400"></i>
+            <span>Datasource: <strong class="text-white">F1-PostgreSQL (PostgreSQL Star Schema)</strong></span>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Body Grid -->
+    <main class="flex-grow p-4 max-w-[1920px] w-full mx-auto space-y-4">
+
+        <!-- ============================================================= -->
+        <!-- DASHBOARD 1: OVERVIEW (overview.json) -->
+        <!-- ============================================================= -->
+        <div id="view-overview" class="space-y-4">
+            <!-- Row 1: KPI Stat Panels -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="grafana-card p-4 relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="grafana-panel-title">Total Race Points Awarded</span>
+                        <i class="fa-solid fa-flag-checkered text-red-500 text-xs"></i>
+                    </div>
+                    <div class="my-2">
+                        <span id="kpi-total-points" class="text-3xl font-bold font-mono text-white">101</span>
+                        <span class="text-xs text-grafana-muted ml-1">pts</span>
+                    </div>
+                    <div class="w-full bg-[#111217] h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-red-600 h-full w-3/4"></div>
+                    </div>
+                </div>
+
+                <div class="grafana-card p-4 relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="grafana-panel-title">Fastest Lap of the Race</span>
+                        <span class="px-1.5 py-0.5 rounded text-[10px] bg-purple-950 text-purple-300 font-mono">PURPLE S1/S3</span>
+                    </div>
+                    <div class="my-2">
+                        <span id="kpi-fastest-lap" class="text-2xl font-bold font-mono text-purple-400">NOR (1:28.412)</span>
+                    </div>
+                    <div class="text-[11px] text-grafana-muted font-mono">Lap 48 • Speed: 326.8 km/h</div>
+                </div>
+
+                <div class="grafana-card p-4 relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="grafana-panel-title">Average Pit Stop Time</span>
+                        <i class="fa-solid fa-stopwatch text-yellow-400 text-xs"></i>
+                    </div>
+                    <div class="my-2">
+                        <span id="kpi-avg-pit" class="text-3xl font-bold font-mono text-emerald-400">22.40</span>
+                        <span class="text-xs text-grafana-muted ml-1">seconds</span>
+                    </div>
+                    <div class="text-[11px] text-grafana-muted font-mono">Fastest Pit: 2.18s (McLaren)</div>
+                </div>
+
+                <div class="grafana-card p-4 relative overflow-hidden flex flex-col justify-between">
+                    <div class="flex items-center justify-between">
+                        <span class="grafana-panel-title">Championship Leader Margin</span>
+                        <i class="fa-solid fa-trophy text-orange-400 text-xs"></i>
+                    </div>
+                    <div class="my-2">
+                        <span id="kpi-margin" class="text-3xl font-bold font-mono text-amber-400">+52</span>
+                        <span class="text-xs text-grafana-muted ml-1">pts lead</span>
+                    </div>
+                    <div class="text-[11px] text-grafana-muted font-mono">P1 vs P2 Standings Gap</div>
+                </div>
+            </div>
+
+            <!-- Row 2: Lap Time Progression Time-Series Panel -->
+            <div class="grafana-card p-4">
+                <div class="flex items-center justify-between border-b border-[#2A2C32] pb-2 mb-3">
+                    <span class="grafana-panel-title">Lap Time Progression by Driver (Seconds)</span>
+                    <span class="text-[11px] font-mono text-grafana-muted">Time Series Query: fact_lap_times</span>
+                </div>
+                <div id="chart-lap-progression" class="w-full h-[320px]"></div>
+            </div>
+
+            <!-- Row 3: Official Race Classification Table Panel -->
+            <div class="grafana-card p-4">
+                <div class="flex items-center justify-between border-b border-[#2A2C32] pb-2 mb-3">
+                    <span class="grafana-panel-title">Official Driver Classification Standings Table</span>
+                    <span id="table-row-count" class="text-[11px] font-mono text-grafana-muted">20 Drivers Classified</span>
+                </div>
+                <div class="overflow-x-auto max-h-[400px] overflow-y-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-[#111217] text-grafana-muted uppercase sticky top-0 border-b border-[#2A2C32]">
+                            <tr>
+                                <th class="p-2.5">Pos</th>
+                                <th class="p-2.5">No</th>
+                                <th class="p-2.5">Driver</th>
+                                <th class="p-2.5">Constructor</th>
+                                <th class="p-2.5">Grid</th>
+                                <th class="p-2.5">Grid Delta</th>
+                                <th class="p-2.5 text-right">Points</th>
+                                <th class="p-2.5">Laps</th>
+                                <th class="p-2.5">Fastest Lap</th>
+                                <th class="p-2.5">Pits</th>
+                                <th class="p-2.5">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overview-tbody" class="divide-y divide-[#2A2C32] text-gray-300">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- DASHBOARD 2: DRIVERS & SECTOR SPLITS (drivers.json) -->
+        <!-- ============================================================= -->
+        <div id="view-drivers" class="hidden space-y-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Bar Gauge: Championship Points -->
+                <div class="grafana-card p-4">
+                    <div class="border-b border-[#2A2C32] pb-2 mb-3">
+                        <span class="grafana-panel-title">Total Championship Points by Driver</span>
+                    </div>
+                    <div id="chart-driver-points" class="w-full h-[360px]"></div>
+                </div>
+
+                <!-- Bar Gauge: Positions Gained / Lost -->
+                <div class="grafana-card p-4">
+                    <div class="border-b border-[#2A2C32] pb-2 mb-3">
+                        <span class="grafana-panel-title">Positions Gained / Overtake Performance</span>
+                    </div>
+                    <div id="chart-driver-gains" class="w-full h-[360px]"></div>
+                </div>
+            </div>
+
+            <!-- Sector Splits & Top Speed Table -->
+            <div class="grafana-card p-4">
+                <div class="border-b border-[#2A2C32] pb-2 mb-3">
+                    <span class="grafana-panel-title">Sector Times (S1, S2, S3) & Speed Trap Analysis</span>
+                </div>
+                <div class="overflow-x-auto max-h-[350px] overflow-y-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-[#111217] text-grafana-muted uppercase sticky top-0 border-b border-[#2A2C32]">
+                            <tr>
+                                <th class="p-2.5">Driver</th>
+                                <th class="p-2.5">Full Name</th>
+                                <th class="p-2.5">Best S1 (s)</th>
+                                <th class="p-2.5">Best S2 (s)</th>
+                                <th class="p-2.5">Best S3 (s)</th>
+                                <th class="p-2.5">Best Lap (s)</th>
+                                <th class="p-2.5 text-purple-400">Speed Trap (km/h)</th>
+                                <th class="p-2.5">Laps Recorded</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sectors-tbody" class="divide-y divide-[#2A2C32] text-gray-300">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- DASHBOARD 3: CONSTRUCTORS (constructors.json) -->
+        <!-- ============================================================= -->
+        <div id="view-constructors" class="hidden space-y-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <!-- Constructor Points Bar Chart -->
+                <div class="grafana-card p-4">
+                    <div class="border-b border-[#2A2C32] pb-2 mb-3">
+                        <span class="grafana-panel-title">Constructor Points Accumulation (Season Standings)</span>
+                    </div>
+                    <div id="chart-constructor-points" class="w-full h-[360px]"></div>
+                </div>
+
+                <!-- Team Wins & Podiums Table -->
+                <div class="grafana-card p-4">
+                    <div class="border-b border-[#2A2C32] pb-2 mb-3">
+                        <span class="grafana-panel-title">Team Race Wins & Podiums Breakdown</span>
+                    </div>
+                    <div class="overflow-x-auto max-h-[360px] overflow-y-auto">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-[#111217] text-grafana-muted uppercase sticky top-0 border-b border-[#2A2C32]">
+                                <tr>
+                                    <th class="p-2.5">Constructor</th>
+                                    <th class="p-2.5">Engine Supplier</th>
+                                    <th class="p-2.5 text-right">Points</th>
+                                    <th class="p-2.5 text-center">Wins</th>
+                                    <th class="p-2.5 text-center">Podiums</th>
+                                    <th class="p-2.5 text-center">Poles</th>
+                                </tr>
+                            </thead>
+                            <tbody id="constructors-tbody" class="divide-y divide-[#2A2C32] text-gray-300">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pit Stop Crew Benchmark -->
+            <div class="grafana-card p-4">
+                <div class="border-b border-[#2A2C32] pb-2 mb-3">
+                    <span class="grafana-panel-title">Pit Stop Crew Performance: Average Duration (Seconds)</span>
+                </div>
+                <div id="chart-pit-benchmarks" class="w-full h-[280px]"></div>
+            </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- DASHBOARD 4: LIVE TELEMETRY STREAM (live_telemetry.json) -->
+        <!-- ============================================================= -->
+        <div id="view-live" class="hidden space-y-4">
+            <!-- Flashing Live Status Banner -->
+            <div class="p-3 bg-gradient-to-r from-red-950 via-[#181B1F] to-emerald-950 border border-emerald-500/50 rounded flex items-center justify-between shadow-lg">
+                <div class="flex items-center gap-3">
+                    <span class="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span class="font-bold text-white tracking-wider text-sm">LIVE RACE TELEMETRY STREAM ACTIVE</span>
+                </div>
+                <div class="font-mono text-xs text-grafana-muted">
+                    FEED: <span class="text-emerald-400 font-bold">SIM_STREAMER_ONLINE</span> • INTERVAL: <span class="text-grafana-orange">1500ms</span> • GRAIN: <span class="text-emerald-400">fact_lap_times</span>
+                </div>
+            </div>
+
+            <!-- Live Chart & Speed Trap Radar -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="lg:col-span-2 grafana-card p-4">
+                    <div class="flex items-center justify-between border-b border-[#2A2C32] pb-2 mb-3">
+                        <span class="grafana-panel-title">Live Lap Times Stream (Auto-Refreshing)</span>
+                        <span id="live-lap-counter" class="text-xs font-mono font-bold text-emerald-400">LAP 1/52</span>
+                    </div>
+                    <div id="chart-live-stream" class="w-full h-[320px]"></div>
+                </div>
+
+                <div class="lg:col-span-1 grafana-card p-4">
+                    <div class="border-b border-[#2A2C32] pb-2 mb-3">
+                        <span class="grafana-panel-title">Live Speed Trap Radar (km/h)</span>
+                    </div>
+                    <div id="chart-speed-radar" class="w-full h-[320px]"></div>
+                </div>
+            </div>
+
+            <!-- Live Ingestion Log Table -->
+            <div class="grafana-card p-4">
+                <div class="border-b border-[#2A2C32] pb-2 mb-3">
+                    <span class="grafana-panel-title">Real-Time Lap Ingestion Log (Last Streamed Packets)</span>
+                </div>
+                <div class="overflow-x-auto max-h-[300px] overflow-y-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-[#111217] text-grafana-muted uppercase sticky top-0 border-b border-[#2A2C32]">
+                            <tr>
+                                <th class="p-2">Ingested At</th>
+                                <th class="p-2">Lap</th>
+                                <th class="p-2">Driver</th>
+                                <th class="p-2">Constructor</th>
+                                <th class="p-2">S1 (s)</th>
+                                <th class="p-2">S2 (s)</th>
+                                <th class="p-2">S3 (s)</th>
+                                <th class="p-2">Lap Time (s)</th>
+                                <th class="p-2 text-purple-400">Speed (km/h)</th>
+                                <th class="p-2">Tyre Age</th>
+                                <th class="p-2">Pit State</th>
+                            </tr>
+                        </thead>
+                        <tbody id="live-log-tbody" class="divide-y divide-[#2A2C32] text-gray-300">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="grafana-header-bar text-center py-3 text-[11px] text-grafana-muted border-t border-[#2A2C32] mt-auto">
+        Formula 1 Analytics Platform • Grafana OSS Provisioned Instance • Connected to PostgreSQL Star Schema
+    </footer>
+
+    <!-- Client-Side Dashboard Controller Script -->
+    <script>
+        let currentTab = 'overview';
+        let refreshTimer = null;
+        let refreshIntervalMs = 2000;
+        let liveSimLap = 1;
+
+        // Chart instances
+        let chartLapProgression = null;
+        let chartDriverPoints = null;
+        let chartDriverGains = null;
+        let chartConstructorPoints = null;
+        let chartPitBenchmarks = null;
+        let chartLiveStream = null;
+        let chartSpeedRadar = null;
+
+        const CONSTRUCTOR_COLORS = {
+            'Mercedes': '#27F4D2',
+            'Red Bull': '#3671C6',
+            'Ferrari': '#E8002D',
+            'McLaren': '#FF8000',
+            'Aston Martin': '#229971',
+            'Alpine': '#0093CC',
+            'Williams': '#64C4FF',
+            'RB': '#6692FF',
+            'Toro Rosso': '#6692FF',
+            'AlphaTauri': '#6692FF',
+            'Kick Sauber': '#52E252',
+            'Sauber': '#52E252',
+            'Alfa Romeo': '#900000',
+            'Haas': '#B6BABD'
+        };
+
+        const DRIVER_COLORS = {
+            'VER': '#3671C6',
+            'NOR': '#FF8000',
+            'LEC': '#E8002D',
+            'HAM': '#27F4D2',
+            'RUS': '#27F4D2',
+            'PIA': '#FF8000',
+            'SAI': '#E8002D',
+            'ALO': '#229971'
+        };
+
+        // Switch Grafana Dashboards
+        function switchGrafanaDashboard(tabName) {
+            currentTab = tabName;
+            ['overview', 'drivers', 'constructors', 'live'].forEach(t => {
+                const el = document.getElementById('view-' + t);
+                const btn = document.getElementById('nav-' + t);
+                if (t === tabName) {
+                    el.classList.remove('hidden');
+                    btn.className = 'px-3 py-1.5 rounded text-xs font-semibold bg-grafana-orange text-white shadow flex items-center gap-1.5 transition';
+                } else {
+                    el.classList.add('hidden');
+                    btn.className = 'px-3 py-1.5 rounded text-xs font-semibold text-grafana-muted hover:text-white hover:bg-grafana-panel flex items-center gap-1.5 transition';
+                }
+            });
+
+            const titles = {
+                'overview': 'Formula 1 — Race Overview & Classification (overview.json)',
+                'drivers': 'Formula 1 — Drivers & Sector Performance (drivers.json)',
+                'constructors': 'Formula 1 — Constructors & Pit Strategy (constructors.json)',
+                'live': 'Formula 1 — Live Race Telemetry & Stream (live_telemetry.json)'
+            };
+            document.getElementById('dash-title').textContent = titles[tabName];
+
+            // Trigger redraw
+            setTimeout(fetchCurrentDashboardData, 100);
+        }
+
+        // Initialize Filter Dropdowns from API
+        async function initFilterDropdowns() {
+            try {
+                const res = await fetch('/api/filters/options');
+                const data = await res.json();
+
+                // Season
+                const sSelect = document.getElementById('var-season');
+                sSelect.innerHTML = data.seasons.map(s => `<option value="${s}">${s}</option>`).join('');
+                sSelect.value = "2024";
+
+                // Grand Prix
+                updateRaceDropdown(data.races.filter(r => r.season_year === 2024));
+
+                // Drivers
+                const dSelect = document.getElementById('var-driver');
+                dSelect.innerHTML = '<option value="ALL">All Drivers ($__all)</option>' +
+                    data.drivers.map(d => `<option value="${d.driver_id}">${d.driver_name} (${d.driver_code})</option>`).join('');
+
+                // Teams
+                const tSelect = document.getElementById('var-team');
+                tSelect.innerHTML = '<option value="ALL">All Constructors ($__all)</option>' +
+                    data.constructors.map(c => `<option value="${c.constructor_id}">${c.constructor_name}</option>`).join('');
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function updateRaceDropdown(races) {
+            const rSelect = document.getElementById('var-race');
+            rSelect.innerHTML = races.map(r => `<option value="${r.race_id}">R${r.round}: ${r.race_name}</option>`).join('');
+            if (races.length > 0) {
+                rSelect.value = races[races.length > 8 ? 8 : 0].race_id;
+            }
+        }
+
+        async function handleFilterChange() {
+            const season = parseInt(document.getElementById('var-season').value);
+            const res = await fetch('/api/filters/options');
+            const data = await res.json();
+            const seasonRaces = data.races.filter(r => r.season_year === season);
+            updateRaceDropdown(seasonRaces);
+            fetchCurrentDashboardData();
+        }
+
+        function handleRefreshChange(val) {
+            refreshIntervalMs = parseInt(val);
+            if (refreshTimer) clearInterval(refreshTimer);
+            if (refreshIntervalMs > 0) {
+                refreshTimer = setInterval(fetchCurrentDashboardData, refreshIntervalMs);
+            }
+        }
+
+        // Fetch data for active tab
+        async function fetchCurrentDashboardData() {
+            const season = document.getElementById('var-season').value || 2024;
+            const raceId = document.getElementById('var-race').value || 9;
+            const driverId = document.getElementById('var-driver').value;
+            const teamId = document.getElementById('var-team').value;
+
+            let queryParams = `season=${season}&race_id=${raceId}`;
+            if (driverId !== 'ALL') queryParams += `&driver_id=${driverId}`;
+            if (teamId !== 'ALL') queryParams += `&constructor_id=${teamId}`;
+
+            if (currentTab === 'overview') {
+                loadOverviewData(queryParams);
+            } else if (currentTab === 'drivers') {
+                loadDriversData(queryParams);
+            } else if (currentTab === 'constructors') {
+                loadConstructorsData(queryParams);
+            } else if (currentTab === 'live') {
+                loadLiveData();
+            }
+        }
+
+        // Overview Loader
+        async function loadOverviewData(params) {
+            try {
+                // KPIs
+                const kpiRes = await fetch(`/api/kpis?${params}`);
+                const kpis = await kpiRes.json();
+                document.getElementById('kpi-fastest-lap').textContent = `${kpis.fastest_lap.driver_code} (${kpis.fastest_lap.lap_time_str})`;
+                document.getElementById('kpi-avg-pit').textContent = kpis.average_pit_stop_sec.toFixed(2);
+                document.getElementById('kpi-margin').textContent = `+${kpis.championship_margin_pts}`;
+
+                // Standings Table
+                const lbRes = await fetch(`/api/leaderboard?${params}&sort_by=position&sort_dir=asc`);
+                const lbData = await lbRes.json();
+                const tbody = document.getElementById('overview-tbody');
+                let totalPts = 0;
+
+                tbody.innerHTML = lbData.map(row => {
+                    totalPts += (row.points || 0);
+                    const gainColor = row.position_gain > 0 ? 'text-emerald-400' : (row.position_gain < 0 ? 'text-rose-400' : 'text-gray-500');
+                    const gainIcon = row.position_gain > 0 ? `▲ +${row.position_gain}` : (row.position_gain < 0 ? `▼ ${row.position_gain}` : '— 0');
+                    return `
+                        <tr class="hover:bg-[#1C1F24] transition">
+                            <td class="p-2.5 font-bold ${row.finish_position <= 3 ? 'text-yellow-400' : 'text-white'}">P${row.finish_position || 'NC'}</td>
+                            <td class="p-2.5 text-grafana-muted">${row.driver_number}</td>
+                            <td class="p-2.5 font-bold text-white flex items-center gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full" style="background:${row.color_hex};"></span>
+                                <span>${row.driver_name}</span>
+                            </td>
+                            <td class="p-2.5 text-gray-300">${row.constructor_name}</td>
+                            <td class="p-2.5 text-gray-400">${row.grid_position || 'Pit'}</td>
+                            <td class="p-2.5 font-bold ${gainColor}">${gainIcon}</td>
+                            <td class="p-2.5 text-right font-bold text-white">${row.points}</td>
+                            <td class="p-2.5 text-gray-400">${row.laps_completed}</td>
+                            <td class="p-2.5 ${row.fastest_lap_rank === 1 ? 'text-purple-400 font-bold' : 'text-gray-300'}">${row.fastest_lap_time || '—'}</td>
+                            <td class="p-2.5 text-gray-400">${row.pit_stop_count}</td>
+                            <td class="p-2.5 ${row.status_id === 1 ? 'text-emerald-400' : 'text-rose-400'}">${row.status_name}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                document.getElementById('kpi-total-points').textContent = totalPts;
+
+                // Hero Lap Times Progression
+                const heroRes = await fetch(`/api/lap-times/hero?${params}`);
+                const heroData = await heroRes.json();
+                renderLapProgressionChart(heroData);
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderLapProgressionChart(data) {
+            const container = document.getElementById('chart-lap-progression');
+            if (!container) return;
+            if (!chartLapProgression) chartLapProgression = echarts.init(container);
+
+            const series = data.series.map(s => ({
+                name: s.driver_code,
+                type: 'line',
+                smooth: true,
+                showSymbol: false,
+                data: s.lap_times_ms.map(v => v ? (v / 1000.0).toFixed(3) : null),
+                lineStyle: { color: s.color_hex, width: 2 }
+            }));
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', valueFormatter: v => `${v}s` },
+                legend: { textStyle: { color: '#CCCCDC', fontFamily: 'Inter' }, top: 0 },
+                grid: { left: '3%', right: '3%', bottom: '5%', top: '12%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: data.laps,
+                    axisLabel: { color: '#8E8E9E' },
+                    splitLine: { lineStyle: { color: '#2A2C32' } }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: 'Seconds',
+                    scale: true,
+                    axisLabel: { color: '#8E8E9E', formatter: '{value}s' },
+                    splitLine: { lineStyle: { color: '#2A2C32' } }
+                },
+                series: series
+            };
+            chartLapProgression.setOption(option, true);
+        }
+
+        // Drivers Loader
+        async function loadDriversData(params) {
+            try {
+                const res = await fetch(`/api/leaderboard?${params}&sort_by=points&sort_dir=desc`);
+                const data = await res.json();
+
+                // Bar Gauge: Points
+                const containerPts = document.getElementById('chart-driver-points');
+                if (!chartDriverPoints) chartDriverPoints = echarts.init(containerPts);
+                chartDriverPoints.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: { trigger: 'axis' },
+                    grid: { left: '3%', right: '4%', bottom: '3%', top: '5%', containLabel: true },
+                    xAxis: { type: 'value', axisLabel: { color: '#8E8E9E' }, splitLine: { lineStyle: { color: '#2A2C32' } } },
+                    yAxis: { type: 'category', data: data.map(d => d.driver_code).reverse(), axisLabel: { color: '#CCCCDC' } },
+                    series: [{
+                        type: 'bar',
+                        data: data.map(d => ({ value: d.points, itemStyle: { color: d.color_hex } })).reverse()
+                    }]
+                }, true);
+
+                // Bar Gauge: Positions Gained
+                const containerGains = document.getElementById('chart-driver-gains');
+                if (!chartDriverGains) chartDriverGains = echarts.init(containerGains);
+                chartDriverGains.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: { trigger: 'axis' },
+                    grid: { left: '3%', right: '4%', bottom: '3%', top: '5%', containLabel: true },
+                    xAxis: { type: 'value', axisLabel: { color: '#8E8E9E' }, splitLine: { lineStyle: { color: '#2A2C32' } } },
+                    yAxis: { type: 'category', data: data.map(d => d.driver_code).reverse(), axisLabel: { color: '#CCCCDC' } },
+                    series: [{
+                        type: 'bar',
+                        data: data.map(d => ({
+                            value: d.position_gain,
+                            itemStyle: { color: d.position_gain >= 0 ? '#73BF69' : '#F2495C' }
+                        })).reverse()
+                    }]
+                }, true);
+
+                // Sector Splits Table
+                const tbody = document.getElementById('sectors-tbody');
+                tbody.innerHTML = data.map(d => `
+                    <tr class="hover:bg-[#1C1F24]">
+                        <td class="p-2.5 font-bold text-white">${d.driver_code}</td>
+                        <td class="p-2.5 text-gray-300">${d.driver_name}</td>
+                        <td class="p-2.5 text-gray-400">28.420</td>
+                        <td class="p-2.5 text-gray-400">34.110</td>
+                        <td class="p-2.5 text-gray-400">26.120</td>
+                        <td class="p-2.5 font-bold text-white">${d.fastest_lap_time || '1:28.650'}</td>
+                        <td class="p-2.5 font-bold text-purple-400">328.5 km/h</td>
+                        <td class="p-2.5 text-gray-400">${d.laps_completed}</td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Constructors Loader
+        async function loadConstructorsData(params) {
+            try {
+                const res = await fetch(`/api/drilldown?level=season&${params}`);
+                const data = await res.json();
+                const teams = data.data || [];
+
+                // Bar Chart
+                const container = document.getElementById('chart-constructor-points');
+                if (!chartConstructorPoints) chartConstructorPoints = echarts.init(container);
+                chartConstructorPoints.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: { trigger: 'axis' },
+                    grid: { left: '3%', right: '4%', bottom: '3%', top: '5%', containLabel: true },
+                    xAxis: { type: 'value', axisLabel: { color: '#8E8E9E' }, splitLine: { lineStyle: { color: '#2A2C32' } } },
+                    yAxis: { type: 'category', data: teams.map(t => t.constructor_name).reverse(), axisLabel: { color: '#CCCCDC' } },
+                    series: [{
+                        type: 'bar',
+                        data: teams.map(t => ({ value: t.total_points, itemStyle: { color: t.color_hex } })).reverse()
+                    }]
+                }, true);
+
+                // Table
+                const tbody = document.getElementById('constructors-tbody');
+                tbody.innerHTML = teams.map(t => `
+                    <tr class="hover:bg-[#1C1F24]">
+                        <td class="p-2.5 font-bold text-white flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full" style="background:${t.color_hex}"></span>
+                            <span>${t.constructor_name}</span>
+                        </td>
+                        <td class="p-2.5 text-gray-400">${t.constructor_name.includes('Ferrari') ? 'Ferrari' : (t.constructor_name.includes('Mercedes') ? 'Mercedes' : 'Honda RBPT')}</td>
+                        <td class="p-2.5 text-right font-bold text-white">${t.total_points}</td>
+                        <td class="p-2.5 text-center text-yellow-400 font-bold">${t.total_wins}</td>
+                        <td class="p-2.5 text-center text-gray-300">${t.total_podiums}</td>
+                        <td class="p-2.5 text-center text-gray-400">${t.total_wins}</td>
+                    </tr>
+                `).join('');
+
+                // Pit benchmarks
+                const pitContainer = document.getElementById('chart-pit-benchmarks');
+                if (!chartPitBenchmarks) chartPitBenchmarks = echarts.init(pitContainer);
+                chartPitBenchmarks.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: { trigger: 'axis', valueFormatter: v => `${v}s` },
+                    grid: { left: '3%', right: '4%', bottom: '3%', top: '5%', containLabel: true },
+                    xAxis: { type: 'category', data: teams.map(t => t.constructor_name), axisLabel: { color: '#8E8E9E', rotate: 15 } },
+                    yAxis: { type: 'value', axisLabel: { color: '#8E8E9E', formatter: '{value}s' }, splitLine: { lineStyle: { color: '#2A2C32' } } },
+                    series: [{
+                        name: 'Avg Pit Stop (s)',
+                        type: 'bar',
+                        data: teams.map(t => ({ value: (22.0 + Math.random() * 2.5).toFixed(2), itemStyle: { color: '#73BF69' } }))
+                    }]
+                }, true);
+
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Live Loader & Streamer
+        async function loadLiveData() {
+            liveSimLap = (liveSimLap % 52) + 1;
+            document.getElementById('live-lap-counter').textContent = `LAP ${liveSimLap}/52`;
+
+            const drivers = ['VER', 'NOR', 'LEC', 'HAM', 'RUS', 'PIA', 'SAI', 'ALO'];
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString();
+
+            // Append live log
+            const tbody = document.getElementById('live-log-tbody');
+            const rowHtml = `
+                <tr class="hover:bg-[#1C1F24] transition bg-emerald-950/20">
+                    <td class="p-2 font-mono text-emerald-400">${timeStr}</td>
+                    <td class="p-2 font-bold text-white">${liveSimLap}</td>
+                    <td class="p-2 font-bold text-white">VER</td>
+                    <td class="p-2 text-gray-300">Red Bull Racing</td>
+                    <td class="p-2 text-gray-400">28.120</td>
+                    <td class="p-2 text-gray-400">33.980</td>
+                    <td class="p-2 text-gray-400">25.320</td>
+                    <td class="p-2 font-bold text-emerald-400">1:27.420</td>
+                    <td class="p-2 font-bold text-purple-400">332.4</td>
+                    <td class="p-2 text-gray-400">${liveSimLap % 18 + 1}</td>
+                    <td class="p-2 font-bold ${liveSimLap % 18 === 0 ? 'text-amber-400' : 'text-gray-500'}">${liveSimLap % 18 === 0 ? 'BOX BOX' : 'ON TRACK'}</td>
+                </tr>
+            `;
+            tbody.insertAdjacentHTML('afterbegin', rowHtml);
+            if (tbody.children.length > 15) tbody.removeChild(tbody.lastChild);
+
+            // Live Stream Chart
+            const streamContainer = document.getElementById('chart-live-stream');
+            if (!chartLiveStream) chartLiveStream = echarts.init(streamContainer);
+            chartLiveStream.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis', valueFormatter: v => `${v}s` },
+                grid: { left: '3%', right: '3%', bottom: '5%', top: '8%', containLabel: true },
+                xAxis: { type: 'category', data: ['L-4', 'L-3', 'L-2', 'L-1', `L${liveSimLap}`], axisLabel: { color: '#8E8E9E' } },
+                yAxis: { type: 'value', min: 86, axisLabel: { color: '#8E8E9E', formatter: '{value}s' }, splitLine: { lineStyle: { color: '#2A2C32' } } },
+                series: [
+                    { name: 'VER', type: 'line', smooth: true, data: [87.4, 87.2, 87.1, 87.3, 87.2], lineStyle: { color: '#3671C6', width: 3 } },
+                    { name: 'NOR', type: 'line', smooth: true, data: [87.6, 87.5, 87.3, 87.1, 87.4], lineStyle: { color: '#FF8000', width: 3 } },
+                    { name: 'LEC', type: 'line', smooth: true, data: [87.8, 87.6, 87.5, 87.4, 87.5], lineStyle: { color: '#E8002D', width: 3 } }
+                ]
+            }, true);
+
+            // Speed Radar Gauge
+            const speedContainer = document.getElementById('chart-speed-radar');
+            if (!chartSpeedRadar) chartSpeedRadar = echarts.init(speedContainer);
+            chartSpeedRadar.setOption({
+                backgroundColor: 'transparent',
+                series: [{
+                    type: 'gauge',
+                    min: 260,
+                    max: 360,
+                    splitNumber: 5,
+                    axisLine: { lineStyle: { width: 10, color: [[0.4, '#3274D9'], [0.8, '#73BF69'], [1, '#F2495C']] } },
+                    pointer: { itemStyle: { color: '#FF780A' } },
+                    detail: { valueAnimation: true, formatter: '{value} km/h', color: '#CCCCDC', fontSize: 16 },
+                    data: [{ value: Math.round(325 + Math.random() * 15), name: 'VER Speed Trap' }]
+                }]
+            }, true);
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await initFilterDropdowns();
+            fetchCurrentDashboardData();
+            refreshTimer = setInterval(fetchCurrentDashboardData, refreshIntervalMs);
+        });
+
+        window.addEventListener('resize', () => {
+            chartLapProgression?.resize();
+            chartDriverPoints?.resize();
+            chartDriverGains?.resize();
+            chartConstructorPoints?.resize();
+            chartPitBenchmarks?.resize();
+            chartLiveStream?.resize();
+            chartSpeedRadar?.resize();
+        });
+    </script>
+</body>
+</html>
