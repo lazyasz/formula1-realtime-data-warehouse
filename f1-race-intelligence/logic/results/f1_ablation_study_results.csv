@@ -1,0 +1,6 @@
+experiment,roc_auc,top1_hit_pct,top1_hits
+Full Feature Set (All 24 Signals),0.9833,66.18,45
+Ablation 1: Without Car Specs,0.9828,63.24,43
+Ablation 2: Without Lap Records,0.9829,67.65,46
+Ablation 3: Without Pit Stop Times,0.9816,61.76,42
+Ablation 4: Grid Position Only (Baseline),0.924,51.47,35

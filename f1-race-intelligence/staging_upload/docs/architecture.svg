@@ -1,0 +1,258 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B0D10"/>
+      <stop offset="100%" stop-color="#14181E"/>
+    </linearGradient>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E10600"/>
+      <stop offset="100%" stop-color="#FF3B30"/>
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1A1F26"/>
+      <stop offset="100%" stop-color="#12161B"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1400" height="900" fill="url(#bgGrad)"/>
+  
+  <!-- Grid Lines Overlay -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#222831" stroke-width="0.8"/>
+  </pattern>
+  <rect width="1400" height="900" fill="url(#grid)" opacity="0.4"/>
+
+  <!-- Title Header -->
+  <rect x="50" y="30" width="1300" height="80" rx="12" fill="url(#cardGrad)" stroke="#2B323D" stroke-width="1.5"/>
+  <rect x="50" y="30" width="8" height="80" rx="4" fill="url(#redGrad)"/>
+  <text x="80" y="68" font-family="'Segoe UI', Roboto, sans-serif" font-size="26" font-weight="800" fill="#FFFFFF" letter-spacing="1">
+    FORMULA 1 WINNER PREDICTION ARCHITECTURE &amp; SNOWFLAKE PIPELINE
+  </text>
+  <text x="80" y="94" font-family="'Segoe UI', Roboto, sans-serif" font-size="14" fill="#8E99A8">
+    End-to-End Modern Data Stack: Ergast Telemetry → Snowflake Stage → 3-Pillar Feature Store → ML &amp; Pattern Mining → Streamlit in Snowflake (SiS)
+  </text>
+
+  <!-- ================= TIER 1: INGESTION ================= -->
+  <g transform="translate(60, 150)">
+    <rect width="220" height="690" rx="12" fill="url(#cardGrad)" stroke="#2B323D" stroke-width="1.5"/>
+    <rect width="220" height="40" rx="12" fill="#1F252E"/>
+    <text x="110" y="26" font-family="sans-serif" font-size="14" font-weight="700" fill="#E10600" text-anchor="middle">1. RAW DATA &amp; STAGING</text>
+    <text x="110" y="58" font-family="sans-serif" font-size="11" fill="#717D8A" text-anchor="middle">Tool: Python / SnowSQL</text>
+
+    <!-- Block 1A -->
+    <rect x="15" y="80" width="190" height="110" rx="8" fill="#14181F" stroke="#333C48" stroke-width="1"/>
+    <text x="25" y="105" font-family="sans-serif" font-size="13" font-weight="700" fill="#FFF">Source Telemetry CSVs</text>
+    <text x="25" y="125" font-family="sans-serif" font-size="11" fill="#8E99A8">• 8,650 Grand Prix results</text>
+    <text x="25" y="143" font-family="sans-serif" font-size="11" fill="#8E99A8">• 21 Seasons (2004–2024)</text>
+    <text x="25" y="161" font-family="sans-serif" font-size="11" fill="#8E99A8">• 38 Circuits &amp; 412 Races</text>
+    <rect x="25" y="172" width="75" height="14" rx="3" fill="#242C37"/>
+    <text x="62" y="183" font-family="monospace" font-size="9" fill="#00E5FF" text-anchor="middle">PANDAS / CSV</text>
+
+    <!-- Arrow -->
+    <path d="M 110 200 L 110 220" stroke="#E10600" stroke-width="2" marker-end="url(#arrow)"/>
+
+    <!-- Block 1B -->
+    <rect x="15" y="230" width="190" height="110" rx="8" fill="#14181F" stroke="#333C48" stroke-width="1"/>
+    <text x="25" y="255" font-family="sans-serif" font-size="13" font-weight="700" fill="#FFF">Internal Snowflake Stage</text>
+    <text x="25" y="275" font-family="sans-serif" font-size="11" fill="#8E99A8">• @RAW.F1_RAW_STAGE</text>
+    <text x="25" y="293" font-family="sans-serif" font-size="11" fill="#8E99A8">• Gzip Auto-Compression</text>
+    <text x="25" y="311" font-family="sans-serif" font-size="11" fill="#8E99A8">• Secure AES-256 Storage</text>
+    <rect x="25" y="322" width="70" height="14" rx="3" fill="#242C37"/>
+    <text x="60" y="333" font-family="monospace" font-size="9" fill="#29B5E8" text-anchor="middle">SNOWFLAKE</text>
+
+    <!-- Arrow -->
+    <path d="M 110 350 L 110 370" stroke="#E10600" stroke-width="2"/>
+
+    <!-- Block 1C -->
+    <rect x="15" y="380" width="190" height="130" rx="8" fill="#14181F" stroke="#333C48" stroke-width="1"/>
+    <text x="25" y="405" font-family="sans-serif" font-size="13" font-weight="700" fill="#FFF">RAW Schema Tables</text>
+    <text x="25" y="425" font-family="sans-serif" font-size="11" fill="#8E99A8">• RAW_RACES</text>
+    <text x="25" y="443" font-family="sans-serif" font-size="11" fill="#8E99A8">• RAW_DRIVERS</text>
+    <text x="25" y="461" font-family="sans-serif" font-size="11" fill="#8E99A8">• RAW_CONSTRUCTORS</text>
+    <text x="25" y="479" font-family="sans-serif" font-size="11" fill="#8E99A8">• RAW_CIRCUITS</text>
+    <rect x="25" y="490" width="75" height="14" rx="3" fill="#242C37"/>
+    <text x="62" y="501" font-family="monospace" font-size="9" fill="#29B5E8" text-anchor="middle">COPY INTO</text>
+  </g>
+
+  <!-- ================= TIER 2: CLEAN FEATURE STORE ================= -->
+  <g transform="translate(310, 150)">
+    <rect width="250" height="690" rx="12" fill="url(#cardGrad)" stroke="#2B323D" stroke-width="1.5"/>
+    <rect width="250" height="40" rx="12" fill="#1F252E"/>
+    <text x="125" y="26" font-family="sans-serif" font-size="14" font-weight="700" fill="#00E5FF" text-anchor="middle">2. CLEAN FEATURE STORE</text>
+    <text x="125" y="58" font-family="sans-serif" font-size="11" fill="#717D8A" text-anchor="middle">Table: CLEAN.F1_MODELING_MASTER</text>
+
+    <!-- Pillar A -->
+    <rect x="15" y="80" width="220" height="160" rx="8" fill="#14181F" stroke="#E10600" stroke-width="1"/>
+    <text x="25" y="105" font-family="sans-serif" font-size="13" font-weight="700" fill="#E10600">Pillar A: CAR FEATURES</text>
+    <text x="25" y="125" font-family="sans-serif" font-size="11" fill="#8E99A8">• Engine BHP (750-1050 BHP)</text>
+    <text x="25" y="143" font-family="sans-serif" font-size="11" fill="#8E99A8">• Power-to-Weight Ratio</text>
+    <text x="25" y="161" font-family="sans-serif" font-size="11" fill="#8E99A8">• Min Car Weight (605-798 kg)</text>
+    <text x="25" y="179" font-family="sans-serif" font-size="11" fill="#8E99A8">• Mechanical Reliability Score</text>
+    <text x="25" y="197" font-family="sans-serif" font-size="11" fill="#8E99A8">• Constructor Pace Index</text>
+    <text x="25" y="215" font-family="sans-serif" font-size="11" fill="#8E99A8">• Starting Grid &amp; Quali Pos</text>
+
+    <!-- Pillar B -->
+    <rect x="15" y="255" width="220" height="145" rx="8" fill="#14181F" stroke="#00E5FF" stroke-width="1"/>
+    <text x="25" y="280" font-family="sans-serif" font-size="13" font-weight="700" fill="#00E5FF">Pillar B: LAP RECORDS</text>
+    <text x="25" y="300" font-family="sans-serif" font-size="11" fill="#8E99A8">• Circuit Track Lap Record</text>
+    <text x="25" y="318" font-family="sans-serif" font-size="11" fill="#8E99A8">• Driver Delta to Record (sec)</text>
+    <text x="25" y="336" font-family="sans-serif" font-size="11" fill="#8E99A8">• Lap Record Pace Ratio</text>
+    <text x="25" y="354" font-family="sans-serif" font-size="11" fill="#8E99A8">• Quali-to-Record Delta</text>
+    <text x="25" y="372" font-family="sans-serif" font-size="11" fill="#8E99A8">• Fastest Lap Top Speed</text>
+
+    <!-- Pillar C -->
+    <rect x="15" y="415" width="220" height="145" rx="8" fill="#14181F" stroke="#FFCC00" stroke-width="1"/>
+    <text x="25" y="440" font-family="sans-serif" font-size="13" font-weight="700" fill="#FFCC00">Pillar C: PIT STOPS</text>
+    <text x="25" y="460" font-family="sans-serif" font-size="11" fill="#8E99A8">• Pit Stop Count (1, 2, 3+)</text>
+    <text x="25" y="478" font-family="sans-serif" font-size="11" fill="#8E99A8">• Total Race Pit Loss (sec)</text>
+    <text x="25" y="496" font-family="sans-serif" font-size="11" fill="#8E99A8">• Stationary Wheel-Gun Time</text>
+    <text x="25" y="514" font-family="sans-serif" font-size="11" fill="#8E99A8">• DHL Pit Crew Efficiency</text>
+    <text x="25" y="532" font-family="sans-serif" font-size="11" fill="#8E99A8">• Circuit Transit Loss Sec</text>
+
+    <!-- Zero Leakage Badge -->
+    <rect x="15" y="580" width="220" height="80" rx="8" fill="#1B221E" stroke="#00E676" stroke-width="1"/>
+    <text x="25" y="605" font-family="sans-serif" font-size="12" font-weight="700" fill="#00E676">✓ ZERO DATA LEAKAGE</text>
+    <text x="25" y="625" font-family="sans-serif" font-size="11" fill="#8E99A8">Strict pre-race isolation.</text>
+    <text x="25" y="643" font-family="sans-serif" font-size="11" fill="#8E99A8">No post-race finish time/points.</text>
+  </g>
+
+  <!-- ================= TIER 3: PATTERN MINING & ML ================= -->
+  <g transform="translate(590, 150)">
+    <rect width="250" height="690" rx="12" fill="url(#cardGrad)" stroke="#2B323D" stroke-width="1.5"/>
+    <rect width="250" height="40" rx="12" fill="#1F252E"/>
+    <text x="125" y="26" font-family="sans-serif" font-size="14" font-weight="700" fill="#FF9100" text-anchor="middle">3. PATTERN MINING &amp; ML</text>
+    <text x="125" y="58" font-family="sans-serif" font-size="11" fill="#717D8A" text-anchor="middle">Tools: MLxtend / Scikit-Learn / XGBoost</text>
+
+    <!-- Pattern Mining -->
+    <rect x="15" y="80" width="220" height="150" rx="8" fill="#14181F" stroke="#333C48" stroke-width="1"/>
+    <text x="25" y="105" font-family="sans-serif" font-size="13" font-weight="700" fill="#FF9100">FP-Growth &amp; Apriori</text>
+    <text x="25" y="125" font-family="sans-serif" font-size="11" fill="#8E99A8">• Discretized race items</text>
+    <text x="25" y="143" font-family="sans-serif" font-size="11" fill="#8E99A8">• 7,940 Frequent Itemsets</text>
+    <text x="25" y="161" font-family="sans-serif" font-size="11" fill="#8E99A8">• 141,763 Association Rules</text>
+    <text x="25" y="179" font-family="sans-serif" font-size="11" fill="#8E99A8">• Top Lift: 19.47x for Winner</text>
+    <rect x="25" y="195" width="85" height="14" rx="3" fill="#242C37"/>
+    <text x="67" y="206" font-family="monospace" font-size="9" fill="#FF9100" text-anchor="middle">MLXTEND MINER</text>
+
+    <!-- Classification Model -->
+    <rect x="15" y="250" width="220" height="170" rx="8" fill="#14181F" stroke="#E10600" stroke-width="1.5"/>
+    <text x="25" y="275" font-family="sans-serif" font-size="13" font-weight="700" fill="#E10600">Champion Classifier</text>
+    <text x="25" y="295" font-family="sans-serif" font-size="11" fill="#8E99A8">• XGBoost with Softmax</text>
+    <text x="25" y="313" font-family="sans-serif" font-size="11" fill="#8E99A8">• 8 Model Comparison Benchmark</text>
+    <text x="25" y="331" font-family="sans-serif" font-size="11" fill="#8E99A8">• 5-Fold Stratified Group CV</text>
+    <text x="25" y="349" font-family="sans-serif" font-size="11" fill="#8E99A8">• Time Split: 2004-20 vs 2021-24</text>
+    <text x="25" y="367" font-family="sans-serif" font-size="11" fill="#00E676">• ROC-AUC: 0.9836</text>
+    <rect x="25" y="380" width="80" height="14" rx="3" fill="#242C37"/>
+    <text x="65" y="391" font-family="monospace" font-size="9" fill="#00E676" text-anchor="middle">XGBOOST CORE</text>
+
+    <!-- Secondary Regression -->
+    <rect x="15" y="440" width="220" height="110" rx="8" fill="#14181F" stroke="#333C48" stroke-width="1"/>
+    <text x="25" y="465" font-family="sans-serif" font-size="13" font-weight="700" fill="#FFF">Secondary Task: Regression</text>
+    <text x="25" y="485" font-family="sans-serif" font-size="11" fill="#8E99A8">• Predict finish_position</text>
+    <text x="25" y="503" font-family="sans-serif" font-size="11" fill="#8E99A8">• Random Forest Regressor</text>
+    <text x="25" y="521" font-family="sans-serif" font-size="11" fill="#8E99A8">• MAE: 2.64 | R²: 0.600</text>
+    <rect x="25" y="528" width="85" height="14" rx="3" fill="#242C37"/>
+    <text x="67" y="539" font-family="monospace" font-size="9" fill="#FFF" text-anchor="middle">SKLEARN RF</text>
+
+    <!-- Innovation Box -->
+    <rect x="15" y="570" width="220" height="100" rx="8" fill="#201826" stroke="#D500F9" stroke-width="1.5"/>
+    <text x="25" y="595" font-family="sans-serif" font-size="12" font-weight="700" fill="#EA80FC">★ CORE INNOVATION</text>
+    <text x="25" y="615" font-family="sans-serif" font-size="11" fill="#E1BEE7">• Association-Rule Augmented</text>
+    <text x="25" y="633" font-family="sans-serif" font-size="11" fill="#E1BEE7">• Cost-Sensitive Imbalance Rebalance</text>
+    <text x="25" y="651" font-family="sans-serif" font-size="11" fill="#E1BEE7">• Group Softmax: exactly 1 winner</text>
+  </g>
+
+  <!-- ================= TIER 4: SNOWFLAKE SERVING ================= -->
+  <g transform="translate(870, 150)">
+    <rect width="230" height="690" rx="12" fill="url(#cardGrad)" stroke="#2B323D" stroke-width="1.5"/>
+    <rect width="230" height="40" rx="12" fill="#1F252E"/>
+    <text x="115" y="26" font-family="sans-serif" font-size="14" font-weight="700" fill="#29B5E8" text-anchor="middle">4. SNOWFLAKE SERVING</text>
+    <text x="115" y="58" font-family="sans-serif" font-size="11" fill="#717D8A" text-anchor="middle">Database: F1_PREDICTION_DB</text>
+
+    <!-- ML Tables -->
+    <rect x="15" y="80" width="200" height="150" rx="8" fill="#14181F" stroke="#333C48" stroke-width="1"/>
+    <text x="25" y="105" font-family="sans-serif" font-size="13" font-weight="700" fill="#29B5E8">ML Registry Tables</text>
+    <text x="25" y="125" font-family="sans-serif" font-size="11" fill="#8E99A8">• ML.MODEL_COMPARISON</text>
+    <text x="25" y="143" font-family="sans-serif" font-size="11" fill="#8E99A8">• ML.MODEL_METRICS</text>
+    <text x="25" y="161" font-family="sans-serif" font-size="11" fill="#8E99A8">• ML.ASSOCIATION_RULES</text>
+    <text x="25" y="179" font-family="sans-serif" font-size="11" fill="#8E99A8">• ML.FEATURE_IMPORTANCE</text>
+    <text x="25" y="197" font-family="sans-serif" font-size="11" fill="#8E99A8">• ML.REGRESSION_METRICS</text>
+
+    <!-- Snowflake Extras -->
+    <rect x="15" y="250" width="200" height="230" rx="8" fill="#14181F" stroke="#29B5E8" stroke-width="1"/>
+    <text x="25" y="275" font-family="sans-serif" font-size="13" font-weight="700" fill="#FFF">Snowflake Enterprise</text>
+    <text x="25" y="295" font-family="sans-serif" font-size="11" fill="#8E99A8">• Zero-Copy Clone</text>
+    <text x="25" y="313" font-family="sans-serif" font-size="11" fill="#8E99A8">• Time Travel (AT OFFSET)</text>
+    <text x="25" y="331" font-family="sans-serif" font-size="11" fill="#8E99A8">• Dynamic Tables (Lag: 1h)</text>
+    <text x="25" y="349" font-family="sans-serif" font-size="11" fill="#8E99A8">• Stream + Task CDC Scoring</text>
+    <text x="25" y="367" font-family="sans-serif" font-size="11" fill="#8E99A8">• Secure Views (RBAC)</text>
+    <text x="25" y="385" font-family="sans-serif" font-size="11" fill="#8E99A8">• JSON FLATTEN Stints</text>
+    <text x="25" y="403" font-family="sans-serif" font-size="11" fill="#8E99A8">• Result Cache (&lt;10ms)</text>
+    <text x="25" y="421" font-family="sans-serif" font-size="11" fill="#8E99A8">• Elastic Scaling X-S/Med</text>
+    <text x="25" y="439" font-family="sans-serif" font-size="11" fill="#8E99A8">• Cortex AI LLM Explainer</text>
+    <rect x="25" y="452" width="70" height="14" rx="3" fill="#242C37"/>
+    <text x="60" y="463" font-family="monospace" font-size="9" fill="#29B5E8" text-anchor="middle">SNOWFLAKE</text>
+
+    <!-- SQL Analytics -->
+    <rect x="15" y="500" width="200" height="160" rx="8" fill="#14181F" stroke="#333C48" stroke-width="1"/>
+    <text x="25" y="525" font-family="sans-serif" font-size="13" font-weight="700" fill="#FFF">12 Analytic Queries</text>
+    <text x="25" y="545" font-family="sans-serif" font-size="11" fill="#8E99A8">• QUALIFY Window functions</text>
+    <text x="25" y="563" font-family="sans-serif" font-size="11" fill="#8E99A8">• LAG Driver momentum</text>
+    <text x="25" y="581" font-family="sans-serif" font-size="11" fill="#8E99A8">• Rolling constructor points</text>
+    <text x="25" y="599" font-family="sans-serif" font-size="11" fill="#8E99A8">• Pit stop vs win efficiency</text>
+    <rect x="25" y="625" width="85" height="14" rx="3" fill="#242C37"/>
+    <text x="67" y="636" font-family="monospace" font-size="9" fill="#00E5FF" text-anchor="middle">SNOWPARK SQL</text>
+  </g>
+
+  <!-- ================= TIER 5: STREAMLIT APP ================= -->
+  <g transform="translate(1130, 150)">
+    <rect width="210" height="690" rx="12" fill="url(#cardGrad)" stroke="#2B323D" stroke-width="1.5"/>
+    <rect width="210" height="40" rx="12" fill="#1F252E"/>
+    <text x="105" y="26" font-family="sans-serif" font-size="14" font-weight="700" fill="#FF4B4B" text-anchor="middle">5. STREAMLIT APP</text>
+    <text x="105" y="58" font-family="sans-serif" font-size="11" fill="#717D8A" text-anchor="middle">Streamlit in Snowflake (SiS)</text>
+
+    <!-- App Highlights -->
+    <rect x="15" y="80" width="180" height="570" rx="8" fill="#14181F" stroke="#E10600" stroke-width="1"/>
+    <text x="25" y="105" font-family="sans-serif" font-size="13" font-weight="700" fill="#FFF">14 Multi-Page Views</text>
+    <text x="25" y="130" font-family="sans-serif" font-size="11" fill="#8E99A8">1. Overview</text>
+    <text x="25" y="150" font-family="sans-serif" font-size="11" fill="#8E99A8">2. Dataset Deep-Dive</text>
+    <text x="25" y="170" font-family="sans-serif" font-size="11" fill="#8E99A8">3. Architecture Flow</text>
+    <text x="25" y="190" font-family="sans-serif" font-size="11" fill="#8E99A8">4. Input / Output &amp; Labels</text>
+    <text x="25" y="210" font-family="sans-serif" font-size="11" fill="#8E99A8">5. Data Explorer</text>
+    <text x="25" y="230" font-family="sans-serif" font-size="11" fill="#8E99A8">6. Pattern Matching</text>
+    <text x="25" y="250" font-family="sans-serif" font-size="11" fill="#8E99A8">7. Classification Engine</text>
+    <text x="25" y="270" font-family="sans-serif" font-size="11" fill="#8E99A8">8. Regression Position</text>
+    <text x="25" y="290" font-family="sans-serif" font-size="11" fill="#8E99A8">9. Innovation &amp; Ablation</text>
+    <text x="25" y="310" font-family="sans-serif" font-size="11" fill="#8E99A8">10. Model Comparison</text>
+    <text x="25" y="330" font-family="sans-serif" font-size="11" fill="#8E99A8">11. Performance Metrics</text>
+    <text x="25" y="350" font-family="sans-serif" font-size="11" fill="#00E5FF">12. What-If Predictor</text>
+    <text x="25" y="370" font-family="sans-serif" font-size="11" fill="#8E99A8">13. SQL Playground</text>
+    <text x="25" y="390" font-family="sans-serif" font-size="11" fill="#29B5E8">14. Snowflake Showcase</text>
+
+    <!-- User / Interaction -->
+    <rect x="25" y="440" width="160" height="90" rx="6" fill="#1C2128" stroke="#333C48"/>
+    <text x="35" y="465" font-family="sans-serif" font-size="12" font-weight="700" fill="#FF4B4B">Interactive User</text>
+    <text x="35" y="485" font-family="sans-serif" font-size="10" fill="#8E99A8">• Live parameter sliders</text>
+    <text x="35" y="500" font-family="sans-serif" font-size="10" fill="#8E99A8">• What-If scenarios</text>
+    <text x="35" y="515" font-family="sans-serif" font-size="10" fill="#8E99A8">• Sub-50ms inference</text>
+
+    <rect x="25" y="615" width="160" height="22" rx="4" fill="#E10600"/>
+    <text x="105" y="630" font-family="sans-serif" font-size="11" font-weight="700" fill="#FFF" text-anchor="middle">STREAMLIT IN SNOWFLAKE</text>
+  </g>
+
+  <!-- Connective Arrows -->
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#E10600"/>
+    </marker>
+  </defs>
+  <path d="M 280 400 L 310 400" stroke="#E10600" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M 560 400 L 590 400" stroke="#00E5FF" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M 840 400 L 870 400" stroke="#FF9100" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <path d="M 1100 400 L 1130 400" stroke="#29B5E8" stroke-width="2.5" marker-end="url(#arrow)"/>
+
+</svg>

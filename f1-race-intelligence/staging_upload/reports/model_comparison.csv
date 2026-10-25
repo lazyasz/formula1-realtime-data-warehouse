@@ -1,0 +1,10 @@
+model_name,category,cv_roc_auc_mean,cv_roc_auc_std,test_accuracy_pct,test_precision,test_recall,test_f1,test_roc_auc,test_pr_auc,test_mcc,test_log_loss,top1_winner_hit_pct,top3_podium_hit_pct
+Baseline XGBoost,Baseline,0.964,0.0045,96.44,0.75,0.4333,0.5493,0.9618,0.635,0.554,0.0955,58.89,90.0
+Gradient Boosting (GBDT),Baseline,0.9599,0.0047,96.05,0.6338,0.5,0.559,0.9615,0.6273,0.5428,0.0979,58.89,90.0
+Logistic Regression,Baseline,0.9589,0.0018,89.55,0.3086,0.8778,0.4566,0.959,0.5759,0.4831,0.2421,63.33,87.78
+Random Forest,Baseline,0.9616,0.0044,90.38,0.3292,0.8889,0.4805,0.958,0.5929,0.5061,0.2231,62.22,86.67
+Support Vector Machine (RBF),Baseline,0.9469,0.0066,95.44,0.7,0.1556,0.2545,0.9512,0.5442,0.3161,0.1088,54.44,88.89
+Association-Rule-Enhanced XGBoost (Champion),Proposed Innovation,0.9595,0.004,96.11,0.6111,0.6111,0.6111,0.944,0.6568,0.5906,0.1263,61.11,90.0
+Decision Tree,Baseline,0.8758,0.0404,87.1,0.2695,0.9222,0.4171,0.9358,0.4379,0.4575,0.3174,68.89,90.0
+Naive Bayes,Baseline,0.9356,0.0063,80.6,0.1981,0.9444,0.3276,0.9246,0.3919,0.3802,2.328,62.22,87.78
+KNN,Baseline,0.8541,0.0221,94.83,0.4444,0.1333,0.2051,0.8022,0.2377,0.2233,0.5585,37.78,75.56

@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Winner Prediction — Car Features, Lap Records & Pit Stop Times</title>
+    <meta name="description" content="Formula 1 Race Winner Prediction Engine with XGBoost classification, Apriori & FP-Growth pattern matching, Snowflake deployment queries, and real-time telemetry parameter simulator.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;0,800;1,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Titillium+Web:wght@600;700;900&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        f1: {
+                            red: '#E10600',
+                            darkRed: '#9A0000',
+                            bg: '#0B0D10',
+                            card: '#121418',
+                            panel: '#16191F',
+                            border: '#222733',
+                            hover: '#1C212B',
+                            textMuted: '#8E95A5',
+                            textBright: '#F3F4F6',
+                            gold: '#FFD700',
+                            purple: '#A855F7',
+                            green: '#22C55E',
+                            yellow: '#EAB308',
+                            cyan: '#06B6D4'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        condensed: ['"Barlow Condensed"', 'sans-serif'],
+                        racing: ['"Titillium Web"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Apache ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+    <style>
+        body {
+            background-color: #0B0D10;
+            color: #F3F4F6;
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(225, 6, 0, 0.08) 0%, transparent 35%),
+                radial-gradient(circle at 85% 75%, rgba(6, 182, 212, 0.06) 0%, transparent 40%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+        }
+
+        .glass-panel {
+            background: rgba(18, 20, 24, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid #222733;
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(225, 6, 0, 0.35);
+        }
+
+        .carbon-border {
+            border-top: 3px solid #E10600;
+        }
+
+        .glow-red {
+            box-shadow: 0 0 20px rgba(225, 6, 0, 0.25);
+        }
+
+        .glow-cyan {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.25);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0D10;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E10600;
+            border-radius: 3px;
+        }
+
+        .tab-btn.active {
+            background: #E10600;
+            color: #FFFFFF;
+            box-shadow: 0 0 12px rgba(225, 6, 0, 0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans selection:bg-red-600 selection:text-white">
+
+    <!-- Top Announcement Bar -->
+    <header class="bg-f1-card border-b border-f1-border px-4 py-2 flex items-center justify-between text-xs sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded bg-f1-red flex items-center justify-center font-racing font-black text-white text-lg tracking-tighter shadow-md shadow-f1-red/30">
+                F1
+            </div>
+            <div>
+                <h1 class="font-racing font-bold text-base tracking-wider text-white flex items-center space-x-2">
+                    <span>FORMULA 1</span> <span class="text-f1-red">WINNER PREDICTION</span>
+                    <span class="text-[10px] bg-red-950/80 text-red-400 border border-red-800 px-2 py-0.5 rounded font-mono uppercase">ML Champion: XGBoost</span>
+                </h1>
+                <p class="text-[11px] text-f1-textMuted font-mono">CAR FEATURES &bull; LAP RECORD METRICS &bull; PIT STOP TIMES</p>
+            </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex items-center space-x-2">
+            <a href="/paddock" class="px-2.5 py-1.5 rounded text-xs text-amber-300 hover:text-white bg-amber-950/70 hover:bg-amber-900 border border-amber-600 font-bold flex items-center gap-1.5 shadow-md shadow-amber-900/40 transition">
+                <i class="fa-solid fa-flag-checkered text-amber-400"></i> <span>Paddock Studio</span>
+            </a>
+            <a href="/race-lab" class="px-2.5 py-1.5 rounded text-xs text-white bg-red-700/70 hover:bg-red-600 border border-red-500 font-bold flex items-center gap-1.5 shadow-md shadow-red-900/40 transition">
+                <i class="fa-solid fa-flask text-white"></i> <span>Race Lab</span>
+            </a>
+            <a href="/" class="px-2.5 py-1.5 rounded text-xs text-gray-300 hover:text-white hover:bg-f1-panel border border-f1-border flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-gauge text-red-500"></i> <span class="hidden sm:inline">Telemetry Dashboard</span>
+            </a>
+            <a href="/showcase" class="px-2.5 py-1.5 rounded text-xs text-gray-300 hover:text-white hover:bg-f1-panel border border-f1-border flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-diagram-project text-cyan-400"></i> <span class="hidden sm:inline">Schema Showcase</span>
+            </a>
+            <a href="/powerbi" class="px-2.5 py-1.5 rounded text-xs text-gray-300 hover:text-white hover:bg-f1-panel border border-f1-border flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-chart-line text-amber-400"></i> <span class="hidden md:inline">Power BI</span>
+            </a>
+            <a href="/grafana" class="px-2.5 py-1.5 rounded text-xs text-gray-300 hover:text-white hover:bg-f1-panel border border-f1-border flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-layer-group text-orange-400"></i> <span class="hidden md:inline">Grafana</span>
+            </a>
+            <span class="text-[11px] font-mono bg-green-950/60 text-green-400 border border-green-800 px-2.5 py-1 rounded flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                <span>MODEL INFERENCE: 1.8ms</span>
+            </span>
+        </nav>
+    </header>
+
+    <!-- Sub-Navbar / Section Tabs -->
+    <div class="bg-f1-panel/90 border-b border-f1-border px-4 py-2 sticky top-[49px] z-40 backdrop-blur-md flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center space-x-1 sm:space-x-2 overflow-x-auto">
+            <button onclick="switchTab('tab-prediction')" id="btn-tab-prediction" class="tab-btn active px-3 py-1.5 rounded text-xs font-semibold tracking-wide uppercase transition flex items-center gap-1.5">
+                <i class="fa-solid fa-trophy"></i> Live Grand Prix Prediction
+            </button>
+            <button onclick="switchTab('tab-simulator')" id="btn-tab-simulator" class="tab-btn px-3 py-1.5 rounded text-xs font-semibold tracking-wide uppercase text-gray-300 hover:text-white hover:bg-f1-card transition flex items-center gap-1.5">
+                <i class="fa-solid fa-sliders"></i> Interactive Parameter Simulator
+            </button>
+            <button onclick="switchTab('tab-benchmarks')" id="btn-tab-benchmarks" class="tab-btn px-3 py-1.5 rounded text-xs font-semibold tracking-wide uppercase text-gray-300 hover:text-white hover:bg-f1-card transition flex items-center gap-1.5">
+                <i class="fa-solid fa-chart-simple"></i> 7 Algorithm Benchmark
+            </button>
+            <button onclick="switchTab('tab-patterns')" id="btn-tab-patterns" class="tab-btn px-3 py-1.5 rounded text-xs font-semibold tracking-wide uppercase text-gray-300 hover:text-white hover:bg-f1-card transition flex items-center gap-1.5">
+                <i class="fa-solid fa-network-wired"></i> FP-Growth vs. Apriori
+            </button>
+            <button onclick="switchTab('tab-snowflake')" id="btn-tab-snowflake" class="tab-btn px-3 py-1.5 rounded text-xs font-semibold tracking-wide uppercase text-gray-300 hover:text-white hover:bg-f1-card transition flex items-center gap-1.5 text-cyan-400">
+                <i class="fa-solid fa-snowflake text-cyan-400"></i> Snowflake SQL Deployment
+            </button>
+        </div>
+
+        <div class="text-xs font-mono text-f1-textMuted flex items-center gap-3">
+            <span>Accuracy: <strong class="text-white">67.6% Top-1</strong></span>
+            <span>Podium: <strong class="text-green-400">97.1% Top-3</strong></span>
+            <span>ROC-AUC: <strong class="text-f1-cyan">0.9836</strong></span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+        <!-- 3-PILLAR PARAMETER SHOWCASE CARDS -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <!-- Pillar 1: CAR FEATURES -->
+            <div class="glass-panel carbon-border rounded-xl p-4 shadow-lg space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs uppercase font-condensed tracking-wider font-bold text-red-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-car-side text-f1-red"></i> Pillar 1: Car Engineering Features
+                    </span>
+                    <span class="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded font-mono">6 Core Signals</span>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-xs border-b border-f1-border/60 pb-1">
+                        <span class="text-f1-textMuted">Engine Architecture</span>
+                        <span class="font-mono font-bold text-white">1.6L V6 Turbo Hybrid E10</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-b border-f1-border/60 pb-1">
+                        <span class="text-f1-textMuted">Power Output (BHP)</span>
+                        <span class="font-mono font-bold text-green-400">1,025 – 1,050 BHP</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-b border-f1-border/60 pb-1">
+                        <span class="text-f1-textMuted">Power-to-Weight Ratio</span>
+                        <span class="font-mono font-bold text-f1-cyan">1.30 – 1.32 BHP/kg</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-b border-f1-border/60 pb-1">
+                        <span class="text-f1-textMuted">Minimum Car Weight</span>
+                        <span class="font-mono font-bold text-gray-300">798 kg (Regulated min)</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-f1-textMuted">Mechanical Reliability</span>
+                        <span class="font-mono font-bold text-amber-400">96.8% (Historical finish rate)</span>
+                    </div>
+                </div>
+                <div class="bg-f1-panel rounded p-2 text-[11px] text-f1-textMuted flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-green-400"></i>
+                    <span>Trained on 21 regulation seasons (V10 &rarr; V8 &rarr; Hybrid &rarr; Ground Effect)</span>
+                </div>
+            </div>
+
+            <!-- Pillar 2: LAP RECORD FEATURES -->
+            <div class="glass-panel rounded-xl p-4 shadow-lg space-y-3" style="border-top: 3px solid #06B6D4;">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs uppercase font-condensed tracking-wider font-bold text-cyan-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-stopwatch text-cyan-400"></i> Pillar 2: Lap Record Benchmarks
+                    </span>
+                    <span class="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded font-mono">5 Core Signals</span>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-xs border-b border-f1-border/60 pb-1">
+                        <span class="text-f1-textMuted">Official Circuit Lap Records</span>
+                        <span class="font-mono font-bold text-white">All 38 FIA Tracks Mapped</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-b border-f1-border/60 pb-1">
+                        <span class="text-f1-textMuted">Driver Lap Delta to Record</span>
+                        <span class="font-mono font-bold text-green-400">+0.250s – +1.800s</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-b border-f1-border/60 pb-1">
+                        <span class="text-f1-textMuted">Lap Record Pace Ratio</span>
+                        <span class="font-mono font-bold text-f1-cyan">1.003x – 1.025x</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-b border-f1-border/60 pb-1">
+                        <span class="text-f1-textMuted">Qualifying-to-Record Delta</span>
+                        <span class="font-mono font-bold text-amber-400">-0.120s – +0.850s</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-f1-textMuted">Fastest Lap Speed Trap</span>
+                        <span class="font-mono font-bold text-gray-300">225 – 264 km/h avg</span>
+                    </div>
+                </div>
+                <div class="bg-f1-panel rounded p-2 text-[11px] text-f1-textMuted flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-cyan-400"></i>
+                    <span>Includes historical records (Monza 1:20.901, Spa 1:44.701, Silverstone 1:27.097)</span>
+                </div>
+            </div>
+
+            <!-- Pillar 3: PIT STOP TIME FEATURES -->
+            <div class="glass-panel rounded-xl p-4 shadow-lg space-y-3" style="border-top: 3px solid #EAB308;">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs uppercase font-condensed tracking-wider font-bold text-amber-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-wrench text-amber-400"></i> Pillar 3: Pit Stop Times & Loss
+                    </span>
+                    <span class="text-[10px] bg-amber-950 text-amber-300 px-2 py-0.5 rounded font-mono">5 Core Signals</span>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-xs border-b border-f1-border/60 pb-1">
+                        <span class="text-f1-textMuted">Circuit Pit Lane Transit Loss</span>
+                        <span class="font-mono font-bold text-white">19.4s – 27.8s (Monaco vs Singapore)</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-b border-f1-border/60 pb-1">
+                        <span class="text-f1-textMuted">Stationary Wheel-Gun Time</span>
+                        <span class="font-mono font-bold text-green-400">2.1s – 2.6s (DHL Fast Award)</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-b border-f1-border/60 pb-1">
+                        <span class="text-f1-textMuted">DHL Pit Crew Rating</span>
+                        <span class="font-mono font-bold text-amber-400">98.0 (Red Bull) &bull; 94.0 (McLaren)</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-b border-f1-border/60 pb-1">
+                        <span class="text-f1-textMuted">Pit Stop Strategy</span>
+                        <span class="font-mono font-bold text-f1-cyan">1-Stop (Low Loss) vs 2-Stop (Aggressive)</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-f1-textMuted">Delta to Race Mean Pit Loss</span>
+                        <span class="font-mono font-bold text-gray-300">-2.4s (Advantage) &bull; +4.8s (Delay)</span>
+                    </div>
+                </div>
+                <div class="bg-f1-panel rounded p-2 text-[11px] text-f1-textMuted flex items-center gap-2">
+                    <i class="fa-solid fa-circle-check text-amber-400"></i>
+                    <span>Models in-race undercut, overcut, and wheel-gun delay penalization</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 1: LIVE GRAND PRIX PREDICTION VIEW -->
+        <!-- ============================================================== -->
+        <section id="tab-prediction" class="tab-content space-y-6">
+            
+            <!-- Grand Prix Selector & Race Summary -->
+            <div class="glass-panel rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-red-600/20 text-f1-red flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-flag-checkered"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center gap-2" id="selected-race-name">
+                            2024 British Grand Prix (Silverstone Circuit)
+                        </h2>
+                        <p class="text-xs text-f1-textMuted" id="selected-race-meta">
+                            Round 12 &bull; 52 Laps &bull; Track Record: 1:27.097 (Max Verstappen, 2020) &bull; Pit Loss: 20.5s
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <select id="race-selector" onchange="loadRacePredictions(this.value)" class="bg-f1-panel border border-f1-border text-white text-xs rounded-lg px-3 py-2 font-mono focus:border-red-500 focus:outline-none w-full md:w-64">
+                        <option value="1132" selected>2024 British GP (Silverstone)</option>
+                        <option value="1121">2024 Bahrain GP (Sakhir)</option>
+                        <option value="1122">2024 Saudi Arabian GP (Jeddah)</option>
+                        <option value="1123">2024 Australian GP (Melbourne)</option>
+                        <option value="1124">2024 Japanese GP (Suzuka)</option>
+                        <option value="1128">2024 Monaco GP (Monte Carlo)</option>
+                        <option value="1129">2024 Canadian GP (Montreal)</option>
+                        <option value="1136">2024 Italian GP (Monza)</option>
+                        <option value="1138">2024 Singapore GP (Marina Bay)</option>
+                        <option value="1144">2024 Abu Dhabi GP (Yas Marina)</option>
+                    </select>
+
+                    <button onclick="refreshPredictions()" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold font-condensed uppercase tracking-wider flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-rotate-right"></i> Predict
+                    </button>
+                </div>
+            </div>
+
+            <!-- Predicted Winner Hero Card & Radar -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Winner Podium Prediction Card -->
+                <div class="glass-panel rounded-xl p-5 space-y-4 lg:col-span-1">
+                    <div class="flex items-center justify-between border-b border-f1-border pb-3">
+                        <span class="text-xs uppercase font-condensed tracking-wider font-bold text-amber-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-crown text-amber-400"></i> Model Predicted Winner (P1)
+                        </span>
+                        <span class="text-xs font-mono bg-amber-950 text-amber-300 px-2 py-0.5 rounded" id="hero-prob-badge">48.2% Win Prob</span>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-f1-red to-amber-500 p-0.5 flex items-center justify-center shadow-lg">
+                            <div class="w-full h-full rounded-full bg-f1-card flex items-center justify-center font-racing font-black text-2xl text-white" id="hero-driver-avatar">
+                                VER
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold font-racing text-white" id="hero-driver-name">Max Verstappen</h3>
+                            <p class="text-xs text-f1-textMuted font-mono" id="hero-driver-team">Red Bull Racing &bull; Honda RBPT</p>
+                            <span class="inline-block mt-1 text-[11px] font-mono text-green-400 bg-green-950/70 border border-green-800 px-2 py-0.5 rounded" id="hero-grid-tag">
+                                Starting Grid: P1 (Pole Position)
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Key Signals for Hero Driver -->
+                    <div class="space-y-2 pt-2 text-xs">
+                        <div class="flex justify-between items-center border-b border-f1-border/50 pb-1">
+                            <span class="text-f1-textMuted">Estimated Engine BHP</span>
+                            <span class="font-mono font-bold text-white" id="hero-bhp">1,045 BHP</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-f1-border/50 pb-1">
+                            <span class="text-f1-textMuted">Qualifying Lap Record Delta</span>
+                            <span class="font-mono font-bold text-cyan-400" id="hero-lap-delta">+0.180s to Record</span>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-f1-border/50 pb-1">
+                            <span class="text-f1-textMuted">DHL Pit Crew Rating</span>
+                            <span class="font-mono font-bold text-amber-400" id="hero-pit-crew">98.0 / 100</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-f1-textMuted">Podium Conversion Probability</span>
+                            <span class="font-mono font-bold text-green-400" id="hero-podium-prob">99.4%</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-f1-panel rounded-lg p-3 text-xs border border-f1-border space-y-1">
+                        <span class="text-[10px] text-f1-textMuted uppercase font-mono tracking-wider">Top Competitors Delta:</span>
+                        <div class="flex justify-between text-xs text-gray-300">
+                            <span>P2: Lando Norris (McLaren)</span>
+                            <span class="font-mono text-cyan-400">24.1%</span>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-300">
+                            <span>P3: Lewis Hamilton (Mercedes)</span>
+                            <span class="font-mono text-cyan-400">14.8%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Grid Probability Ranking Chart -->
+                <div class="glass-panel rounded-xl p-5 lg:col-span-2 space-y-3">
+                    <div class="flex items-center justify-between border-b border-f1-border pb-3">
+                        <span class="text-xs uppercase font-condensed tracking-wider font-bold text-cyan-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-chart-column text-cyan-400"></i> Calibrated Winner Probability Distribution (Sum = 100%)
+                        </span>
+                        <span class="text-[10px] font-mono text-f1-textMuted">Group-Wise Race Softmax Calibration</span>
+                    </div>
+
+                    <!-- ECharts Container -->
+                    <div id="chart-probabilities" class="w-full h-72"></div>
+                </div>
+
+            </div>
+
+            <!-- Full Starting Grid Machine Learning Table -->
+            <div class="glass-panel rounded-xl p-5 space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-f1-border pb-3">
+                    <span class="text-xs uppercase font-condensed tracking-wider font-bold text-white flex items-center gap-1.5">
+                        <i class="fa-solid fa-list-ol text-f1-red"></i> Full Starting Grid Prediction Matrix (20 Drivers)
+                    </span>
+                    <div class="text-xs font-mono text-f1-textMuted">
+                        Green Badge = Predicted Winner matches Actual GP Winner
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-f1-border text-f1-textMuted uppercase font-mono text-[11px]">
+                                <th class="py-2 px-3">Pred Rank</th>
+                                <th class="py-2 px-3">Driver</th>
+                                <th class="py-2 px-3">Constructor</th>
+                                <th class="py-2 px-3">Grid Pos</th>
+                                <th class="py-2 px-3">Win Prob %</th>
+                                <th class="py-2 px-3">Car BHP</th>
+                                <th class="py-2 px-3">Lap Delta</th>
+                                <th class="py-2 px-3">Pit Crew</th>
+                                <th class="py-2 px-3">Actual Finish</th>
+                                <th class="py-2 px-3 text-right">Hit Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="predictions-tbody" class="divide-y divide-f1-border/40 font-mono">
+                            <!-- Injected by Javascript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 2: INTERACTIVE PARAMETER SIMULATOR -->
+        <!-- ============================================================== -->
+        <section id="tab-simulator" class="tab-content hidden space-y-6">
+            
+            <div class="glass-panel rounded-xl p-5 space-y-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-cyan-400"></i> Interactive 3-Pillar Parameter Sensitivity Simulator
+                </h3>
+                <p class="text-xs text-f1-textMuted">
+                    Modify the driver's engine power, car weight, track lap delta, and pit stop execution times to observe how the champion XGBoost classifier updates win probabilities in real-time.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Controls Column -->
+                <div class="glass-panel rounded-xl p-5 space-y-5 lg:col-span-2">
+                    
+                    <!-- Parameter 1: CAR FEATURES -->
+                    <div class="space-y-3 border-b border-f1-border pb-4">
+                        <h4 class="text-xs font-bold uppercase font-condensed tracking-wider text-red-400 flex items-center justify-between">
+                            <span>🏎️ Pillar 1: Car Engineering Parameters</span>
+                            <span class="text-[11px] font-mono text-white" id="val-bhp">1040 BHP (1.30 BHP/kg)</span>
+                        </h4>
+                        
+                        <div>
+                            <div class="flex justify-between text-xs text-f1-textMuted mb-1">
+                                <span>Engine Power (BHP)</span>
+                                <span class="font-mono text-white" id="lbl-bhp">1040 BHP</span>
+                            </div>
+                            <input type="range" id="sim-bhp" min="750" max="1060" step="10" value="1040" oninput="updateSimValue()" class="w-full accent-red-600 bg-f1-panel rounded">
+                            <div class="flex justify-between text-[10px] text-gray-500 font-mono mt-0.5">
+                                <span>750 BHP (V8 Era)</span>
+                                <span>930 BHP (V10)</span>
+                                <span>1050 BHP (Ground Effect)</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs text-f1-textMuted mb-1">
+                                <span>Mechanical Reliability Score (%)</span>
+                                <span class="font-mono text-white" id="lbl-rel">98.0%</span>
+                            </div>
+                            <input type="range" id="sim-rel" min="80" max="100" step="1" value="98" oninput="updateSimValue()" class="w-full accent-red-600 bg-f1-panel rounded">
+                        </div>
+                    </div>
+
+                    <!-- Parameter 2: LAP RECORD -->
+                    <div class="space-y-3 border-b border-f1-border pb-4">
+                        <h4 class="text-xs font-bold uppercase font-condensed tracking-wider text-cyan-400 flex items-center justify-between">
+                            <span>⏱️ Pillar 2: Track Lap Record Delta</span>
+                            <span class="text-[11px] font-mono text-white" id="val-lap">+0.400s</span>
+                        </h4>
+                        
+                        <div>
+                            <div class="flex justify-between text-xs text-f1-textMuted mb-1">
+                                <span>Pace Gap to Official Circuit Lap Record (Seconds)</span>
+                                <span class="font-mono text-white" id="lbl-lap">+0.400s</span>
+                            </div>
+                            <input type="range" id="sim-lap" min="0.0" max="3.0" step="0.05" value="0.4" oninput="updateSimValue()" class="w-full accent-cyan-500 bg-f1-panel rounded">
+                            <div class="flex justify-between text-[10px] text-gray-500 font-mono mt-0.5">
+                                <span>0.00s (Matches Record)</span>
+                                <span>+1.50s (Midfield)</span>
+                                <span>+3.00s (Backmarker)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Parameter 3: PIT STOP TIME -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold uppercase font-condensed tracking-wider text-amber-400 flex items-center justify-between">
+                            <span>🛑 Pillar 3: Pit Stop Times & Loss</span>
+                            <span class="text-[11px] font-mono text-white" id="val-pit">1 Stop &bull; 21.5s Loss</span>
+                        </h4>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs text-f1-textMuted block mb-1">Pit Stop Count</label>
+                                <select id="sim-stops" onchange="updateSimValue()" class="w-full bg-f1-panel border border-f1-border text-white text-xs rounded p-2 font-mono">
+                                    <option value="1">1 Stop (Standard)</option>
+                                    <option value="2">2 Stops (Aggressive)</option>
+                                    <option value="3">3 Stops (Safety Car)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs text-f1-textMuted block mb-1">DHL Crew Rating</label>
+                                <select id="sim-crew" onchange="updateSimValue()" class="w-full bg-f1-panel border border-f1-border text-white text-xs rounded p-2 font-mono">
+                                    <option value="98">98.0 (Red Bull Elite)</option>
+                                    <option value="94">94.0 (McLaren / Ferrari)</option>
+                                    <option value="88">88.0 (Midfield Average)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs text-f1-textMuted mb-1">
+                                <span>Starting Grid Position (1 - 20)</span>
+                                <span class="font-mono text-white" id="lbl-grid">P1 (Pole)</span>
+                            </div>
+                            <input type="range" id="sim-grid" min="1" max="20" step="1" value="1" oninput="updateSimValue()" class="w-full accent-amber-500 bg-f1-panel rounded">
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Simulation Real-Time Result Gauge Card -->
+                <div class="glass-panel rounded-xl p-5 space-y-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between border-b border-f1-border pb-3">
+                            <span class="text-xs uppercase font-condensed tracking-wider font-bold text-white flex items-center gap-1.5">
+                                <i class="fa-solid fa-gauge-high text-f1-red"></i> Real-Time Inference
+                            </span>
+                            <span class="text-[10px] font-mono bg-red-950 text-red-300 px-2 py-0.5 rounded" id="sim-badge">HIGH CONFIDENCE</span>
+                        </div>
+
+                        <div class="text-center py-6">
+                            <span class="text-xs font-mono uppercase tracking-widest text-f1-textMuted">Predicted Win Probability</span>
+                            <h2 class="text-5xl font-black font-racing text-white mt-1" id="sim-win-prob">86.4%</h2>
+                            <p class="text-xs font-mono text-green-400 mt-2" id="sim-podium-prob">Podium Conversion: 100.0%</p>
+                        </div>
+
+                        <!-- Progress Bar Gauge -->
+                        <div class="w-full bg-f1-panel h-3 rounded-full overflow-hidden border border-f1-border">
+                            <div id="sim-gauge-bar" class="h-full bg-gradient-to-r from-red-600 via-amber-500 to-green-500 transition-all duration-300" style="width: 86.4%;"></div>
+                        </div>
+
+                        <!-- Dominant Signals List -->
+                        <div class="mt-6 space-y-2 text-xs">
+                            <span class="text-[10px] font-mono text-f1-textMuted uppercase tracking-wider block">Key Decision Factors:</span>
+                            <div id="sim-signals-list" class="space-y-1.5 font-mono text-[11px] text-gray-300">
+                                <div class="bg-f1-panel p-2 rounded flex items-center gap-2">
+                                    <i class="fa-solid fa-bolt text-red-500"></i> Starting Grid P1 (Clean Air Advantage)
+                                </div>
+                                <div class="bg-f1-panel p-2 rounded flex items-center gap-2">
+                                    <i class="fa-solid fa-car text-amber-500"></i> Car Power: 1,040 BHP (1.30 BHP/kg)
+                                </div>
+                                <div class="bg-f1-panel p-2 rounded flex items-center gap-2">
+                                    <i class="fa-solid fa-stopwatch text-cyan-400"></i> Lap Delta: +0.400s to Track Record
+                                </div>
+                                <div class="bg-f1-panel p-2 rounded flex items-center gap-2">
+                                    <i class="fa-solid fa-wrench text-green-400"></i> 1-Stop Strategy (21.5s Pit Loss)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onclick="triggerSimulateCustom()" class="w-full py-2.5 bg-gradient-to-r from-f1-red to-red-700 hover:from-red-600 hover:to-red-800 text-white rounded-lg text-xs font-bold uppercase font-condensed tracking-wider shadow-lg shadow-f1-red/30 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-brain"></i> Re-Calculate Win Probability
+                    </button>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 3: 7 ALGORITHM BENCHMARK VIEW -->
+        <!-- ============================================================== -->
+        <section id="tab-benchmarks" class="tab-content hidden space-y-6">
+            
+            <div class="glass-panel rounded-xl p-5 space-y-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-chart-simple text-amber-400"></i> Master 7-Algorithm Classification Comparison & Validation Benchmark
+                </h3>
+                <p class="text-xs text-f1-textMuted">
+                    Evaluated chronologically on the 2022–2024 Ground Effect Championship Era (68 Grands Prix / 1,359 test records) alongside 5-Fold Stratified Group Cross-Validation.
+                </p>
+            </div>
+
+            <!-- Benchmark Comparison Table -->
+            <div class="glass-panel rounded-xl p-5 space-y-4">
+                <span class="text-xs uppercase font-condensed tracking-wider font-bold text-white flex items-center gap-1.5 border-b border-f1-border pb-3">
+                    <i class="fa-solid fa-table-list text-f1-red"></i> Empirical Performance Matrix
+                </span>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead>
+                            <tr class="border-b border-f1-border text-f1-textMuted uppercase text-[11px]">
+                                <th class="py-2.5 px-3">Algorithm</th>
+                                <th class="py-2.5 px-3">ROC-AUC</th>
+                                <th class="py-2.5 px-3">PR-AUC</th>
+                                <th class="py-2.5 px-3">Balanced Acc</th>
+                                <th class="py-2.5 px-3">Top-1 Hit (68 GPs)</th>
+                                <th class="py-2.5 px-3">Top-3 Hit Rate</th>
+                                <th class="py-2.5 px-3">Brier Score</th>
+                                <th class="py-2.5 px-3 text-right">Latency</th>
+                            </tr>
+                        </thead>
+                        <tbody id="benchmarks-tbody" class="divide-y divide-f1-border/40">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Benchmark Chart & Ablation Study -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                
+                <div class="glass-panel rounded-xl p-5 space-y-3">
+                    <span class="text-xs uppercase font-condensed tracking-wider font-bold text-cyan-400 flex items-center gap-1.5 border-b border-f1-border pb-3">
+                        <i class="fa-solid fa-chart-column text-cyan-400"></i> Top-1 Winner Hit Rate vs. Top-3 Hit Rate
+                    </span>
+                    <div id="chart-benchmark-bar" class="w-full h-72"></div>
+                </div>
+
+                <div class="glass-panel rounded-xl p-5 space-y-3">
+                    <span class="text-xs uppercase font-condensed tracking-wider font-bold text-amber-400 flex items-center gap-1.5 border-b border-f1-border pb-3">
+                        <i class="fa-solid fa-vial-virus text-amber-400"></i> Feature Ablation Study (Impact of 3 Pillars)
+                    </span>
+                    <div id="chart-ablation" class="w-full h-72"></div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 4: FP-GROWTH VS APRIORI PATTERN MINING -->
+        <!-- ============================================================== -->
+        <section id="tab-patterns" class="tab-content hidden space-y-6">
+            
+            <div class="glass-panel rounded-xl p-5 space-y-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-network-wired text-purple-400"></i> Frequent Pattern Mining & Association Rules Discovery (FP-Growth vs. Apriori)
+                </h3>
+                <p class="text-xs text-f1-textMuted">
+                    Mining 8,650 Grand Prix transactions across 37 categorical taxonomy items. 3,698 Frequent Itemsets and 11,063 Association Rules extracted with up to 14.58x Lift.
+                </p>
+            </div>
+
+            <!-- Algorithm Execution Comparison Card -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="glass-panel rounded-xl p-4 border-l-4 border-amber-500 space-y-2">
+                    <h4 class="text-xs font-bold font-condensed uppercase tracking-wider text-amber-400">Apriori Algorithm (Level-Wise Search)</h4>
+                    <ul class="text-xs text-f1-textMuted space-y-1 font-mono">
+                        <li>&bull; Database Scans: <strong class="text-white">k + 1 Full Scans</strong></li>
+                        <li>&bull; Candidate Generation: <strong class="text-amber-400">Combinatorial (High Memory)</strong></li>
+                        <li>&bull; Frequent Itemsets Found: <strong class="text-white">3,698 Itemsets</strong></li>
+                        <li>&bull; Execution Latency: <strong class="text-gray-300">12.4 seconds</strong></li>
+                    </ul>
+                </div>
+
+                <div class="glass-panel rounded-xl p-4 border-l-4 border-purple-500 space-y-2">
+                    <h4 class="text-xs font-bold font-condensed uppercase tracking-wider text-purple-400">FP-Growth Algorithm (Prefix Tree)</h4>
+                    <ul class="text-xs text-f1-textMuted space-y-1 font-mono">
+                        <li>&bull; Database Scans: <strong class="text-green-400">Exactly 2 Scans (Tree Build)</strong></li>
+                        <li>&bull; Candidate Generation: <strong class="text-green-400">None (Divide & Conquer)</strong></li>
+                        <li>&bull; Mathematical Equivalence: <strong class="text-white">100% Identical Itemsets</strong></li>
+                        <li>&bull; Execution Latency: <strong class="text-green-400">4.1 seconds (3x Faster)</strong></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Top Association Rules Table -->
+            <div class="glass-panel rounded-xl p-5 space-y-4">
+                <div class="flex items-center justify-between border-b border-f1-border pb-3">
+                    <span class="text-xs uppercase font-condensed tracking-wider font-bold text-white flex items-center gap-1.5">
+                        <i class="fa-solid fa-arrow-trend-up text-purple-400"></i> Top Formula 1 High-Lift Association Rules
+                    </span>
+                    <span class="text-xs font-mono text-f1-textMuted">Sorted by Lift (Max 14.58x)</span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead>
+                            <tr class="border-b border-f1-border text-f1-textMuted uppercase text-[11px]">
+                                <th class="py-2.5 px-3">Rule Antecedent (Condition)</th>
+                                <th class="py-2.5 px-3">&rArr;</th>
+                                <th class="py-2.5 px-3">Consequent (Outcome)</th>
+                                <th class="py-2.5 px-3">Support</th>
+                                <th class="py-2.5 px-3">Confidence</th>
+                                <th class="py-2.5 px-3 text-right">Lift Ratio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rules-tbody" class="divide-y divide-f1-border/40 text-[11px]">
+                            <!-- Injected by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- TAB 5: SNOWFLAKE PRODUCTION SQL DEPLOYMENT -->
+        <!-- ============================================================== -->
+        <section id="tab-snowflake" class="tab-content hidden space-y-6">
+            
+            <div class="glass-panel rounded-xl p-5 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-snowflake text-cyan-400"></i> Production Snowflake Deployment Suite (DDL, Staging & Feature Store)
+                        </h3>
+                        <p class="text-xs text-f1-textMuted mt-0.5">
+                            Fully ANSI & Snowflake compliant SQL scripts. Copy and run directly in Snowflake Worksheets.
+                        </p>
+                    </div>
+                    <button onclick="copySnowflakeSQL()" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded text-xs font-bold uppercase font-mono flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-copy"></i> <span id="copy-btn-text">Copy Snowflake SQL</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- SQL Code View -->
+            <div class="glass-panel rounded-xl p-5 space-y-4">
+                <div class="flex items-center justify-between text-xs font-mono text-f1-textMuted border-b border-f1-border pb-2">
+                    <span>snowflake_production_deployment.sql</span>
+                    <span>Warehouse: F1_ANALYTICS_WH &bull; DB: F1_DATA_WAREHOUSE</span>
+                </div>
+
+                <pre id="snowflake-code-block" class="p-4 bg-f1-panel rounded-lg overflow-x-auto text-[11px] font-mono text-gray-300 leading-relaxed border border-f1-border max-h-[500px]"><code>-- 1. CREATE VIRTUAL WAREHOUSE & DATABASE
+CREATE OR REPLACE WAREHOUSE F1_ANALYTICS_WH
+    WITH WAREHOUSE_SIZE = 'XSMALL' AUTO_SUSPEND = 60 AUTO_RESUME = TRUE;
+
+CREATE OR REPLACE DATABASE F1_DATA_WAREHOUSE;
+CREATE OR REPLACE SCHEMA F1_DATA_WAREHOUSE.ML_MARTS;
+
+-- 2. CREATE ML FEATURE STORE TABLE (CAR FEATURES, LAP RECORD, PIT STOPS)
+CREATE OR REPLACE TABLE F1_DATA_WAREHOUSE.ML_MARTS.F1_WINNER_PREDICTION_FEATURE_STORE (
+    FEATURE_ENTRY_ID VARCHAR(64) PRIMARY KEY,
+    RACE_ID NUMBER(38,0) NOT NULL,
+    SEASON_YEAR NUMBER(4,0) NOT NULL,
+    DRIVER_CODE VARCHAR(3) NOT NULL,
+    CONSTRUCTOR_NAME VARCHAR(100) NOT NULL,
+    -- Pillar 1: Car Features
+    CAR_ESTIMATED_POWER_BHP FLOAT NOT NULL,
+    CAR_POWER_TO_WEIGHT_RATIO FLOAT NOT NULL,
+    CAR_MIN_WEIGHT_KG FLOAT NOT NULL,
+    CAR_MECHANICAL_RELIABILITY_SCORE FLOAT NOT NULL,
+    -- Pillar 2: Lap Record Features
+    CIRCUIT_LAP_RECORD_SEC FLOAT NOT NULL,
+    DRIVER_LAP_RECORD_DELTA_SEC FLOAT NOT NULL,
+    DRIVER_LAP_RECORD_RATIO FLOAT NOT NULL,
+    FASTEST_LAP_SPEED FLOAT NOT NULL,
+    -- Pillar 3: Pit Stop Times
+    PIT_STOP_COUNT NUMBER(2,0) NOT NULL,
+    TOTAL_RACE_PIT_LOSS_SEC FLOAT NOT NULL,
+    PIT_CREW_EFFICIENCY_SCORE FLOAT NOT NULL,
+    -- Target Label
+    IS_WIN NUMBER(1,0) NOT NULL,
+    IS_PODIUM NUMBER(1,0) NOT NULL
+)
+CLUSTER BY (SEASON_YEAR, RACE_ID);
+
+-- 3. WINNER PREDICTION FEATURE VECTOR QUERY (JSON OBJECT_CONSTRUCT)
+SELECT 
+    RACE_ID,
+    DRIVER_CODE,
+    CONSTRUCTOR_NAME,
+    OBJECT_CONSTRUCT(
+        'car_bhp', CAR_ESTIMATED_POWER_BHP,
+        'power_to_weight', CAR_POWER_TO_WEIGHT_RATIO,
+        'lap_record_delta', DRIVER_LAP_RECORD_DELTA_SEC,
+        'pit_loss_sec', TOTAL_RACE_PIT_LOSS_SEC,
+        'pit_crew_score', PIT_CREW_EFFICIENCY_SCORE
+    ) AS ML_FEATURE_VECTOR
+FROM F1_DATA_WAREHOUSE.ML_MARTS.F1_WINNER_PREDICTION_FEATURE_STORE
+WHERE RACE_ID = 1129
+ORDER BY IS_WIN DESC;</code></pre>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-8 bg-f1-card border-t border-f1-border p-4 text-center text-xs text-f1-textMuted font-mono">
+        ApexIQ Formula 1 Winner Prediction Platform &bull; Data Warehouse Star & Snowflake Schemas &bull; XGBoost & LightGBM Machine Learning Benchmark
+    </footer>
+
+    <!-- Client-Side Application Logic -->
+    <script>
+        let currentTab = 'tab-prediction';
+        let probChart = null;
+        let benchChart = null;
+        let ablationChart = null;
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+            const targetSection = document.getElementById(tabId);
+            if (targetSection) targetSection.classList.remove('hidden');
+
+            const targetBtn = document.getElementById('btn-' + tabId);
+            if (targetBtn) targetBtn.classList.add('active');
+
+            currentTab = tabId;
+
+            // Trigger chart resizes
+            if (tabId === 'tab-prediction' && probChart) {
+                setTimeout(() => probChart.resize(), 100);
+            } else if (tabId === 'tab-benchmarks') {
+                setTimeout(() => {
+                    if (benchChart) benchChart.resize();
+                    if (ablationChart) ablationChart.resize();
+                }, 100);
+            }
+        }
+
+        // Load Predictions for a specific race
+        async function loadRacePredictions(raceId) {
+            try {
+                const res = await fetch(`/api/ml/predict-winner/${raceId}`);
+                if (!res.ok) throw new Error("API call failed");
+                const data = await res.json();
+
+                // Update Race Meta
+                document.getElementById('selected-race-name').innerText = `${data.race_metadata.season} ${data.race_metadata.race_name} (${data.race_metadata.circuit_name})`;
+                document.getElementById('selected-race-meta').innerText = `Round ${data.race_metadata.round} • Date: ${data.race_metadata.race_date} • Algorithm: ${data.model_metadata.algorithm} (${data.model_metadata.top1_accuracy} Top-1 Acc)`;
+
+                // Update Hero Driver
+                const topDriver = data.predictions[0];
+                document.getElementById('hero-prob-badge').innerText = `${topDriver.win_probability_pct}% Win Prob`;
+                document.getElementById('hero-driver-avatar').innerText = topDriver.driver_code;
+                document.getElementById('hero-driver-name').innerText = topDriver.driver_name;
+                document.getElementById('hero-driver-team').innerText = `${topDriver.constructor_name} • ${topDriver.car_specs.power_unit || 'Hybrid'}`;
+                document.getElementById('hero-grid-tag').innerText = `Starting Grid: P${topDriver.grid_position}`;
+                document.getElementById('hero-bhp').innerText = `${topDriver.car_specs.estimated_bhp} BHP (${topDriver.car_specs.power_to_weight.toFixed(2)} BHP/kg)`;
+                document.getElementById('hero-lap-delta').innerText = `+${topDriver.lap_record_metrics.lap_record_delta_sec.toFixed(3)}s to Record`;
+                document.getElementById('hero-pit-crew').innerText = `${topDriver.pit_stop_metrics.pit_crew_score} / 100`;
+
+                // Render Table
+                const tbody = document.getElementById('predictions-tbody');
+                tbody.innerHTML = '';
+
+                const chartDrivers = [];
+                const chartProbs = [];
+
+                data.predictions.forEach((d, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.className = `hover:bg-f1-hover/40 transition ${idx < 3 ? 'bg-f1-panel/40' : ''}`;
+
+                    const isMatch = d.is_actual_winner && d.predicted_rank === 1;
+                    const hitBadge = d.is_actual_winner 
+                        ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-950 text-green-400 border border-green-800">ACTUAL WINNER 🏆</span>`
+                        : (d.finish_position <= 3 ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-cyan-950 text-cyan-400">Podium (P${d.finish_position})</span>` : `<span class="text-gray-500">P${d.finish_position || '-'}</span>`);
+
+                    tr.innerHTML = `
+                        <td class="py-2 px-3 font-bold ${idx === 0 ? 'text-amber-400' : 'text-gray-300'}">#${d.predicted_rank}</td>
+                        <td class="py-2 px-3 font-bold text-white flex items-center gap-1.5">
+                            <span class="w-1.5 h-1.5 rounded-full ${idx === 0 ? 'bg-amber-400' : 'bg-gray-600'}"></span>
+                            ${d.driver_name} <span class="text-f1-textMuted text-[10px]">(${d.driver_code})</span>
+                        </td>
+                        <td class="py-2 px-3 text-gray-300">${d.constructor_name}</td>
+                        <td class="py-2 px-3 text-cyan-400 font-bold">P${d.grid_position}</td>
+                        <td class="py-2 px-3">
+                            <span class="font-bold ${idx === 0 ? 'text-amber-400 text-sm' : 'text-white'}">${d.win_probability_pct}%</span>
+                        </td>
+                        <td class="py-2 px-3 text-gray-400">${d.car_specs.estimated_bhp} BHP</td>
+                        <td class="py-2 px-3 text-gray-400">+${d.lap_record_metrics.lap_record_delta_sec.toFixed(3)}s</td>
+                        <td class="py-2 px-3 text-gray-400">${d.pit_stop_metrics.pit_crew_score}</td>
+                        <td class="py-2 px-3">${d.finish_position ? 'P' + d.finish_position : 'DNF'}</td>
+                        <td class="py-2 px-3 text-right">${hitBadge}</td>
+                    `;
+                    tbody.appendChild(tr);
+
+                    if (idx < 10) {
+                        chartDrivers.push(d.driver_code);
+                        chartProbs.push(d.win_probability_pct);
+                    }
+                });
+
+                renderProbChart(chartDrivers, chartProbs);
+
+            } catch (err) {
+                console.error("Error loading predictions:", err);
+            }
+        }
+
+        function renderProbChart(drivers, probs) {
+            const chartDom = document.getElementById('chart-probabilities');
+            if (!probChart) {
+                probChart = echarts.init(chartDom);
+            }
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'shadow' },
+                    formatter: '{b}: {c}% Win Probability'
+                },
+                grid: { top: '10%', left: '3%', right: '4%', bottom: '5%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: drivers,
+                    axisLine: { lineStyle: { color: '#222733' } },
+                    axisLabel: { color: '#F3F4F6', fontFamily: 'JetBrains Mono', fontSize: 11 }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLine: { lineStyle: { color: '#222733' } },
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
+                    axisLabel: { formatter: '{value}%', color: '#8E95A5', fontFamily: 'JetBrains Mono' }
+                },
+                series: [{
+                    name: 'Win Probability',
+                    type: 'bar',
+                    data: probs,
+                    barWidth: '45%',
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#E10600' },
+                            { offset: 1, color: '#9A0000' }
+                        ]),
+                        borderRadius: [4, 4, 0, 0]
+                    },
+                    label: {
+                        show: true,
+                        position: 'top',
+                        formatter: '{c}%',
+                        color: '#F3F4F6',
+                        fontFamily: 'JetBrains Mono',
+                        fontSize: 10
+                    }
+                }]
+            };
+
+            probChart.setOption(option);
+        }
+
+        // Live Parameter Simulator
+        function updateSimValue() {
+            const bhp = parseFloat(document.getElementById('sim-bhp').value);
+            const rel = parseFloat(document.getElementById('sim-rel').value);
+            const lap = parseFloat(document.getElementById('sim-lap').value);
+            const grid = parseInt(document.getElementById('sim-grid').value);
+            const stops = parseInt(document.getElementById('sim-stops').value);
+            const crew = parseFloat(document.getElementById('sim-crew').value);
+
+            const p2w = (bhp / 798).toFixed(2);
+            document.getElementById('lbl-bhp').innerText = `${bhp} BHP`;
+            document.getElementById('val-bhp').innerText = `${bhp} BHP (${p2w} BHP/kg)`;
+
+            document.getElementById('lbl-rel').innerText = `${rel}%`;
+            document.getElementById('lbl-lap').innerText = `+${lap.toFixed(3)}s`;
+            document.getElementById('val-lap').innerText = `+${lap.toFixed(3)}s`;
+            document.getElementById('lbl-grid').innerText = `P${grid}`;
+            document.getElementById('val-pit').innerText = `${stops} Stop${stops > 1 ? 's' : ''} • ${(stops * 21.5).toFixed(1)}s Loss`;
+
+            triggerSimulateCustom();
+        }
+
+        let simDebounce = null;
+        function triggerSimulateCustom() {
+            clearTimeout(simDebounce);
+            simDebounce = setTimeout(async () => {
+                const bhp = parseFloat(document.getElementById('sim-bhp').value);
+                const rel = parseFloat(document.getElementById('sim-rel').value);
+                const lap = parseFloat(document.getElementById('sim-lap').value);
+                const grid = parseInt(document.getElementById('sim-grid').value);
+                const stops = parseInt(document.getElementById('sim-stops').value);
+                const crew = parseFloat(document.getElementById('sim-crew').value);
+                const p2w = (bhp / 798);
+
+                try {
+                    const url = `/api/ml/simulate-custom?bhp=${bhp}&power_to_weight=${p2w}&reliability_score=${rel}&lap_record_delta_sec=${lap}&pit_stop_count=${stops}&total_race_pit_loss_sec=${stops * 21.5}&pit_crew_score=${crew}&grid_position=${grid}`;
+                    const res = await fetch(url);
+                    const data = await res.json();
+
+                    document.getElementById('sim-win-prob').innerText = `${data.predicted_win_probability_pct}%`;
+                    document.getElementById('sim-podium-prob').innerText = `Podium Conversion: ${data.predicted_podium_probability_pct}%`;
+                    document.getElementById('sim-gauge-bar').style.width = `${Math.min(100, data.predicted_win_probability_pct)}%`;
+                    document.getElementById('sim-badge').innerText = `${data.confidence_level.toUpperCase()} CONFIDENCE`;
+
+                    const signalsDiv = document.getElementById('sim-signals-list');
+                    signalsDiv.innerHTML = data.dominant_signals.map(s => `
+                        <div class="bg-f1-panel p-2 rounded flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check text-cyan-400"></i> ${s}
+                        </div>
+                    `).join('');
+
+                } catch (e) {
+                    console.error("Simulation error:", e);
+                }
+            }, 150);
+        }
+
+        // Load 7-Algorithm Benchmarks & Ablation
+        async function loadBenchmarks() {
+            try {
+                const res = await fetch('/api/ml/benchmark-comparison');
+                const data = await res.json();
+
+                const tbody = document.getElementById('benchmarks-tbody');
+                tbody.innerHTML = '';
+
+                const algNames = [];
+                const top1Hits = [];
+                const top3Hits = [];
+
+                data.benchmarks.forEach((b, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.className = `hover:bg-f1-hover/40 transition ${idx === 0 ? 'bg-red-950/20 font-bold' : ''}`;
+                    tr.innerHTML = `
+                        <td class="py-2.5 px-3 ${idx === 0 ? 'text-amber-400' : 'text-white'}">
+                            ${idx === 0 ? '🏆 ' : ''}${b.algorithm}
+                        </td>
+                        <td class="py-2.5 px-3 text-cyan-400">${b.roc_auc.toFixed(4)}</td>
+                        <td class="py-2.5 px-3 text-gray-300">${b.pr_auc.toFixed(4)}</td>
+                        <td class="py-2.5 px-3 text-gray-300">${b.balanced_acc_pct}%</td>
+                        <td class="py-2.5 px-3 font-bold ${b.top1_winner_hit_pct > 65 ? 'text-green-400' : 'text-gray-300'}">${b.top1_winner_hit_pct}% (${b.top1_hits}/68)</td>
+                        <td class="py-2.5 px-3 text-green-400">${b.top3_podium_hit_pct}%</td>
+                        <td class="py-2.5 px-3 text-gray-400">${b.brier_score.toFixed(4)}</td>
+                        <td class="py-2.5 px-3 text-right text-gray-400">${b.inf_latency_ms} ms</td>
+                    `;
+                    tbody.appendChild(tr);
+
+                    algNames.push(b.algorithm.replace(/^\d+\.\s*/, '').replace(' Classifier', ''));
+                    top1Hits.push(b.top1_winner_hit_pct);
+                    top3Hits.push(b.top3_podium_hit_pct);
+                });
+
+                renderBenchmarkCharts(algNames, top1Hits, top3Hits, data.ablation_study);
+
+            } catch (err) {
+                console.error("Error loading benchmarks:", err);
+            }
+        }
+
+        function renderBenchmarkCharts(algs, top1, top3, ablation) {
+            const barDom = document.getElementById('chart-benchmark-bar');
+            if (!benchChart) benchChart = echarts.init(barDom);
+
+            benchChart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                legend: { textStyle: { color: '#F3F4F6' }, top: 0 },
+                grid: { top: '15%', left: '3%', right: '4%', bottom: '5%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: algs,
+                    axisLabel: { color: '#F3F4F6', fontSize: 10, rotate: 20 }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: { formatter: '{value}%', color: '#8E95A5' },
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
+                },
+                series: [
+                    { name: 'Top-1 Winner Hit %', type: 'bar', data: top1, itemStyle: { color: '#E10600' } },
+                    { name: 'Top-3 Podium Hit %', type: 'bar', data: top3, itemStyle: { color: '#06B6D4' } }
+                ]
+            });
+
+            const ablDom = document.getElementById('chart-ablation');
+            if (!ablationChart) ablationChart = echarts.init(ablDom);
+
+            const ablLabels = ablation.map(a => a.experiment.replace('Ablation: ', ''));
+            const ablHits = ablation.map(a => a.top1_hit_pct);
+
+            ablationChart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                grid: { top: '10%', left: '3%', right: '4%', bottom: '5%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: ablLabels,
+                    axisLabel: { color: '#F3F4F6', fontSize: 9, rotate: 15 }
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: { formatter: '{value}%', color: '#8E95A5' },
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
+                },
+                series: [{
+                    name: 'Top-1 Hit %',
+                    type: 'bar',
+                    data: ablHits,
+                    itemStyle: {
+                        color: function(params) {
+                            return params.dataIndex === 0 ? '#22C55E' : (params.dataIndex === 4 ? '#E10600' : '#EAB308');
+                        }
+                    },
+                    label: { show: true, position: 'top', formatter: '{c}%', color: '#FFF' }
+                }]
+            });
+        }
+
+        // Load Pattern Mining Association Rules
+        async function loadPatternMining() {
+            try {
+                const res = await fetch('/api/ml/pattern-mining?limit=25');
+                const data = await res.json();
+
+                const tbody = document.getElementById('rules-tbody');
+                tbody.innerHTML = '';
+
+                data.top_rules.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-f1-hover/40 transition';
+                    tr.innerHTML = `
+                        <td class="py-2 px-3 text-cyan-300 font-bold">${r.antecedent}</td>
+                        <td class="py-2 px-3 text-gray-500">&rArr;</td>
+                        <td class="py-2 px-3 text-green-400 font-bold">${r.consequent}</td>
+                        <td class="py-2 px-3 text-gray-400">${(r.support * 100).toFixed(2)}%</td>
+                        <td class="py-2 px-3 text-gray-300">${(r.confidence * 100).toFixed(1)}%</td>
+                        <td class="py-2 px-3 text-right font-bold text-amber-400">${r.lift.toFixed(2)}x</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error("Error loading pattern rules:", err);
+            }
+        }
+
+        function refreshPredictions() {
+            const val = document.getElementById('race-selector').value;
+            loadRacePredictions(val);
+        }
+
+        function copySnowflakeSQL() {
+            const code = document.getElementById('snowflake-code-block').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                document.getElementById('copy-btn-text').innerText = 'Copied to Clipboard!';
+                setTimeout(() => {
+                    document.getElementById('copy-btn-text').innerText = 'Copy Snowflake SQL';
+                }, 2000);
+            });
+        }
+
+        async function loadRaceDropdown() {
+            try {
+                const res = await fetch('/api/ml/races?season=2024');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.races && data.races.length > 0) {
+                    const sel = document.getElementById('race-selector');
+                    const currentVal = sel.value || 1132;
+                    sel.innerHTML = '';
+                    data.races.forEach(r => {
+                        const opt = document.createElement('option');
+                        opt.value = r.race_id;
+                        opt.innerText = `${r.season} Round ${r.round}: ${r.race_name} (${r.circuit_name})`;
+                        if (r.race_id === parseInt(currentVal)) {
+                            opt.selected = true;
+                        }
+                        sel.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.warn("Could not load dynamic races, using default options:", e);
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadRaceDropdown();
+            loadRacePredictions(1132); // 2024 British GP
+            loadBenchmarks();
+            loadPatternMining();
+        });
+    </script>
+</body>
+</html>

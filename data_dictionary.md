@@ -167,3 +167,46 @@ Records driver and team overall performance metrics per race.
 | `driver_age_years` | DECIMAL(5,2) | | Driver's age at date of race. | `driver_age_years` | |
 | `driver_standing_gap_to_leader` | DECIMAL(7,2) | | Points behind driver championship leader. | `driver_standing_gap_to_leader` | |
 | `constructor_standing_gap_to_leader` | DECIMAL(7,2) | | Points behind constructor championship leader. | `constructor_standing_gap_to_leader` | |
+
+---
+
+## Machine Learning & Winner Prediction Feature Layer
+
+*Table: `ML_WINNER_PREDICTION_FEATURES` (in `f1_warehouse.db`) and `F1_ML_Winner_Prediction_Dataset.csv` (97 total columns)*
+
+### 1. 🚗 Car Features
+| Column Name | Data Type | Description | Source / Derivation |
+|---|---|---|---|
+| `car_engine_architecture` | VARCHAR(100) | Formula engine specification (e.g. 1.6L V6 Turbo Hybrid, 2.4L V8, 3.0L V10). | Derived from technical regulation era |
+| `car_power_unit_supplier` | VARCHAR(50) | Official engine supplier / manufacturer (Ferrari, Mercedes, Red Bull Powertrains, Honda, Renault, BMW). | Manufacturer tracking across seasons |
+| `car_estimated_power_bhp` | INT | Engine output rating in BHP, accounting for works factory tier advantages. | Calculated from engine era & supplier |
+| `car_min_weight_kg` | INT | Official FIA minimum car weight regulation for that season (605kg–798kg). | FIA Technical Regulations |
+| `car_power_to_weight_ratio` | DECIMAL(6,4) | Ratio of engine power to minimum car weight (BHP / kg). | `car_estimated_power_bhp / car_min_weight_kg` |
+| `car_aero_regulation_era` | VARCHAR(100) | Aerodynamic formula era (e.g., Ground Effect, Turbo Hybrid Wide, V8 Blown Diffuser). | FIA Aero Rule Epochs |
+| `car_chassis_model` | VARCHAR(50) | Constructor chassis model designation (e.g., RB20, SF-24, MCL38, W15). | Constructor Chassis Registry |
+| `car_mechanical_reliability_score` | DECIMAL(5,4) | Non-mechanical completion rate (% of races completed without mechanical DNF). | Historical seasonal aggregation |
+| `constructor_pace_index` | DECIMAL(5,2) | Relative qualifying pace advantage index (higher = faster chassis). | `21.0 - constructor_season_avg_grid` |
+
+### 2. ⏱️ Lap Record & Track Speed Features
+| Column Name | Data Type | Description | Source / Derivation |
+|---|---|---|---|
+| `circuit_lap_record_sec` | DECIMAL(6,3) | Official all-time FIA race lap record for the circuit (in seconds). | Official F1 Track Records |
+| `circuit_lap_record_str` | VARCHAR(20) | Formatted lap record time string (e.g. "1:27.097"). | Official F1 Track Records |
+| `circuit_lap_record_holder` | VARCHAR(100) | Driver holding the all-time race lap record. | Official F1 Track Records |
+| `circuit_lap_record_year` | INT | Year in which the all-time race lap record was established. | Official F1 Track Records |
+| `driver_fastest_lap_sec` | DECIMAL(6,3) | Driver's fastest lap time in the Grand Prix in seconds. | `fastest_lap_time` or `fastest_recorded_lap_ms` |
+| `driver_lap_record_delta_sec` | DECIMAL(6,3) | Gap in seconds between driver fastest lap and all-time circuit record. | `driver_fastest_lap_sec - circuit_lap_record_sec` |
+| `driver_lap_record_ratio` | DECIMAL(6,4) | Pace ratio against all-time track record (1.0 = equal to record). | `driver_fastest_lap_sec / circuit_lap_record_sec` |
+| `driver_quali_to_record_delta_sec` | DECIMAL(6,3) | Delta between qualifying time and circuit lap record limit. | `driver_qualifying_sec - circuit_lap_record_sec` |
+
+### 3. 🛠️ Pit Stop Times & Efficiency Features
+| Column Name | Data Type | Description | Source / Derivation |
+|---|---|---|---|
+| `circuit_pit_lane_loss_sec` | DECIMAL(5,2) | Baseline pit lane transit time penalty for the circuit (19.4s–27.8s). | FIA Circuit Geometry & Speed Limits |
+| `pit_crew_efficiency_score` | DECIMAL(5,2) | Constructor pit crew execution benchmark score (0–100 scale). | DHL Fastest Pit Stop Benchmark Data |
+| `estimated_stationary_pit_sec` | DECIMAL(6,3) | Estimated wheel-gun stationary tire change time (isolated from pit transit). | `avg_pit_duration_sec - circuit_pit_lane_loss_sec` |
+| `total_race_pit_loss_sec` | DECIMAL(7,2) | Net race time invested in pit stops across the Grand Prix. | `(pit_stop_count * circuit_pit_lane_loss_sec) + total_pit_duration_sec` |
+| `pit_loss_delta_to_race_mean_sec` | DECIMAL(6,2) | Pit stop efficiency delta relative to the race field average. | `total_race_pit_loss_sec - race_mean_pit_loss` |
+| `winning_strategy_stop_count` | INT | Number of pit stops executed by the eventual race winner. | Race winner pit stop count |
+| `pit_stop_delta_to_winning_strategy` | INT | Difference in pit stop count from the winning strategy. | `pit_stop_count - winning_strategy_stop_count` |
+

@@ -1,0 +1,32 @@
+feature,importance,group
+grid_position,0.23541519,Car Features
+qualifying_position,0.18153974,Car Features
+driver_championship_position,0.15624654,Car Features
+car_min_weight_kg,0.031302527,Car Features
+car_mechanical_reliability_score,0.024303993,Car Features
+rule_pace_and_pit_mastery,0.020610353,Association Rule Features
+estimated_stationary_pit_sec,0.0203289,Pit Stop Features
+driver_standing_points,0.019734997,Car Features
+constructor_championship_position,0.019392451,Car Features
+pit_crew_efficiency_score,0.0169756,Pit Stop Features
+constructor_pace_index,0.016166708,Car Features
+car_power_to_weight_ratio,0.015291477,Car Features
+driver_lap_record_delta_sec,0.015278546,Lap Record Features
+constructor_standing_points,0.015037633,Car Features
+fastest_lap_speed,0.014596924,Lap Record Features
+total_race_pit_loss_sec,0.014525414,Pit Stop Features
+pit_loss_delta_to_race_mean_sec,0.0144149475,Pit Stop Features
+rule_top3_front_row_reliable,0.01423973,Association Rule Features
+driver_lap_record_ratio,0.014081612,Lap Record Features
+driver_fastest_lap_sec,0.013980422,Lap Record Features
+average_lap_ms,0.013565467,Lap Record Features
+driver_age_years,0.013274482,Car Features
+avg_pit_duration_sec,0.0127128335,Pit Stop Features
+car_estimated_power_bhp,0.012556356,Car Features
+rule_composite_win_score,0.0120212715,Association Rule Features
+pit_stop_count,0.01192632,Pit Stop Features
+circuit_pit_lane_loss_sec,0.011802129,Pit Stop Features
+driver_quali_to_record_delta_sec,0.011689561,Lap Record Features
+circuit_lap_record_sec,0.0113188755,Lap Record Features
+rule_hybrid_power_front_row,0.008772915,Association Rule Features
+rule_pole_elite_crew,0.0068960483,Association Rule Features

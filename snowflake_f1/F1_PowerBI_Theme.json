@@ -1,0 +1,127 @@
+{
+  "name": "Formula 1 High-Octane Racing Dark",
+  "dataColors": [
+    "#E10600",
+    "#00BDAE",
+    "#F2C811",
+    "#118DFF",
+    "#00E676",
+    "#E66C37",
+    "#A05BF5",
+    "#FF5252",
+    "#8B949E"
+  ],
+  "background": "#0B0D10",
+  "foreground": "#FFFFFF",
+  "tableAccent": "#E10600",
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [
+          {
+            "color": {
+              "solid": {
+                "color": "#1C1C1C"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "color": {
+              "solid": {
+                "color": "#333333"
+              }
+            },
+            "radius": 6
+          }
+        ],
+        "title": [
+          {
+            "color": {
+              "solid": {
+                "color": "#FFFFFF"
+              }
+            },
+            "fontFamily": "Segoe UI",
+            "fontSize": 12
+          }
+        ],
+        "legend": [
+          {
+            "labelColor": {
+              "solid": {
+                "color": "#CCCCCC"
+              }
+            },
+            "fontFamily": "Segoe UI"
+          }
+        ],
+        "categoryAxis": [
+          {
+            "labelColor": {
+              "solid": {
+                "color": "#CCCCCC"
+              }
+            },
+            "gridlineColor": {
+              "solid": {
+                "color": "#2A2A2A"
+              }
+            }
+          }
+        ],
+        "valueAxis": [
+          {
+            "labelColor": {
+              "solid": {
+                "color": "#CCCCCC"
+              }
+            },
+            "gridlineColor": {
+              "solid": {
+                "color": "#2A2A2A"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "card": {
+      "*": {
+        "background": [
+          {
+            "color": {
+              "solid": {
+                "color": "#242424"
+              }
+            }
+          }
+        ],
+        "labels": [
+          {
+            "color": {
+              "solid": {
+                "color": "#F2C811"
+              }
+            },
+            "fontSize": 24,
+            "fontFamily": "Segoe UI"
+          }
+        ],
+        "categoryLabels": [
+          {
+            "color": {
+              "solid": {
+                "color": "#888888"
+              }
+            },
+            "fontSize": 10,
+            "fontFamily": "Segoe UI"
+          }
+        ]
+      }
+    }
+  }
+}

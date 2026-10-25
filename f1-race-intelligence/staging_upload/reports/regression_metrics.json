@@ -1,0 +1,14 @@
+{
+  "best_regression_model": "Random Forest Regressor",
+  "mae": 2.64,
+  "rmse": 3.64,
+  "r2_score": 0.6003,
+  "within_1_position_pct": 26.74,
+  "within_2_positions_pct": 49.86,
+  "error_distribution": {
+    "error_mean": 0.2366659934369543,
+    "error_std": 3.7604079675568944,
+    "p50_absolute_error": 2.0312027217056023,
+    "p90_absolute_error": 5.622766917361407
+  }
+}

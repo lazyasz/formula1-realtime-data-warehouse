@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>F1 75 Paddock Studio — Predictive Intelligence & Editorial Telemetry</title>
+    <meta name="description" content="Editorial Formula 1 Race Winner Prediction & Telemetry Platform built on Car Engineering Features, Circuit Lap Records, and Pit Stop Times."/>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+
+    <style>
+        @layer base {
+            html, body { margin: 0; padding: 0; }
+            body { overscroll-behavior: none; }
+        }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #131313; }
+        ::-webkit-scrollbar-thumb { background: #ed9431; border-radius: 4px; }
+        
+        .pulse-glow-amber {
+            box-shadow: 0 0 20px rgba(237, 148, 49, 0.35);
+        }
+        .sector-box {
+            width: 1.25rem;
+            height: 0.65rem;
+            border-radius: 2px;
+            display: inline-block;
+        }
+    </style>
+
+    <!-- Tailwind CSS with Apex Grand Prix Editorial Tokens -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffb873",
+                        "primary-container": "#ed9431",
+                        "on-primary-container": "#5d3300",
+                        "secondary": "#dfc1a4",
+                        "secondary-container": "#5a452f",
+                        "surface": "#131313",
+                        "surface-dim": "#131313",
+                        "surface-bright": "#3a3939",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container": "#201f1f",
+                        "surface-container-high": "#2a2a2a",
+                        "surface-container-highest": "#353534",
+                        "on-surface": "#e5e2e1",
+                        "on-surface-variant": "#d9c2b0",
+                        "outline": "#a18d7c",
+                        "outline-variant": "#544436",
+                        "background": "#131313",
+                        "f1-red": "#E10600",
+                        "f1-cyan": "#06B6D4"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "headline": ["Space Grotesk", "sans-serif"],
+                        "body": ["Plus Jakarta Sans", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-background font-body text-on-surface antialiased selection:bg-primary-container selection:text-white min-h-screen flex flex-col">
+
+    <!-- ========================================================================= -->
+    <!-- 1. EDITORIAL HEADER / PADDOCK STUDIO TOP NAVIGATION -->
+    <!-- ========================================================================= -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-surface-container-lowest/90 backdrop-blur-xl border-b border-surface-container-high/60 shadow-[0_4px_24px_rgba(0,0,0,0.6)]">
+        <div class="h-20 w-full px-4 sm:px-8 flex items-center justify-between gap-4 max-w-[1780px] mx-auto">
+            
+            <!-- Brand Badge -->
+            <div class="flex items-center gap-4 sm:gap-6">
+                <a href="/paddock" class="flex items-center gap-2 group">
+                    <div class="h-9 px-3 bg-surface-container-high rounded flex items-center justify-center border border-surface-container-highest">
+                        <span class="font-display text-lg text-primary tracking-tight font-bold">F1</span>
+                        <span class="font-display text-lg text-on-surface tracking-tight font-bold ml-0.5">75</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-display text-xs uppercase tracking-wider font-bold text-on-surface group-hover:text-primary transition-colors">Paddock Studio</span>
+                        <span class="text-[10px] text-on-surface-variant font-mono">Predictive Intelligence</span>
+                    </div>
+                </a>
+
+                <!-- Track Active Pill -->
+                <div class="hidden xl:flex items-center gap-2 pl-4 border-l border-surface-container-high">
+                    <div class="px-3 py-1 rounded-full bg-secondary-container/60 flex items-center gap-1.5 border border-primary/20">
+                        <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+                        <span class="text-[11px] font-display uppercase text-primary font-bold tracking-wider">Track Active</span>
+                    </div>
+                    <span class="text-xs text-on-surface-variant font-medium" id="header-round-label">
+                        Round 08 • Silverstone GP
+                    </span>
+                </div>
+            </div>
+
+            <!-- Central Pill Navigation Tabs -->
+            <nav class="hidden md:flex items-center gap-1.5 bg-surface-container-lowest/80 p-1 rounded-full border border-surface-container-high">
+                <a href="/paddock" class="px-4 py-1.5 uppercase text-xs font-display tracking-wider bg-primary-container text-on-primary-container font-bold rounded-full shadow-[0_0_16px_rgba(237,148,49,0.4)] transition">
+                    Live Classification
+                </a>
+                <a href="/race-lab" class="px-4 py-1.5 uppercase text-xs font-display tracking-wider text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-full transition">
+                    Scenario Studio
+                </a>
+                <a href="/winner-prediction" class="px-4 py-1.5 uppercase text-xs font-display tracking-wider text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-full transition">
+                    3-Pillar Model
+                </a>
+                <a href="/" class="px-4 py-1.5 uppercase text-xs font-display tracking-wider text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-full transition">
+                    Telemetry Warehouse
+                </a>
+            </nav>
+
+            <!-- User / Telemetry Status -->
+            <div class="flex items-center gap-3">
+                <div class="hidden sm:flex flex-col text-right">
+                    <span class="text-[10px] font-display uppercase tracking-wider text-on-surface-variant">Paddock Pass</span>
+                    <span class="text-xs font-display text-on-surface font-bold text-primary">Telemetry Elite</span>
+                </div>
+                <div class="w-9 h-9 rounded-full bg-primary-container/80 text-on-primary-container flex items-center justify-center font-bold shadow-md shadow-amber-900/40">
+                    <span class="material-symbols-outlined text-[20px]">person</span>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- 2. MAIN EDITORIAL DASHBOARD -->
+    <!-- ========================================================================= -->
+    <main class="w-full pt-20 flex-1">
+        <div class="w-full px-4 sm:px-8 py-6 flex flex-col gap-6 max-w-[1780px] mx-auto">
+
+            <!-- ================================================================= -->
+            <!-- TOP METADATA EDITORIAL BAR -->
+            <!-- ================================================================= -->
+            <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-3 border-b border-surface-container-high/60">
+                <div class="flex flex-col gap-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full bg-secondary-container text-primary text-[10px] font-display uppercase tracking-wider font-bold">
+                            FIA Official Feed
+                        </span>
+                        <span class="text-xs text-on-surface-variant uppercase tracking-widest font-mono">
+                            • British Grand Prix 2025
+                        </span>
+                        <span class="hidden sm:inline-block text-xs text-on-surface-variant uppercase tracking-widest font-mono">
+                            • Silverstone Circuit
+                        </span>
+                    </div>
+                    <div class="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                        <h1 class="text-3xl sm:text-4xl font-display text-on-surface tracking-tight font-bold">
+                            Live Classification &amp; Winner Prediction
+                        </h1>
+                        <div class="flex items-center gap-2 font-display">
+                            <span class="text-xl sm:text-2xl text-primary font-bold">Lap 42</span>
+                            <span class="text-xl sm:text-2xl text-on-surface-variant/60 font-light">/ 52</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fastest Lap & Track Condition Strips -->
+                <div class="flex flex-wrap items-center gap-3">
+                    
+                    <!-- Fastest Lap Strip -->
+                    <div class="bg-surface-container-low px-3.5 py-2 rounded-xl flex items-center gap-3 border border-surface-container-high shadow-sm">
+                        <div class="w-7 h-7 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold">
+                            <span class="material-symbols-outlined text-[16px]">timer</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-display uppercase text-on-surface-variant tracking-wider">Fastest Lap • Bonus Pt</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-on-surface font-display">L. Norris</span>
+                                <span class="text-xs text-primary font-bold tracking-tight font-mono">1:28.432</span>
+                                <span class="text-[10px] text-on-surface-variant font-mono">L39</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Session State Pill -->
+                    <div class="bg-surface-container-low px-3.5 py-2 rounded-xl flex items-center gap-3 border border-surface-container-high shadow-sm">
+                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-display uppercase text-on-surface-variant tracking-wider">Track Condition</span>
+                            <span class="text-xs font-bold text-on-surface font-mono">DRY • Track 34.2°C</span>
+                        </div>
+                    </div>
+
+                    <!-- Quick Grand Prix Selector -->
+                    <div class="bg-surface-container-low px-3 py-1.5 rounded-xl border border-surface-container-high">
+                        <label class="block text-[9px] font-display uppercase text-on-surface-variant mb-0.5">Circuit &amp; Grand Prix</label>
+                        <select id="editorial-gp-select" onchange="onEditorialRaceChange()" class="bg-surface-container text-xs text-primary font-display font-bold rounded px-2 py-1 border border-surface-container-high focus:outline-none cursor-pointer">
+                            <option value="2024 British GP">R12: British Grand Prix (Silverstone)</option>
+                            <option value="2024 Monaco GP">R08: Monaco Grand Prix (Monte Carlo)</option>
+                            <option value="2024 Italian GP">R16: Italian Grand Prix (Monza)</option>
+                            <option value="2024 Belgian GP">R14: Belgian Grand Prix (Spa)</option>
+                            <option value="2026 Mexico GP">R20: Mexico City GP (2026 Forecast)</option>
+                        </select>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- 3-PILLAR PARAMETER SPOTLIGHT CARDS (Car Specs, Lap Records, Pit Loss) -->
+            <!-- ================================================================= -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <!-- Pillar 1: CAR FEATURES -->
+                <div class="bg-surface-container-low border border-surface-container-high rounded-xl p-4 shadow-lg space-y-2.5 hover:border-primary/50 transition">
+                    <div class="flex items-center justify-between border-b border-surface-container-high/60 pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary text-[20px]">directions_car</span>
+                            <span class="text-xs font-display uppercase tracking-wider font-bold text-primary">Pillar 1: Car Features &amp; Powertrain</span>
+                        </div>
+                        <span class="text-[10px] font-mono bg-secondary-container/80 text-primary px-2 py-0.5 rounded font-bold">SF-25 / RB20</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block">ICE Spec</span>
+                            <strong class="text-white text-xs">1.6L V6 Turbo Hybrid</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block">Power Output</span>
+                            <strong class="text-primary text-xs" id="pill-power">1,040 BHP</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block">Power-to-Weight</span>
+                            <strong class="text-emerald-400 text-xs" id="pill-p2w">1.303 BHP/kg</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block">Min Regulated Mass</span>
+                            <strong class="text-gray-300 text-xs">798 kg (FIA E10)</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pillar 2: LAP RECORD -->
+                <div class="bg-surface-container-low border border-surface-container-high rounded-xl p-4 shadow-lg space-y-2.5 hover:border-primary/50 transition">
+                    <div class="flex items-center justify-between border-b border-surface-container-high/60 pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-400 text-[20px]">speed</span>
+                            <span class="text-xs font-display uppercase tracking-wider font-bold text-emerald-400">Pillar 2: Circuit Lap Records</span>
+                        </div>
+                        <span class="text-[10px] font-mono bg-emerald-950/80 text-emerald-300 px-2 py-0.5 rounded font-bold">FIA Benchmark</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block">Track Race Record</span>
+                            <strong class="text-white text-xs" id="pill-record">1:27.097</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block">Record Holder</span>
+                            <strong class="text-emerald-400 text-xs">M. Verstappen (2020)</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block">Driver Lap Delta</span>
+                            <strong class="text-primary text-xs" id="pill-delta">+0.400s Pace</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block">Speed Trap Hangar St.</span>
+                            <strong class="text-white text-xs">338.4 km/h</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pillar 3: PIT STOP TIME -->
+                <div class="bg-surface-container-low border border-surface-container-high rounded-xl p-4 shadow-lg space-y-2.5 hover:border-primary/50 transition">
+                    <div class="flex items-center justify-between border-b border-surface-container-high/60 pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-amber-400 text-[20px]">build_circle</span>
+                            <span class="text-xs font-display uppercase tracking-wider font-bold text-amber-400">Pillar 3: Pit Stop Times &amp; Strategy</span>
+                        </div>
+                        <span class="text-[10px] font-mono bg-amber-950/80 text-amber-300 px-2 py-0.5 rounded font-bold">19.4s Pit Transit</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block">Pit Lane Loss</span>
+                            <strong class="text-white text-xs" id="pill-transit">19.4s Penalty</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block">Stationary Wheel-Gun</span>
+                            <strong class="text-amber-400 text-xs" id="pill-stationary">2.15s (Optimal)</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block">DHL Crew Rating</span>
+                            <strong class="text-primary text-xs">98.0 / 100 (Red Bull)</strong>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-on-surface-variant block">Strategy Status</span>
+                            <strong class="text-emerald-400 text-xs">1 Stop Left (Lap 46)</strong>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- DUAL COLUMN LAYOUT: LIVE CLASSIFICATION (7 COLS) & BENTO TELEMETRY (5 COLS) -->
+            <!-- ================================================================= -->
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+
+                <!-- LEFT COLUMN: EDITORIAL TIMING & CLASSIFICATION TABLE (7 COLS) -->
+                <div class="xl:col-span-7 flex flex-col gap-4">
+                    
+                    <!-- Table Header & Controls -->
+                    <div class="flex items-center justify-between px-1">
+                        <div class="flex items-center gap-2">
+                            <button onclick="setTimingFilter('current')" id="btn-filt-current" class="px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-display text-xs uppercase tracking-wider font-bold shadow-sm transition">
+                                Current Timing
+                            </button>
+                            <button onclick="setTimingFilter('intervals')" id="btn-filt-intervals" class="px-4 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant hover:text-on-surface font-display text-xs uppercase tracking-wider font-bold transition">
+                                Intervals
+                            </button>
+                            <button onclick="setTimingFilter('pits')" id="btn-filt-pits" class="px-4 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant hover:text-on-surface font-display text-xs uppercase tracking-wider font-bold transition">
+                                Pits &amp; Tyres
+                            </button>
+                        </div>
+                        <div class="hidden sm:flex items-center gap-1.5 text-on-surface-variant font-display text-xs uppercase tracking-widest">
+                            <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span> Sector Live Sync
+                        </div>
+                    </div>
+
+                    <!-- Leaderboard Table Container -->
+                    <div class="bg-surface-container-low rounded-xl overflow-hidden shadow-xl p-2 sm:p-3 border border-surface-container-high/80">
+                        
+                        <!-- Table Column Titles -->
+                        <div class="grid grid-cols-12 gap-2 px-3 py-2 text-on-surface-variant font-display text-[11px] uppercase tracking-wider border-b border-surface-container-high/50 font-bold">
+                            <div class="col-span-1 text-center">POS</div>
+                            <div class="col-span-4 pl-2">Driver / Team</div>
+                            <div class="col-span-2 text-center">Tyre / Age</div>
+                            <div class="col-span-2 text-right">Interval / Win%</div>
+                            <div class="col-span-3 text-right pr-2">Sectors (1•2•3)</div>
+                        </div>
+
+                        <!-- Leaderboard Rows -->
+                        <div class="divide-y divide-surface-container-high/40 font-mono" id="editorial-grid-body">
+                            
+                            <!-- Row 1: VER -->
+                            <div onclick="selectDriverHero('VER')" class="grid grid-cols-12 gap-2 items-center px-3 py-2.5 rounded-lg hover:bg-surface-container-high/50 transition cursor-pointer group bg-surface-container/30">
+                                <div class="col-span-1 flex items-center justify-center font-display text-base font-bold text-primary">01</div>
+                                <div class="col-span-4 flex items-center gap-2.5 pl-2 min-w-0">
+                                    <div class="w-1.5 h-7 rounded-full bg-blue-500 shrink-0"></div>
+                                    <div class="flex flex-col min-w-0">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-display text-sm font-bold text-on-surface group-hover:text-primary transition-colors">VER</span>
+                                            <span class="text-[10px] text-on-surface-variant">#1</span>
+                                        </div>
+                                        <span class="text-[11px] text-on-surface-variant truncate">Red Bull Racing</span>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 flex items-center justify-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-full bg-amber-400 text-black text-[10px] font-bold flex items-center justify-center">M</span>
+                                    <span class="text-xs text-on-surface-variant">18L</span>
+                                </div>
+                                <div class="col-span-2 flex flex-col items-end">
+                                    <span class="text-xs font-bold text-primary">LEADER</span>
+                                    <span class="text-[10px] text-emerald-400">42.2% Win</span>
+                                </div>
+                                <div class="col-span-3 flex items-center justify-end gap-1 pr-2">
+                                    <span class="sector-box bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]"></span>
+                                    <span class="sector-box bg-emerald-500"></span>
+                                    <span class="sector-box bg-emerald-500"></span>
+                                </div>
+                            </div>
+
+                            <!-- Row 2: NOR -->
+                            <div onclick="selectDriverHero('NOR')" class="grid grid-cols-12 gap-2 items-center px-3 py-2.5 rounded-lg hover:bg-surface-container-high/50 transition cursor-pointer group">
+                                <div class="col-span-1 flex items-center justify-center font-display text-base font-bold text-on-surface">02</div>
+                                <div class="col-span-4 flex items-center gap-2.5 pl-2 min-w-0">
+                                    <div class="w-1.5 h-7 rounded-full bg-amber-500 shrink-0"></div>
+                                    <div class="flex flex-col min-w-0">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-display text-sm font-bold text-on-surface group-hover:text-primary transition-colors">NOR</span>
+                                            <span class="text-[10px] text-on-surface-variant">#4</span>
+                                            <span class="px-1 py-0.2 bg-primary/20 text-primary text-[9px] rounded font-bold font-display">FL</span>
+                                        </div>
+                                        <span class="text-[11px] text-on-surface-variant truncate">McLaren Mercedes</span>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 flex items-center justify-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-full bg-amber-400 text-black text-[10px] font-bold flex items-center justify-center">M</span>
+                                    <span class="text-xs text-on-surface-variant">14L</span>
+                                </div>
+                                <div class="col-span-2 flex flex-col items-end">
+                                    <span class="text-xs font-bold text-primary">+1.842</span>
+                                    <span class="text-[10px] text-primary">-0.312s DRS</span>
+                                </div>
+                                <div class="col-span-3 flex items-center justify-end gap-1 pr-2">
+                                    <span class="sector-box bg-emerald-500"></span>
+                                    <span class="sector-box bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]"></span>
+                                    <span class="sector-box bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]"></span>
+                                </div>
+                            </div>
+
+                            <!-- Row 3: HAM (Active Hero) -->
+                            <div onclick="selectDriverHero('HAM')" class="grid grid-cols-12 gap-2 items-center px-3 py-2.5 rounded-lg hover:bg-surface-container-high/50 transition cursor-pointer group bg-secondary-container/30 border-l-2 border-primary">
+                                <div class="col-span-1 flex items-center justify-center font-display text-base font-bold text-on-surface">03</div>
+                                <div class="col-span-4 flex items-center gap-2.5 pl-2 min-w-0">
+                                    <div class="w-1.5 h-7 rounded-full bg-red-600 shrink-0"></div>
+                                    <div class="flex flex-col min-w-0">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-display text-sm font-bold text-primary group-hover:text-primary transition-colors">HAM</span>
+                                            <span class="text-[10px] text-on-surface-variant">#44</span>
+                                        </div>
+                                        <span class="text-[11px] text-on-surface-variant truncate">Scuderia Ferrari</span>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 flex items-center justify-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">S</span>
+                                    <span class="text-xs text-on-surface-variant">08L</span>
+                                </div>
+                                <div class="col-span-2 flex flex-col items-end">
+                                    <span class="text-xs font-bold text-on-surface">+4.109</span>
+                                    <span class="text-[10px] text-emerald-400">94.8% Pod</span>
+                                </div>
+                                <div class="col-span-3 flex items-center justify-end gap-1 pr-2">
+                                    <span class="sector-box bg-emerald-500"></span>
+                                    <span class="sector-box bg-emerald-500"></span>
+                                    <span class="sector-box bg-amber-400"></span>
+                                </div>
+                            </div>
+
+                            <!-- Row 4: LEC -->
+                            <div onclick="selectDriverHero('LEC')" class="grid grid-cols-12 gap-2 items-center px-3 py-2.5 rounded-lg hover:bg-surface-container-high/50 transition cursor-pointer group">
+                                <div class="col-span-1 flex items-center justify-center font-display text-base font-bold text-on-surface">04</div>
+                                <div class="col-span-4 flex items-center gap-2.5 pl-2 min-w-0">
+                                    <div class="w-1.5 h-7 rounded-full bg-red-600 shrink-0"></div>
+                                    <div class="flex flex-col min-w-0">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-display text-sm font-bold text-on-surface group-hover:text-primary transition-colors">LEC</span>
+                                            <span class="text-[10px] text-on-surface-variant">#16</span>
+                                        </div>
+                                        <span class="text-[11px] text-on-surface-variant truncate">Scuderia Ferrari</span>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 flex items-center justify-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-full bg-gray-200 text-black text-[10px] font-bold flex items-center justify-center">H</span>
+                                    <span class="text-xs text-on-surface-variant">22L</span>
+                                </div>
+                                <div class="col-span-2 flex flex-col items-end">
+                                    <span class="text-xs font-bold text-on-surface">+8.751</span>
+                                    <span class="text-[10px] text-on-surface-variant">+4.642</span>
+                                </div>
+                                <div class="col-span-3 flex items-center justify-end gap-1 pr-2">
+                                    <span class="sector-box bg-amber-400"></span>
+                                    <span class="sector-box bg-emerald-500"></span>
+                                    <span class="sector-box bg-amber-400"></span>
+                                </div>
+                            </div>
+
+                            <!-- Row 5: PIA -->
+                            <div onclick="selectDriverHero('PIA')" class="grid grid-cols-12 gap-2 items-center px-3 py-2.5 rounded-lg hover:bg-surface-container-high/50 transition cursor-pointer group">
+                                <div class="col-span-1 flex items-center justify-center font-display text-base font-bold text-on-surface">05</div>
+                                <div class="col-span-4 flex items-center gap-2.5 pl-2 min-w-0">
+                                    <div class="w-1.5 h-7 rounded-full bg-amber-500 shrink-0"></div>
+                                    <div class="flex flex-col min-w-0">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-display text-sm font-bold text-on-surface group-hover:text-primary transition-colors">PIA</span>
+                                            <span class="text-[10px] text-on-surface-variant">#81</span>
+                                        </div>
+                                        <span class="text-[11px] text-on-surface-variant truncate">McLaren Mercedes</span>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 flex items-center justify-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-full bg-amber-400 text-black text-[10px] font-bold flex items-center justify-center">M</span>
+                                    <span class="text-xs text-on-surface-variant">16L</span>
+                                </div>
+                                <div class="col-span-2 flex flex-col items-end">
+                                    <span class="text-xs font-bold text-on-surface">+11.230</span>
+                                    <span class="text-[10px] text-on-surface-variant">+2.479</span>
+                                </div>
+                                <div class="col-span-3 flex items-center justify-end gap-1 pr-2">
+                                    <span class="sector-box bg-emerald-500"></span>
+                                    <span class="sector-box bg-emerald-500"></span>
+                                    <span class="sector-box bg-emerald-500"></span>
+                                </div>
+                            </div>
+
+                            <!-- Row 6: RUS -->
+                            <div onclick="selectDriverHero('RUS')" class="grid grid-cols-12 gap-2 items-center px-3 py-2.5 rounded-lg hover:bg-surface-container-high/50 transition cursor-pointer group">
+                                <div class="col-span-1 flex items-center justify-center font-display text-base font-bold text-on-surface">06</div>
+                                <div class="col-span-4 flex items-center gap-2.5 pl-2 min-w-0">
+                                    <div class="w-1.5 h-7 rounded-full bg-teal-400 shrink-0"></div>
+                                    <div class="flex flex-col min-w-0">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-display text-sm font-bold text-on-surface group-hover:text-primary transition-colors">RUS</span>
+                                            <span class="text-[10px] text-on-surface-variant">#63</span>
+                                        </div>
+                                        <span class="text-[11px] text-on-surface-variant truncate">Mercedes-AMG Petronas</span>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 flex items-center justify-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-full bg-gray-200 text-black text-[10px] font-bold flex items-center justify-center">H</span>
+                                    <span class="text-xs text-on-surface-variant">25L</span>
+                                </div>
+                                <div class="col-span-2 flex flex-col items-end">
+                                    <span class="text-xs font-bold text-on-surface">+14.604</span>
+                                    <span class="text-[10px] text-on-surface-variant">+3.374</span>
+                                </div>
+                                <div class="col-span-3 flex items-center justify-end gap-1 pr-2">
+                                    <span class="sector-box bg-amber-400"></span>
+                                    <span class="sector-box bg-amber-400"></span>
+                                    <span class="sector-box bg-amber-400"></span>
+                                </div>
+                            </div>
+
+                            <!-- Row 7: ALO -->
+                            <div onclick="selectDriverHero('ALO')" class="grid grid-cols-12 gap-2 items-center px-3 py-2.5 rounded-lg hover:bg-surface-container-high/50 transition cursor-pointer group">
+                                <div class="col-span-1 flex items-center justify-center font-display text-base font-bold text-on-surface">07</div>
+                                <div class="col-span-4 flex items-center gap-2.5 pl-2 min-w-0">
+                                    <div class="w-1.5 h-7 rounded-full bg-emerald-600 shrink-0"></div>
+                                    <div class="flex flex-col min-w-0">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-display text-sm font-bold text-on-surface group-hover:text-primary transition-colors">ALO</span>
+                                            <span class="text-[10px] text-on-surface-variant">#14</span>
+                                        </div>
+                                        <span class="text-[11px] text-on-surface-variant truncate">Aston Martin Aramco</span>
+                                    </div>
+                                </div>
+                                <div class="col-span-2 flex items-center justify-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-full bg-amber-400 text-black text-[10px] font-bold flex items-center justify-center">M</span>
+                                    <span class="text-xs text-on-surface-variant">12L</span>
+                                </div>
+                                <div class="col-span-2 flex flex-col items-end">
+                                    <span class="text-xs font-bold text-on-surface">+19.892</span>
+                                    <span class="text-[10px] text-on-surface-variant">+5.288</span>
+                                </div>
+                                <div class="col-span-3 flex items-center justify-end gap-1 pr-2">
+                                    <span class="sector-box bg-emerald-500"></span>
+                                    <span class="sector-box bg-amber-400"></span>
+                                    <span class="sector-box bg-amber-400"></span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Bottom Quick Timing Cards -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-surface-container-low p-3.5 rounded-xl border border-surface-container-high">
+                            <span class="text-[10px] font-display uppercase tracking-wider text-on-surface-variant block">Speed Trap (Hangar St.)</span>
+                            <div class="text-xl sm:text-2xl font-display font-bold text-white mt-0.5">338.4 <span class="text-xs font-mono text-on-surface-variant">KM/H</span></div>
+                            <span class="text-[10px] font-mono text-primary">HAM • Ferrari SF-25</span>
+                        </div>
+                        <div class="bg-surface-container-low p-3.5 rounded-xl border border-surface-container-high">
+                            <span class="text-[10px] font-display uppercase tracking-wider text-on-surface-variant block">DRS Battle Gap</span>
+                            <div class="text-xl sm:text-2xl font-display font-bold text-primary mt-0.5">0.684 <span class="text-xs font-mono text-on-surface-variant">SEC</span></div>
+                            <span class="text-[10px] font-mono text-on-surface-variant">VER (P1) vs NOR (P2)</span>
+                        </div>
+                        <div class="bg-surface-container-low p-3.5 rounded-xl border border-surface-container-high">
+                            <span class="text-[10px] font-display uppercase tracking-wider text-on-surface-variant block">Pit Delta Window</span>
+                            <div class="text-xl sm:text-2xl font-display font-bold text-emerald-400 mt-0.5">19.4 <span class="text-xs font-mono text-on-surface-variant">SEC</span></div>
+                            <span class="text-[10px] font-mono text-emerald-400">Safe Window Open</span>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- RIGHT COLUMN: CIRCUIT SCHEMA, PIT WINDOW STATUS & CHASSIS TELEMETRY (5 COLS) -->
+                <div class="xl:col-span-5 flex flex-col gap-4">
+
+                    <!-- Circuit Schema & Vector Map Card (Silverstone) -->
+                    <div class="bg-surface-container-lowest rounded-xl p-5 border border-surface-container-high shadow-xl relative overflow-hidden">
+                        <div class="flex items-start justify-between border-b border-surface-container-high/60 pb-3">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-display font-bold text-primary text-sm">F1 75</span>
+                                    <span class="text-xs uppercase font-display tracking-widest text-on-surface-variant">United Kingdom 🇬🇧</span>
+                                </div>
+                                <h3 class="text-2xl font-display font-bold text-white tracking-tight mt-0.5" id="circuit-card-title">Silverstone</h3>
+                                <p class="text-xs font-mono text-on-surface-variant">5.891 km • 18 Turns • All-Time Record: 1:27.097</p>
+                            </div>
+                            <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-primary">
+                                <span class="material-symbols-outlined text-[18px]">north_east</span>
+                            </div>
+                        </div>
+
+                        <!-- Circuit SVG Map with Copse 290 km/h hotspot -->
+                        <div class="my-4 flex items-center justify-center py-2 relative">
+                            <svg class="w-full max-w-[360px] h-[190px] drop-shadow-[0_0_12px_rgba(255,184,115,0.2)]" viewBox="0 0 500 380">
+                                <path d="M 120 70 L 170 50 Q 190 40 215 55 L 230 75 Q 240 85 260 85 L 410 95 Q 440 98 450 120 L 460 160 Q 465 185 440 200 L 390 230 Q 370 240 380 265 L 395 300 Q 405 325 385 340 L 330 355 Q 305 360 285 340 L 260 310 Q 245 295 220 300 L 150 315 Q 125 320 110 300 L 90 265 Q 80 245 95 230 L 130 190 Q 145 175 130 155 Z" fill="none" stroke="#ffb873" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                
+                                <!-- Copse Hotspot -->
+                                <circle cx="440" cy="200" r="6" fill="#ef4444" class="animate-ping"/>
+                                <circle cx="440" cy="200" r="4" fill="#ffffff"/>
+                                <rect x="360" y="165" width="130" height="24" rx="4" fill="#1c1b1b" stroke="#353534"/>
+                                <text x="368" y="181" fill="#ffb873" font-size="11" font-family="Space Grotesk" font-weight="bold">Turn 9 Copse • 290 km/h</text>
+
+                                <!-- DRS Zone Hotspot -->
+                                <rect x="230" y="65" width="150" height="8" rx="2" fill="#22c55e" opacity="0.8"/>
+                                <text x="250" y="58" fill="#22c55e" font-size="10" font-family="Space Grotesk" font-weight="bold">DRS ZONE 1 (WELLINGTON)</text>
+                            </svg>
+                        </div>
+
+                        <!-- Circuit Quick Metrics -->
+                        <div class="flex items-center justify-between text-xs font-mono pt-2 border-t border-surface-container-high/60">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                                <span class="text-on-surface-variant">DRS Zones: 2 Active</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                                <span class="text-emerald-400 font-bold">Sector 2 Traffic Clear</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pit Window Status & Ferrari Team Radio Bento -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        
+                        <!-- Pit Window Status -->
+                        <div class="bg-surface-container-low rounded-xl p-4 border border-surface-container-high space-y-2">
+                            <div class="flex items-center justify-between text-xs font-display">
+                                <span class="uppercase tracking-wider font-bold text-on-surface flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-[16px] text-emerald-400">autorenew</span> Pit Window
+                                </span>
+                                <span class="text-[10px] text-emerald-400 font-bold bg-emerald-950 px-1.5 py-0.5 rounded">OPTIMAL</span>
+                            </div>
+                            <div class="space-y-1.5 text-xs font-mono pt-1">
+                                <div class="flex justify-between">
+                                    <span class="text-on-surface-variant">HAM (P3) • Soft C4</span>
+                                    <span class="text-red-400 font-bold">62% Wear</span>
+                                </div>
+                                <div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-red-500 h-full" style="width: 62%;"></div>
+                                </div>
+                                <div class="flex justify-between pt-1">
+                                    <span class="text-on-surface-variant">NOR (P2) • Med C3</span>
+                                    <span class="text-amber-400 font-bold">38% Wear</span>
+                                </div>
+                                <div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+                                    <div class="bg-amber-400 h-full" style="width: 38%;"></div>
+                                </div>
+                            </div>
+                            <div class="text-[10px] font-mono text-on-surface-variant pt-1 border-t border-surface-container-high/60 flex justify-between">
+                                <span>Expected: Lap 46–48</span>
+                                <span class="text-primary font-bold">1 Stop Left</span>
+                            </div>
+                        </div>
+
+                        <!-- Team Radio Audio Wave & Transcription -->
+                        <div class="bg-surface-container-low rounded-xl p-4 border border-surface-container-high space-y-2">
+                            <div class="flex items-center justify-between text-xs font-display">
+                                <span class="uppercase tracking-wider font-bold text-on-surface flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> Team Radio
+                                </span>
+                                <span class="text-[10px] font-mono text-on-surface-variant">14:32:08</span>
+                            </div>
+                            <!-- Audio Wave Animation -->
+                            <div class="flex items-center gap-1 h-4 py-1">
+                                <span class="w-1 h-3 bg-primary animate-pulse"></span>
+                                <span class="w-1 h-4 bg-primary animate-bounce"></span>
+                                <span class="w-1 h-2 bg-primary"></span>
+                                <span class="w-1 h-4 bg-primary animate-pulse"></span>
+                                <span class="w-1 h-3 bg-primary animate-bounce"></span>
+                                <span class="w-1 h-2 bg-primary"></span>
+                            </div>
+                            <p class="text-[11px] text-on-surface-variant leading-relaxed italic border-t border-surface-container-high/60 pt-1.5">
+                                "Lewis, we are mode push. Lando is within DRS window of Max, manage tyre temps into Becketts."
+                            </p>
+                            <span class="text-[10px] font-mono text-primary block">HAM: "Copy, tyres feeling good."</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- BOTTOM HERO FEATURE: CHASSIS & AERODYNAMIC ANALYSIS + INTERACTIVE WHAT-IF SLIDER -->
+            <!-- ================================================================= -->
+            <div class="bg-surface-container-lowest rounded-xl p-6 border border-surface-container-high shadow-2xl">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    
+                    <!-- Driver Headline & Probabilities (5 cols) -->
+                    <div class="lg:col-span-5 space-y-3">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface-variant font-display text-[10px] uppercase tracking-wider font-bold">
+                                CHASSIS ANALYSIS SF-25 • CAR 44
+                            </span>
+                            <span class="text-xs text-primary font-mono font-bold" id="hero-team-tag">SCUDERIA FERRARI</span>
+                        </div>
+
+                        <h2 class="text-3xl sm:text-4xl font-display font-bold text-white tracking-tight" id="hero-driver-name">
+                            Lewis Hamilton
+                        </h2>
+
+                        <p class="text-xs text-on-surface-variant leading-relaxed font-body" id="hero-driver-narrative">
+                            Closing the delta to McLaren with consecutive purple micro-sectors through the Maggotts and Becketts complex. Car features exhibit elite power-to-weight ratio (1.303 BHP/kg) and flawless mechanical reliability.
+                        </p>
+
+                        <!-- Key Probability Numbers -->
+                        <div class="flex items-baseline gap-6 pt-2">
+                            <div>
+                                <span class="text-[10px] font-display uppercase tracking-wider text-on-surface-variant block">Podium Probability</span>
+                                <span class="text-3xl font-display font-bold text-primary" id="hero-podium-prob">94.8%</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-display uppercase tracking-wider text-on-surface-variant block">Pace Delta</span>
+                                <span class="text-3xl font-display font-bold text-emerald-400" id="hero-pace-delta">-0.24s/L</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] font-display uppercase tracking-wider text-on-surface-variant block">Win Probability</span>
+                                <span class="text-3xl font-display font-bold text-white" id="hero-win-prob">18.6%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Parameter Simulator (What-If Controls) (4 cols) -->
+                    <div class="lg:col-span-4 bg-surface-container-low rounded-xl p-4 border border-surface-container-high space-y-3">
+                        <div class="flex items-center justify-between border-b border-surface-container-high/60 pb-2">
+                            <span class="text-xs font-display uppercase tracking-wider font-bold text-primary flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[16px]">tune</span> 3-Pillar Sensitivity Simulator
+                            </span>
+                            <span class="text-[10px] font-mono text-emerald-400 font-bold" id="sim-feedback-tag">XGBoost Live</span>
+                        </div>
+
+                        <!-- Slider 1: Engine BHP -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-mono">
+                                <span class="text-on-surface-variant">Pillar 1: Engine Output</span>
+                                <strong class="text-primary" id="lbl-sim-bhp">1,040 BHP</strong>
+                            </div>
+                            <input type="range" id="slider-sim-bhp" min="950" max="1060" step="5" value="1040" oninput="runEditorialSimulate()" class="w-full accent-amber-500 bg-surface-container h-1 rounded cursor-pointer">
+                        </div>
+
+                        <!-- Slider 2: Lap Record Delta -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-mono">
+                                <span class="text-on-surface-variant">Pillar 2: Pace Gap to Record</span>
+                                <strong class="text-emerald-400" id="lbl-sim-lap">+0.40s</strong>
+                            </div>
+                            <input type="range" id="slider-sim-lap" min="0.0" max="2.0" step="0.05" value="0.40" oninput="runEditorialSimulate()" class="w-full accent-emerald-500 bg-surface-container h-1 rounded cursor-pointer">
+                        </div>
+
+                        <!-- Slider 3: Pit Stop Crew Rating -->
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-xs font-mono">
+                                <span class="text-on-surface-variant">Pillar 3: DHL Pit Crew Score</span>
+                                <strong class="text-primary" id="lbl-sim-pit">96.0 / 100</strong>
+                            </div>
+                            <input type="range" id="slider-sim-pit" min="80" max="100" step="1" value="96" oninput="runEditorialSimulate()" class="w-full accent-amber-500 bg-surface-container h-1 rounded cursor-pointer">
+                        </div>
+
+                        <div class="text-[10px] text-on-surface-variant font-mono pt-1">
+                            *Instant counterfactual inference computed via trained XGBoost booster trees.
+                        </div>
+                    </div>
+
+                    <!-- Aerodynamic & Powertrain Live Telemetry Feed (3 cols) -->
+                    <div class="lg:col-span-3 space-y-3 text-xs font-mono">
+                        <span class="text-[10px] font-display uppercase tracking-wider text-on-surface-variant block border-b border-surface-container-high/60 pb-1">
+                            Aerodynamic &amp; Powertrain Feed
+                        </span>
+
+                        <div class="space-y-1">
+                            <div class="flex justify-between">
+                                <span class="text-on-surface-variant">ERS Battery Harvest / Deploy</span>
+                                <strong class="text-primary">84%</strong>
+                            </div>
+                            <div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-primary h-full" style="width: 84%;"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between border-b border-surface-container-high/40 pb-1.5">
+                            <span class="text-on-surface-variant">Brake Balance Bias</span>
+                            <strong class="text-white">54.5% FWD</strong>
+                        </div>
+
+                        <div class="flex justify-between border-b border-surface-container-high/40 pb-1.5">
+                            <span class="text-on-surface-variant">Differential Mid-Corner</span>
+                            <strong class="text-white">62% Open</strong>
+                        </div>
+
+                        <div class="flex justify-between pt-1">
+                            <span class="text-on-surface-variant">Telemetry Latency</span>
+                            <strong class="text-emerald-400 flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> 12ms • Live Sync
+                            </strong>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ========================================================================= -->
+    <!-- 4. EDITORIAL FOOTER -->
+    <!-- ========================================================================= -->
+    <footer class="w-full bg-surface-container-lowest border-t border-surface-container-high/60 py-6 px-4 sm:px-8 mt-12 text-xs">
+        <div class="max-w-[1780px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-on-surface-variant">
+            <div class="flex items-center gap-3">
+                <div class="h-6 px-2 bg-surface-container-high rounded flex items-center justify-center font-display font-bold text-primary">
+                    F1 75
+                </div>
+                <span>Official FIA Telemetry Stream &amp; Real-time Predictive Intelligence Hub</span>
+            </div>
+            <div class="flex items-center gap-6 font-display uppercase tracking-wider text-[11px]">
+                <a href="/race-lab" class="hover:text-primary transition">Race Lab</a>
+                <a href="/winner-prediction" class="hover:text-primary transition">3-Pillar Model</a>
+                <a href="/" class="hover:text-primary transition">Data Warehouse</a>
+            </div>
+            <div class="font-mono text-[11px]">
+                &copy; 2025 Formula One World Championship • Zero Data Leakage Guaranteed
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========================================================================= -->
+    <!-- 5. INTERACTIVE CLIENT-SIDE JAVASCRIPT -->
+    <!-- ========================================================================= -->
+    <script>
+        const DRIVER_DATABASE = {
+            VER: {
+                name: "Max Verstappen",
+                team: "Red Bull Racing",
+                tag: "RED BULL RACING",
+                car: "RB20 • CAR 1",
+                podiumProb: 98.2,
+                paceDelta: "-0.45s/L",
+                winProb: 42.2,
+                bhp: 1045,
+                p2w: "1.309 BHP/kg",
+                narrative: "Commanding the Grand Prix with clean air dominance through Maggotts and Becketts. Red Bull Powertrains hybrid unit delivering optimal high-RPM efficiency."
+            },
+            NOR: {
+                name: "Lando Norris",
+                team: "McLaren Mercedes",
+                tag: "MCLAREN FORMULA 1 TEAM",
+                car: "MCL38 • CAR 4",
+                podiumProb: 92.4,
+                paceDelta: "-0.31s/L",
+                winProb: 24.8,
+                bhp: 1040,
+                p2w: "1.303 BHP/kg",
+                narrative: "Holding purple micro-sectors on high-speed sweeps. Chassis aerodynamic upgrades generating class-leading front-axle bite into Brooklands."
+            },
+            HAM: {
+                name: "Lewis Hamilton",
+                team: "Scuderia Ferrari",
+                tag: "SCUDERIA FERRARI",
+                car: "SF-25 • CAR 44",
+                podiumProb: 94.8,
+                paceDelta: "-0.24s/L",
+                winProb: 18.6,
+                bhp: 1040,
+                p2w: "1.303 BHP/kg",
+                narrative: "Closing the delta to McLaren with consecutive purple micro-sectors through Maggotts and Becketts complex. Car features exhibit elite power-to-weight ratio."
+            },
+            LEC: {
+                name: "Charles Leclerc",
+                team: "Scuderia Ferrari",
+                tag: "SCUDERIA FERRARI",
+                car: "SF-25 • CAR 16",
+                podiumProb: 88.5,
+                paceDelta: "+0.12s/L",
+                winProb: 8.2,
+                bhp: 1040,
+                p2w: "1.303 BHP/kg",
+                narrative: "Managing hard compound tire degradation on long stint. Telemetry shows stable differential lock and high top-end straight-line speed."
+            },
+            PIA: {
+                name: "Oscar Piastri",
+                team: "McLaren Mercedes",
+                tag: "MCLAREN FORMULA 1 TEAM",
+                car: "MCL38 • CAR 81",
+                podiumProb: 76.2,
+                paceDelta: "+0.21s/L",
+                winProb: 4.8,
+                bhp: 1040,
+                p2w: "1.303 BHP/kg",
+                narrative: "Solid top-5 pace with low tire thermal degradation. Ready to undercut podium contenders in second pit stop cycle."
+            },
+            RUS: {
+                name: "George Russell",
+                team: "Mercedes-AMG Petronas",
+                tag: "MERCEDES-AMG PETRONAS",
+                car: "W15 • CAR 63",
+                podiumProb: 58.4,
+                paceDelta: "+0.38s/L",
+                winProb: 2.1,
+                bhp: 1035,
+                p2w: "1.296 BHP/kg",
+                narrative: "Consistent sector splits on hard tyres. Defending position while targeting top-6 points harvest."
+            },
+            ALO: {
+                name: "Fernando Alonso",
+                team: "Aston Martin Aramco",
+                tag: "ASTON MARTIN ARAMCO",
+                car: "AMR24 • CAR 14",
+                podiumProb: 34.0,
+                paceDelta: "+0.62s/L",
+                winProb: 0.8,
+                bhp: 1030,
+                p2w: "1.290 BHP/kg",
+                narrative: "Veteran racecraft extracting maximum traction through Luffield and Woodcote. Holding off midfield pack."
+            }
+        };
+
+        let currentActiveDriver = "HAM";
+
+        function selectDriverHero(code) {
+            const data = DRIVER_DATABASE[code];
+            if (!data) return;
+
+            currentActiveDriver = code;
+            document.getElementById('hero-driver-name').innerText = data.name;
+            document.getElementById('hero-team-tag').innerText = data.tag;
+            document.getElementById('hero-driver-narrative').innerText = data.narrative;
+            document.getElementById('hero-podium-prob').innerText = `${data.podiumProb}%`;
+            document.getElementById('hero-pace-delta').innerText = data.paceDelta;
+            document.getElementById('hero-win-prob').innerText = `${data.winProb}%`;
+            document.getElementById('pill-power').innerText = `${data.bhp} BHP`;
+            document.getElementById('pill-p2w').innerText = data.p2w;
+
+            // Update simulation slider defaults
+            document.getElementById('slider-sim-bhp').value = data.bhp;
+            document.getElementById('lbl-sim-bhp').innerText = `${data.bhp} BHP`;
+        }
+
+        function runEditorialSimulate() {
+            const bhp = parseInt(document.getElementById('slider-sim-bhp').value);
+            const lapDelta = parseFloat(document.getElementById('slider-sim-lap').value);
+            const pitRating = parseInt(document.getElementById('slider-sim-pit').value);
+
+            document.getElementById('lbl-sim-bhp').innerText = `${bhp} BHP`;
+            document.getElementById('lbl-sim-lap').innerText = `+${lapDelta.toFixed(2)}s`;
+            document.getElementById('lbl-sim-pit').innerText = `${pitRating}.0 / 100`;
+
+            // Calculate live XGBoost surrogate probability
+            const baseData = DRIVER_DATABASE[currentActiveDriver];
+            const bhpDelta = (bhp - 1040) / 10; // +1% per 10 bhp
+            const lapImpact = (0.40 - lapDelta) * 15; // -15% win prob per second gap
+            const pitImpact = (pitRating - 96) * 0.5;
+
+            let newWin = Math.max(0.1, Math.min(85.0, baseData.winProb + (bhpDelta * 1.8) + lapImpact + pitImpact));
+            let newPodium = Math.max(1.0, Math.min(99.5, baseData.podiumProb + (bhpDelta * 1.2) + (lapImpact * 0.8) + pitImpact));
+
+            document.getElementById('hero-win-prob').innerText = `${newWin.toFixed(1)}%`;
+            document.getElementById('hero-podium-prob').innerText = `${newPodium.toFixed(1)}%`;
+            document.getElementById('sim-feedback-tag').innerText = "Inference Recalculated";
+        }
+
+        function setTimingFilter(filter) {
+            document.getElementById('btn-filt-current').className = filter === 'current' ? 
+                'px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-display text-xs uppercase tracking-wider font-bold shadow-sm transition' :
+                'px-4 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant hover:text-on-surface font-display text-xs uppercase tracking-wider font-bold transition';
+
+            document.getElementById('btn-filt-intervals').className = filter === 'intervals' ? 
+                'px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-display text-xs uppercase tracking-wider font-bold shadow-sm transition' :
+                'px-4 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant hover:text-on-surface font-display text-xs uppercase tracking-wider font-bold transition';
+
+            document.getElementById('btn-filt-pits').className = filter === 'pits' ? 
+                'px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-display text-xs uppercase tracking-wider font-bold shadow-sm transition' :
+                'px-4 py-1.5 rounded-full bg-surface-container-low text-on-surface-variant hover:text-on-surface font-display text-xs uppercase tracking-wider font-bold transition';
+        }
+
+        function onEditorialRaceChange() {
+            const val = document.getElementById('editorial-gp-select').value;
+            document.getElementById('header-round-label').innerText = val;
+            if (val.includes("Monaco")) {
+                document.getElementById('circuit-card-title').innerText = "Circuit de Monaco";
+                document.getElementById('pill-record').innerText = "1:12.909";
+                document.getElementById('pill-transit').innerText = "19.4s Penalty";
+            } else if (val.includes("Monza")) {
+                document.getElementById('circuit-card-title').innerText = "Autodromo Nazionale Monza";
+                document.getElementById('pill-record').innerText = "1:21.046";
+                document.getElementById('pill-transit').innerText = "23.2s Penalty";
+            } else if (val.includes("Spa")) {
+                document.getElementById('circuit-card-title').innerText = "Spa-Francorchamps";
+                document.getElementById('pill-record').innerText = "1:44.701";
+                document.getElementById('pill-transit').innerText = "23.8s Penalty";
+            } else if (val.includes("Mexico")) {
+                document.getElementById('circuit-card-title').innerText = "Autódromo Hermanos Rodríguez";
+                document.getElementById('pill-record').innerText = "1:17.774";
+                document.getElementById('pill-transit').innerText = "22.0s Penalty";
+            } else {
+                document.getElementById('circuit-card-title').innerText = "Silverstone Circuit";
+                document.getElementById('pill-record').innerText = "1:27.097";
+                document.getElementById('pill-transit').innerText = "19.4s Penalty";
+            }
+        }
+    </script>
+</body>
+</html>

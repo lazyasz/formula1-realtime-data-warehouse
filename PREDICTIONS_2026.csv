@@ -1,0 +1,11 @@
+RACE_NAME,DRIVERID,CONSTRUCTORID,GRID,win_prob,predicted_rank
+2026 Australian Grand Prix,830,9,1,0.9138,1
+2026 Australian Grand Prix,844,6,3,0.0425,2
+2026 Australian Grand Prix,846,1,2,0.0367,3
+2026 Australian Grand Prix,847,131,6,0.0036,4
+2026 Australian Grand Prix,1,6,4,0.0021,5
+2026 Australian Grand Prix,857,1,5,0.0008,6
+2026 Australian Grand Prix,832,3,10,0.0002,7
+2026 Australian Grand Prix,859,131,7,1e-04,8
+2026 Australian Grand Prix,4,117,8,1e-04,9
+2026 Australian Grand Prix,848,3,9,1e-04,10

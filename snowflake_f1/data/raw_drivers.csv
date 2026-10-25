@@ -1,0 +1,109 @@
+driver_id,driver_ref,driver_code,driver_name,driver_dob,driver_nationality
+1,hamilton,HAM,Lewis Hamilton,1985-01-07,British
+2,heidfeld,HEI,Nick Heidfeld,1977-05-10,German
+3,rosberg,ROS,Nico Rosberg,1985-06-27,German
+4,alonso,ALO,Fernando Alonso,1981-07-29,Spanish
+5,kovalainen,KOV,Heikki Kovalainen,1981-10-19,Finnish
+6,nakajima,NAK,Kazuki Nakajima,1985-01-11,Japanese
+7,bourdais,BOU,Sébastien Bourdais,1979-02-28,French
+8,raikkonen,RAI,Kimi Räikkönen,1979-10-17,Finnish
+9,kubica,KUB,Robert Kubica,1984-12-07,Polish
+10,glock,GLO,Timo Glock,1982-03-18,German
+11,sato,SAT,Takuma Sato,1977-01-28,Japanese
+12,piquet_jr,PIQ,Nelson Piquet Jr.,1985-07-25,Brazilian
+13,massa,MAS,Felipe Massa,1981-04-25,Brazilian
+14,coulthard,COU,David Coulthard,1971-03-27,British
+15,trulli,TRU,Jarno Trulli,1974-07-13,Italian
+16,sutil,SUT,Adrian Sutil,1983-01-11,German
+17,webber,WEB,Mark Webber,1976-08-27,Australian
+18,button,BUT,Jenson Button,1980-01-19,British
+19,davidson,DAV,Anthony Davidson,1979-04-18,British
+20,vettel,VET,Sebastian Vettel,1987-07-03,German
+21,fisichella,FIS,Giancarlo Fisichella,1973-01-14,Italian
+22,barrichello,BAR,Rubens Barrichello,1972-05-23,Brazilian
+23,ralf_schumacher,SCH,Ralf Schumacher,1975-06-30,German
+24,liuzzi,LIU,Vitantonio Liuzzi,1980-08-06,Italian
+25,wurz,WUR,Alexander Wurz,1974-02-15,Austrian
+26,speed,SPE,Scott Speed,1983-01-24,American
+27,albers,ALB,Christijan Albers,1979-04-16,Dutch
+28,markus_winkelhock,WIN,Markus Winkelhock,1980-06-13,German
+29,yamamoto,YAM,Sakon Yamamoto,1982-07-09,Japanese
+30,michael_schumacher,MSC,Michael Schumacher,1969-01-03,German
+31,montoya,MON,Juan Pablo Montoya,1975-09-20,Colombian
+32,klien,KLI,Christian Klien,1983-02-07,Austrian
+33,monteiro,TMO,Tiago Monteiro,1976-07-24,Portuguese
+34,ide,IDE,Yuji Ide,1975-01-21,Japanese
+35,villeneuve,VIL,Jacques Villeneuve,1971-04-09,Canadian
+36,montagny,FMO,Franck Montagny,1978-01-05,French
+37,rosa,DLR,Pedro de la Rosa,1971-02-24,Spanish
+38,doornbos,DOO,Robert Doornbos,1981-09-23,Dutch
+39,karthikeyan,KAR,Narain Karthikeyan,1977-01-14,Indian
+40,friesacher,FRI,Patrick Friesacher,1980-09-26,Austrian
+41,zonta,ZON,Ricardo Zonta,1976-03-23,Brazilian
+42,pizzonia,PIZ,Antônio Pizzonia,1980-09-11,Brazilian
+43,matta,\N,Cristiano da Matta,1973-09-19,Brazilian
+44,panis,\N,Olivier Panis,1966-09-02,French
+45,pantano,\N,Giorgio Pantano,1979-02-04,Italian
+46,bruni,\N,Gianmaria Bruni,1981-05-30,Italian
+47,baumgartner,\N,Zsolt Baumgartner,1981-01-01,Hungarian
+48,gene,\N,Marc Gené,1974-03-29,Spanish
+67,buemi,BUE,Sébastien Buemi,1988-10-31,Swiss
+153,alguersuari,ALG,Jaime Alguersuari,1990-03-23,Spanish
+154,grosjean,GRO,Romain Grosjean,1986-04-17,French
+69,badoer,BAD,Luca Badoer,1971-01-25,Italian
+155,kobayashi,KOB,Kamui Kobayashi,1986-09-13,Japanese
+807,hulkenberg,HUL,Nico Hülkenberg,1987-08-19,German
+811,bruno_senna,SEN,Bruno Senna,1983-10-15,Brazilian
+808,petrov,PET,Vitaly Petrov,1984-09-08,Russian
+810,grassi,DIG,Lucas di Grassi,1984-08-11,Brazilian
+812,chandhok,CHA,Karun Chandhok,1984-01-19,Indian
+814,resta,DIR,Paul di Resta,1986-04-16,British
+816,ambrosio,DAM,Jérôme d'Ambrosio,1985-12-27,Belgian
+813,maldonado,MAL,Pastor Maldonado,1985-03-09,Venezuelan
+815,perez,PER,Sergio Pérez,1990-01-26,Mexican
+817,ricciardo,RIC,Daniel Ricciardo,1989-07-01,Australian
+818,vergne,VER,Jean-Éric Vergne,1990-04-25,French
+819,pic,PIC,Charles Pic,1990-02-15,French
+821,gutierrez,GUT,Esteban Gutiérrez,1991-08-05,Mexican
+822,bottas,BOT,Valtteri Bottas,1989-08-28,Finnish
+824,jules_bianchi,BIA,Jules Bianchi,1989-08-03,French
+820,chilton,CHI,Max Chilton,1991-04-21,British
+823,garde,VDG,Giedo van der Garde,1985-04-25,Dutch
+825,kevin_magnussen,MAG,Kevin Magnussen,1992-10-05,Danish
+826,kvyat,KVY,Daniil Kvyat,1994-04-26,Russian
+828,ericsson,ERI,Marcus Ericsson,1990-09-02,Swedish
+827,lotterer,LOT,André Lotterer,1981-11-19,German
+829,stevens,STE,Will Stevens,1991-06-28,British
+831,nasr,NAS,Felipe Nasr,1992-08-21,Brazilian
+832,sainz,SAI,Carlos Sainz,1994-09-01,Spanish
+830,max_verstappen,VER,Max Verstappen,1997-09-30,Dutch
+833,merhi,MER,Roberto Merhi,1991-03-22,Spanish
+834,rossi,RSS,Alexander Rossi,1991-09-25,American
+835,jolyon_palmer,PAL,Jolyon Palmer,1991-01-20,British
+836,wehrlein,WEH,Pascal Wehrlein,1994-10-18,German
+837,haryanto,HAR,Rio Haryanto,1993-01-22,Indonesian
+838,vandoorne,VAN,Stoffel Vandoorne,1992-03-26,Belgian
+839,ocon,OCO,Esteban Ocon,1996-09-17,French
+841,giovinazzi,GIO,Antonio Giovinazzi,1993-12-14,Italian
+840,stroll,STR,Lance Stroll,1998-10-29,Canadian
+842,gasly,GAS,Pierre Gasly,1996-02-07,French
+843,brendon_hartley,HAR,Brendon Hartley,1989-11-10,New Zealander
+844,leclerc,LEC,Charles Leclerc,1997-10-16,Monegasque
+845,sirotkin,SIR,Sergey Sirotkin,1995-08-27,Russian
+846,norris,NOR,Lando Norris,1999-11-13,British
+848,albon,ALB,Alexander Albon,1996-03-23,Thai
+847,russell,RUS,George Russell,1998-02-15,British
+849,latifi,LAT,Nicholas Latifi,1995-06-29,Canadian
+851,aitken,AIT,Jack Aitken,1995-09-23,British
+850,pietro_fittipaldi,FIT,Pietro Fittipaldi,1996-06-25,Brazilian
+852,tsunoda,TSU,Yuki Tsunoda,2000-05-11,Japanese
+854,mick_schumacher,MSC,Mick Schumacher,1999-03-22,German
+853,mazepin,MAZ,Nikita Mazepin,1999-03-02,Russian
+855,zhou,ZHO,Guanyu Zhou,1999-05-30,Chinese
+856,de_vries,DEV,Nyck de Vries,1995-02-06,Dutch
+858,sargeant,SAR,Logan Sargeant,2000-12-31,American
+857,piastri,PIA,Oscar Piastri,2001-04-06,Australian
+859,lawson,LAW,Liam Lawson,2002-02-11,New Zealander
+860,bearman,BEA,Oliver Bearman,2005-05-08,British
+861,colapinto,COL,Franco Colapinto,2003-05-27,Argentinian 
+862,doohan,DOO,Jack Doohan,2003-01-20,Australian

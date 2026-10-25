@@ -1,0 +1,6 @@
+experiment,roc_auc,pr_auc,top1_race_acc,top1_hits
+1. Baseline XGBoost (No Innovations),0.9371,0.4606,58.33,14
+2. + FP-Growth Rule Flags,0.9326,0.431,54.17,13
+3. + Recency Weighting,0.93,0.4194,50.0,12
+4. + Group Softmax Normalisation,0.9191,0.5369,50.0,12
+5. All Combined (Proposed Champion),0.923,0.5586,45.83,11

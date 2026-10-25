@@ -1,0 +1,15 @@
+name: snowflake_f1_streamlit
+channels:
+  - snowflake
+dependencies:
+  - snowflake-snowpark-python
+  - pandas
+  - numpy
+  - scikit-learn
+  - xgboost
+  - lightgbm
+  - mlxtend
+  - scipy
+  - plotly
+  - joblib
+

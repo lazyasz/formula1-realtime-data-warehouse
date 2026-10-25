@@ -1,0 +1,8 @@
+algorithm,roc_auc,pr_auc,accuracy_pct,balanced_acc_pct,top1_winner_hit_pct,top3_podium_hit_pct,top1_hits,brier_score,inf_latency_ms
+1. XGBoost Classifier,0.9836,0.7281,94.63,95.78,67.65,97.06,46,0.0391,15.53
+2. LightGBM Classifier,0.9828,0.7281,94.92,91.06,67.65,97.06,46,0.0349,18.19
+3. Random Forest Classifier,0.9812,0.6969,94.55,92.26,60.29,94.12,41,0.039,54.92
+4. Gradient Boosting (GBDT),0.9798,0.7376,96.39,77.21,63.24,94.12,43,0.0247,8.03
+5. Multi-Layer Perceptron (MLP),0.9816,0.731,96.62,72.45,64.71,95.59,44,0.0265,6.2
+6. Support Vector Machine (RBF),0.9721,0.6177,95.88,62.31,70.59,100.0,48,0.0302,805.41
+7. Baseline (Logistic Regression),0.8888,0.2755,92.05,48.45,33.82,76.47,23,0.0431,4.71

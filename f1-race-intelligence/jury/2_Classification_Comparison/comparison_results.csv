@@ -1,0 +1,8 @@
+algorithm,roc_auc,pr_auc,accuracy_pct,balanced_acc_pct,precision,recall,f1_score,top1_winner_hit_pct,top1_hits,top3_podium_hit_pct,brier_score,inf_latency_ms
+1. Dummy Classifier,0.5,0.05,49.96,49.28,0.0487,0.4853,0.0885,33.82,23,76.47,0.25,1.4
+2. Baseline (Logistic Reg - Grid Only),0.9198,0.3994,95.0,50.0,0.0,0.0,0.0,51.47,35,83.82,0.0345,4.25
+3. Decision Tree,0.9177,0.4715,85.58,84.75,0.2355,0.8382,0.3677,52.94,36,76.47,0.1005,3.13
+4. Random Forest Classifier,0.9561,0.5866,86.83,88.19,0.2618,0.8971,0.4053,51.47,35,86.76,0.0919,49.82
+5. Gradient Boosting (GBDT),0.9622,0.5994,96.32,70.2,0.7368,0.4118,0.5283,52.94,36,86.76,0.0293,6.45
+6. LightGBM Classifier,0.9586,0.6152,88.01,86.02,0.2727,0.8382,0.4116,51.47,35,83.82,0.0811,15.42
+7. XGBoost Classifier (Champion),0.9635,0.6029,90.14,86.45,0.3146,0.8235,0.4553,54.41,37,88.24,0.0678,11.35

@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "F1RacePredictionOutputSchema",
+  "description": "Schema for model prediction outputs, calibrated probabilities, and rankings",
+  "type": "object",
+  "properties": {
+    "race_id": {
+      "type": "integer"
+    },
+    "race_name": {
+      "type": "string"
+    },
+    "season": {
+      "type": "integer"
+    },
+    "predictions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "driver_id": {
+            "type": "integer"
+          },
+          "driver_name": {
+            "type": "string"
+          },
+          "driver_code": {
+            "type": "string"
+          },
+          "constructor_name": {
+            "type": "string"
+          },
+          "grid_position": {
+            "type": "integer"
+          },
+          "predicted_win": {
+            "type": "integer",
+            "enum": [0, 1],
+            "description": "Predicted winner classification flag (strictly 1 driver per race)"
+          },
+          "win_probability": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Group softmax normalized win probability (summing to 1.00 per race)"
+          },
+          "predicted_podium": {
+            "type": "integer",
+            "enum": [0, 1]
+          },
+          "podium_probability": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "predicted_points": {
+            "type": "integer",
+            "enum": [0, 1]
+          },
+          "points_probability": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0
+          },
+          "predicted_finish_position": {
+            "type": "number",
+            "minimum": 1.0,
+            "maximum": 24.0,
+            "description": "Secondary regression output for expected finishing slot"
+          },
+          "rank": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24,
+            "description": "Predicted race finishing order rank"
+          }
+        },
+        "required": [
+          "driver_name",
+          "predicted_win",
+          "win_probability",
+          "predicted_finish_position",
+          "rank"
+        ]
+      }
+    }
+  },
+  "required": [
+    "race_id",
+    "predictions"
+  ]
+}

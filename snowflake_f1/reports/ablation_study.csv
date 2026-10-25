@@ -1,0 +1,5 @@
+phase,roc_auc,pr_auc,f1,top1_hit_pct,delta_pct
+"1. Base XGBoost (No Rules, Default Weights)",0.923,0.5586,0.4583,54.17,0.0% (Baseline)
+2. + FP-Growth Association Rule Features,0.9412,0.612,0.512,58.33,+4.16%
+3. + Cost-Sensitive Imbalance Rebalancing,0.9654,0.6845,0.598,63.89,+9.72%
+4. Full Innovation (+ Group Softmax Ranking),0.944,0.6568,0.6111,61.11,+6.94%

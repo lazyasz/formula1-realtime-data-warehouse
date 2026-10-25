@@ -1,0 +1,2059 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Race Lab — Formula 1 Predictive Intelligence &amp; Scenario Studio</title>
+    <meta name="description" content="Formula 1 Predictive Intelligence &amp; Scenario Studio powered by 1994-2024 Ergast data, FastF1 telemetry principles, XGBoost/LightGBM classification, TreeSHAP explainability, and 2026 championship forecasting.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;0,800;1,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Titillium+Web:wght@600;700;900&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        f1: {
+                            red: '#E10600',
+                            darkRed: '#9A0000',
+                            bg: '#0B0D10',
+                            card: '#121418',
+                            panel: '#16191F',
+                            border: '#222733',
+                            hover: '#1C212B',
+                            textMuted: '#8E95A5',
+                            textBright: '#F3F4F6',
+                            gold: '#FFD700',
+                            cyan: '#06B6D4',
+                            green: '#22C55E'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        condensed: ['"Barlow Condensed"', 'sans-serif'],
+                        racing: ['"Titillium Web"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Apache ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+    <style>
+        body {
+            background-color: #0B0D10;
+            color: #F3F4F6;
+            background-image: 
+                radial-gradient(circle at 10% 15%, rgba(225, 6, 0, 0.08) 0%, transparent 35%),
+                radial-gradient(circle at 90% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 40%),
+                linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;
+        }
+
+        .glass-panel {
+            background: rgba(18, 20, 24, 0.94);
+            backdrop-filter: blur(14px);
+            border: 1px solid #222733;
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(225, 6, 0, 0.4);
+        }
+
+        .carbon-border-red {
+            border-top: 3px solid #E10600;
+        }
+
+        .carbon-border-cyan {
+            border-top: 3px solid #06B6D4;
+        }
+
+        .carbon-border-gold {
+            border-top: 3px solid #FFD700;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B0D10;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E10600;
+            border-radius: 3px;
+        }
+
+        .active-tab-btn {
+            background: #E10600 !important;
+            color: #FFFFFF !important;
+            box-shadow: 0 0 12px rgba(225, 6, 0, 0.5);
+        }
+
+        .driver-pill-active {
+            border-color: #E10600 !important;
+            background: rgba(225, 6, 0, 0.22) !important;
+            transform: scale(1.03);
+            box-shadow: 0 0 14px rgba(225, 6, 0, 0.45);
+        }
+
+        .target-chip-active {
+            background: #06B6D4 !important;
+            color: #0B0D10 !important;
+            font-weight: 700 !important;
+            box-shadow: 0 0 14px rgba(6, 182, 212, 0.5);
+            border-color: #06B6D4 !important;
+        }
+
+        .active-target-card {
+            border-color: #06B6D4 !important;
+            box-shadow: 0 0 18px rgba(6, 182, 212, 0.25) !important;
+            background: rgba(6, 182, 212, 0.08) !important;
+        }
+
+        /* Toast notification animation */
+        #toast-banner {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(-100%);
+            opacity: 0;
+        }
+        #toast-banner.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans selection:bg-red-600 selection:text-white">
+
+    <!-- Live Action Notification Toast Banner -->
+    <div id="toast-banner" class="fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-none px-4 py-2 rounded-lg bg-red-600 text-white font-mono text-xs font-bold shadow-xl shadow-red-950/60 flex items-center gap-2 border border-red-400">
+        <i class="fa-solid fa-bolt animate-pulse"></i>
+        <span id="toast-text">Prediction Updated</span>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- TOP HEADER -->
+    <!-- ========================================================================= -->
+    <header class="bg-f1-card border-b border-f1-border px-4 py-2.5 flex items-center justify-between text-xs sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 rounded bg-f1-red flex items-center justify-center font-racing font-black text-white text-lg tracking-tighter shadow-md shadow-f1-red/30">
+                LAB
+            </div>
+            <div>
+                <h1 class="font-racing font-bold text-base tracking-wider text-white flex items-center space-x-2">
+                    <span>F1 PREDICTIVE INTELLIGENCE</span>
+                    <span class="text-f1-red">&bull; THE RACE LAB</span>
+                    <span class="text-[10px] bg-red-950/80 text-red-400 border border-red-800 px-2 py-0.5 rounded font-mono uppercase">1994–2026 ENGINE</span>
+                </h1>
+                <p class="text-[11px] text-f1-textMuted font-mono">SCENARIO STUDIO &bull; HYPOTHETICAL SIMULATION &bull; 2026 FORECAST</p>
+            </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex items-center space-x-2">
+            <a href="/paddock" class="px-2.5 py-1.5 rounded text-xs text-amber-300 hover:text-white bg-amber-950/60 hover:bg-amber-900 border border-amber-700/80 flex items-center gap-1.5 transition font-bold">
+                <i class="fa-solid fa-flag-checkered text-amber-400"></i> <span class="hidden sm:inline">Paddock Studio</span>
+            </a>
+            <a href="/winner-prediction" class="px-2.5 py-1.5 rounded text-xs text-gray-300 hover:text-white hover:bg-f1-panel border border-f1-border flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-trophy text-amber-400"></i> <span class="hidden sm:inline">Winner Prediction</span>
+            </a>
+            <a href="/" class="px-2.5 py-1.5 rounded text-xs text-gray-300 hover:text-white hover:bg-f1-panel border border-f1-border flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-gauge text-red-500"></i> <span class="hidden sm:inline">Telemetry Dashboard</span>
+            </a>
+            <a href="/showcase" class="px-2.5 py-1.5 rounded text-xs text-gray-300 hover:text-white hover:bg-f1-panel border border-f1-border flex items-center gap-1.5 transition">
+                <i class="fa-solid fa-diagram-project text-cyan-400"></i> <span class="hidden sm:inline">Showcase</span>
+            </a>
+            <span class="text-[11px] font-mono bg-green-950/60 text-green-400 border border-green-800 px-2.5 py-1 rounded flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                <span>INFERENCE ACTIVE</span>
+            </span>
+        </nav>
+    </header>
+
+    <!-- Sub-Navbar / Section Tabs -->
+    <div class="bg-f1-panel/90 border-b border-f1-border px-4 py-2 sticky top-[49px] z-40 backdrop-blur-md flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center space-x-1 sm:space-x-2 overflow-x-auto">
+            <button onclick="switchLabTab('tab-scenario-studio')" id="btn-tab-scenario-studio" class="active-tab-btn px-3 py-1.5 rounded text-xs font-semibold tracking-wide uppercase transition flex items-center gap-1.5">
+                <i class="fa-solid fa-flask"></i> Scenario Studio
+            </button>
+            <button onclick="switchLabTab('tab-race-predictions')" id="btn-tab-race-predictions" class="px-3 py-1.5 rounded text-xs font-semibold tracking-wide uppercase text-gray-300 hover:text-white hover:bg-f1-card transition flex items-center gap-1.5">
+                <i class="fa-solid fa-list-ol"></i> Full Grid Predictions
+            </button>
+            <button onclick="switchLabTab('tab-compare')" id="btn-tab-compare" class="px-3 py-1.5 rounded text-xs font-semibold tracking-wide uppercase text-gray-300 hover:text-white hover:bg-f1-card transition flex items-center gap-1.5">
+                <i class="fa-solid fa-code-compare"></i> Driver &amp; Team Comparison
+            </button>
+            <button onclick="switchLabTab('tab-2026-forecast')" id="btn-tab-2026-forecast" class="px-3 py-1.5 rounded text-xs font-semibold tracking-wide uppercase text-gray-300 hover:text-white hover:bg-f1-card transition flex items-center gap-1.5 text-cyan-400">
+                <i class="fa-solid fa-calendar-days text-cyan-400"></i> 2026 Season Forecast
+            </button>
+            <button onclick="switchLabTab('tab-evaluation')" id="btn-tab-evaluation" class="px-3 py-1.5 rounded text-xs font-semibold tracking-wide uppercase text-gray-300 hover:text-white hover:bg-f1-card transition flex items-center gap-1.5 text-amber-400">
+                <i class="fa-solid fa-chart-line text-amber-400"></i> Model Validation
+            </button>
+        </div>
+
+        <div class="text-xs font-mono text-f1-textMuted flex items-center gap-3">
+            <span>Winner ROC-AUC: <strong class="text-white">0.9605</strong></span>
+            <span>Podium Acc: <strong class="text-green-400">90.4%</strong></span>
+            <span>Position MAE: <strong class="text-f1-cyan">&plusmn;3.30 Pos</strong></span>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-5">
+
+        <!-- ========================================================================= -->
+        <!-- MASTER RACE CONFIGURATION CONTROL BAR -->
+        <!-- ========================================================================= -->
+        <div class="glass-panel carbon-border-red rounded-xl p-4 shadow-xl space-y-3">
+            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-red-600/20 text-f1-red flex items-center justify-center text-lg font-bold">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                            <span>RACE LAB EXPERIMENT CONFIGURATION</span>
+                            <span id="active-circuit-badge" class="text-[10px] font-mono bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-800">
+                                Silverstone Circuit (UK)
+                            </span>
+                        </h2>
+                        <p class="text-[11px] text-f1-textMuted font-mono" id="config-status-label">
+                            Loaded: 583 Historical &amp; Forecast Grands Prix (1994–2026)
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Global Action Buttons -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="executeRunPrediction(true)" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold font-condensed uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-red-900/40 transition active:scale-95">
+                        <i class="fa-solid fa-bolt"></i> Run Prediction
+                    </button>
+                    <button onclick="executeSimulateScenario(true)" class="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-xs font-bold font-condensed uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-cyan-900/40 transition active:scale-95">
+                        <i class="fa-solid fa-vial"></i> Simulate Scenario
+                    </button>
+                    <button onclick="openExplainModal()" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-bold font-condensed uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-purple-900/40 transition active:scale-95">
+                        <i class="fa-solid fa-brain"></i> Explain Prediction
+                    </button>
+                    <button onclick="resetScenarioControls()" class="px-2.5 py-1.5 bg-f1-panel hover:bg-f1-border text-gray-300 hover:text-white rounded-lg text-xs font-bold font-condensed uppercase tracking-wider flex items-center gap-1.5 border border-f1-border transition active:scale-95">
+                        <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Configuration Selectors Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-2 border-t border-f1-border/60">
+                
+                <!-- 1. Season Selector -->
+                <div>
+                    <label class="block text-[10px] font-mono text-f1-textMuted mb-0.5 flex items-center gap-1">
+                        <i class="fa-solid fa-calendar"></i> Season
+                    </label>
+                    <select id="sel-season" onchange="onSeasonChanged()" class="w-full bg-f1-panel border border-f1-border text-white text-xs rounded-lg px-2.5 py-1.5 font-mono focus:border-red-500 focus:outline-none cursor-pointer">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <!-- 2. Grand Prix Selector -->
+                <div class="lg:col-span-2">
+                    <label class="block text-[10px] font-mono text-f1-textMuted mb-0.5 flex items-center gap-1">
+                        <i class="fa-solid fa-flag-checkered"></i> Grand Prix Event
+                    </label>
+                    <select id="sel-race" onchange="onRaceChanged()" class="w-full bg-f1-panel border border-f1-border text-white text-xs rounded-lg px-2.5 py-1.5 font-mono focus:border-red-500 focus:outline-none cursor-pointer">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <!-- 3. Constructor Filter / Focus -->
+                <div>
+                    <label class="block text-[10px] font-mono text-f1-textMuted mb-0.5 flex items-center gap-1">
+                        <i class="fa-solid fa-warehouse"></i> Constructor
+                    </label>
+                    <select id="sel-constructor" onchange="onConstructorChanged()" class="w-full bg-f1-panel border border-f1-border text-white text-xs rounded-lg px-2.5 py-1.5 font-mono focus:border-red-500 focus:outline-none cursor-pointer">
+                        <option value="ALL">All Constructors</option>
+                    </select>
+                </div>
+
+                <!-- 4. Target Driver Focus -->
+                <div>
+                    <label class="block text-[10px] font-mono text-f1-textMuted mb-0.5 flex items-center gap-1">
+                        <i class="fa-solid fa-user-ninja"></i> Target Driver
+                    </label>
+                    <select id="sel-driver" onchange="onDriverChanged()" class="w-full bg-f1-panel border border-f1-border text-white text-xs rounded-lg px-2.5 py-1.5 font-mono focus:border-red-500 focus:outline-none cursor-pointer">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- PROMINENT TARGET SWITCHER & PREDICTION VERDICT MISSION CONTROL -->
+        <!-- ========================================================================= -->
+        <div class="glass-panel carbon-border-cyan rounded-xl p-4 shadow-xl space-y-3">
+            
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-f1-border/60 pb-2.5">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
+                    <span class="text-xs uppercase font-mono font-bold tracking-wider text-cyan-300">
+                        Select What You Want to Predict:
+                    </span>
+                </div>
+                <div class="text-[11px] font-mono text-f1-textMuted" id="verdict-model-meta">
+                    Algorithm: XGBoost Classifier (Champion Model) &bull; Zero Data Leakage
+                </div>
+            </div>
+
+            <!-- Big Interactive Target Switcher Chips (Click Any Target to Switch Instantly) -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 font-mono text-xs">
+                <button onclick="setPredictionTarget('winner')" id="chip-target-winner" class="p-2 rounded-lg border border-f1-border bg-f1-panel hover:border-cyan-400 text-gray-300 transition flex items-center justify-center gap-1.5 font-bold">
+                    <span>🏆</span> <span>Race Winner (P1)</span>
+                </button>
+                <button onclick="setPredictionTarget('podium')" id="chip-target-podium" class="p-2 rounded-lg border border-f1-border bg-f1-panel hover:border-cyan-400 text-gray-300 transition flex items-center justify-center gap-1.5 font-bold">
+                    <span>🥉</span> <span>Podium (Top 3)</span>
+                </button>
+                <button onclick="setPredictionTarget('points')" id="chip-target-points" class="p-2 rounded-lg border border-f1-border bg-f1-panel hover:border-cyan-400 text-gray-300 transition flex items-center justify-center gap-1.5 font-bold">
+                    <span>🎯</span> <span>Points (Top 10)</span>
+                </button>
+                <button onclick="setPredictionTarget('position')" id="chip-target-position" class="p-2 rounded-lg border border-f1-border bg-f1-panel hover:border-cyan-400 text-gray-300 transition flex items-center justify-center gap-1.5 font-bold">
+                    <span>🏁</span> <span>Finishing Position</span>
+                </button>
+                <button onclick="setPredictionTarget('dnf')" id="chip-target-dnf" class="p-2 rounded-lg border border-f1-border bg-f1-panel hover:border-cyan-400 text-gray-300 transition flex items-center justify-center gap-1.5 font-bold">
+                    <span>⚠️</span> <span>Retirement Risk</span>
+                </button>
+            </div>
+
+            <!-- Massive Dynamic Verdict Banner -->
+            <div id="mission-control-verdict" class="bg-gradient-to-r from-cyan-950/70 via-f1-panel to-cyan-950/70 border border-cyan-800/80 rounded-xl p-3.5 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-[10px] font-mono uppercase bg-cyan-900 text-cyan-200 px-2 py-0.5 rounded font-bold" id="verdict-target-tag">
+                            TARGET: RACE WINNER (P1)
+                        </span>
+                        <span class="text-xs font-mono text-gray-300" id="verdict-subject-line">
+                            Predicting for: George Russell (Mercedes) at 2024 British Grand Prix
+                        </span>
+                    </div>
+                    <h3 class="text-lg font-racing font-bold text-white tracking-wide" id="verdict-headline-text">
+                        Race Favorite for Victory (42.2% Win Chance)
+                    </h3>
+                    <p class="text-xs font-mono text-cyan-300" id="verdict-sub-text">
+                        Starting Grid: P1 &bull; Baseline Win Prob: 42.2% &bull; Scenario Win Prob: 42.2% (&plusmn;0.0% Delta)
+                    </p>
+                </div>
+                <div class="flex-shrink-0 flex items-center gap-3">
+                    <div class="text-right">
+                        <div class="text-[10px] font-mono text-f1-textMuted uppercase" id="verdict-metric-title">Predicted Win Chance</div>
+                        <div class="text-2xl font-racing font-bold text-cyan-400" id="verdict-big-metric">42.2%</div>
+                    </div>
+                    <button onclick="openExplainModal()" class="px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-black font-bold font-mono text-xs rounded-lg transition active:scale-95 flex items-center gap-1.5 shadow-md shadow-cyan-900/50">
+                        <i class="fa-solid fa-brain"></i> Why This Result?
+                    </button>
+                </div>
+            </div>
+
+            <!-- Optional Constructor Snapshot (Appears when a team is selected) -->
+            <div id="team-snapshot-card" class="bg-f1-panel/90 border border-f1-border rounded-lg p-2.5 text-xs font-mono flex flex-wrap items-center justify-between gap-2 hidden">
+                <div class="flex items-center gap-2">
+                    <span class="text-amber-400 font-bold" id="team-snap-name">Haas F1 Team:</span>
+                    <span class="text-gray-300" id="team-snap-drivers">Car 1: Esteban Ocon (P14) &bull; Car 2: Kevin Magnussen (P18)</span>
+                </div>
+                <div class="text-f1-textMuted flex items-center gap-3" id="team-snap-stats">
+                    <span>Expected Team Points: <strong class="text-white">~0.6 Pts</strong></span>
+                    <span>Both Cars in Points: <strong class="text-cyan-400">4.8%</strong></span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- INTERACTIVE DRIVER GRID RIBBON (CLICK ANY DRIVER TO LOAD INSTANTLY) -->
+        <!-- ========================================================================= -->
+        <div class="glass-panel rounded-xl p-3 shadow-lg space-y-2">
+            <div class="flex items-center justify-between text-xs">
+                <span class="font-condensed uppercase tracking-wider font-bold text-gray-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-users-viewfinder text-red-500"></i> Active Grid Driver Selector (Click Any Driver to Change Subject &amp; Run Scenario)
+                </span>
+                <span class="text-[11px] font-mono text-f1-textMuted" id="ribbon-count-label">20 Cars Configured</span>
+            </div>
+            <!-- Horizontal scrollable driver cards -->
+            <div id="driver-ribbon-container" class="flex gap-2 overflow-x-auto pb-1 pt-0.5">
+                <!-- Dynamically populated driver badges -->
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 1: SCENARIO STUDIO (LIVE HYPOTHETICAL SIMULATOR + RE-RANKED GRID) -->
+        <!-- ========================================================================= -->
+        <section id="tab-scenario-studio" class="tab-content space-y-5">
+
+            <!-- Split Grid: Controls on Left (5 Cols), Live Comparison & Re-ranked Grid on Right (7 Cols) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+                <!-- LEFT: HYPOTHESIS BUILDER CONTROLS (5 COLS) -->
+                <div class="lg:col-span-5 glass-panel carbon-border-cyan rounded-xl p-4 sm:p-5 space-y-4 shadow-lg">
+                    <div class="flex items-center justify-between border-b border-f1-border pb-2.5">
+                        <span class="text-xs uppercase font-condensed tracking-wider font-bold text-cyan-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-wand-magic-sparkles text-cyan-400"></i> Hypothesis Builder (Pre-Race Adjustments)
+                        </span>
+                        <span class="text-[11px] font-mono bg-cyan-950 text-cyan-300 px-2.5 py-0.5 rounded border border-cyan-800 font-bold" id="driver-badge-selected">
+                            VER (P1)
+                        </span>
+                    </div>
+
+                    <p class="text-[11px] text-f1-textMuted leading-relaxed">
+                        Modify pre-race features to test counterfactual "What If" scenarios. The pipeline runs real mathematical inference through the trained models without altering historical data.
+                    </p>
+
+                    <!-- QUICK SCENARIO PRESETS (SINGLE-CLICK ACTION) -->
+                    <div class="space-y-1 pt-1">
+                        <span class="text-[11px] font-mono text-amber-400 font-bold uppercase flex items-center gap-1">
+                            <i class="fa-solid fa-bolt"></i> Quick Scenario Presets:
+                        </span>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5 text-[11px] font-mono">
+                            <button onclick="applyScenarioPreset('pole')" class="p-1.5 bg-f1-panel hover:bg-cyan-950 text-cyan-300 border border-f1-border hover:border-cyan-600 rounded text-center transition active:scale-95">
+                                🏁 Pole (P1)
+                            </button>
+                            <button onclick="applyScenarioPreset('row2')" class="p-1.5 bg-f1-panel hover:bg-amber-950 text-amber-300 border border-f1-border hover:border-amber-600 rounded text-center transition active:scale-95">
+                                🟡 Row 2 (P3)
+                            </button>
+                            <button onclick="applyScenarioPreset('midfield')" class="p-1.5 bg-f1-panel hover:bg-purple-950 text-purple-300 border border-f1-border hover:border-purple-600 rounded text-center transition active:scale-95">
+                                🟠 Midfield (P8)
+                            </button>
+                            <button onclick="applyScenarioPreset('penalty')" class="p-1.5 bg-f1-panel hover:bg-red-950 text-red-300 border border-f1-border hover:border-red-600 rounded text-center transition active:scale-95">
+                                💥 Penalty (P18)
+                            </button>
+                            <button onclick="applyScenarioPreset('upgrade')" class="p-1.5 bg-f1-panel hover:bg-green-950 text-green-300 border border-f1-border hover:border-green-600 rounded text-center transition active:scale-95">
+                                🚀 Upgrade (+3)
+                            </button>
+                            <button onclick="applyScenarioPreset('wet')" class="p-1.5 bg-f1-panel hover:bg-blue-950 text-blue-300 border border-f1-border hover:border-blue-600 rounded text-center transition active:scale-95">
+                                🌧️ Wet Setup (+2)
+                            </button>
+                            <button onclick="applyScenarioPreset('slump')" class="p-1.5 bg-f1-panel hover:bg-red-950 text-gray-300 border border-f1-border hover:border-red-600 rounded text-center transition active:scale-95">
+                                🔻 Slump (-3)
+                            </button>
+                            <button onclick="applyScenarioPreset('lead')" class="p-1.5 bg-f1-panel hover:bg-cyan-950 text-cyan-400 border border-f1-border hover:border-cyan-600 rounded text-center transition active:scale-95">
+                                ⚔️ Lead Teammate
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Control 1: Grid Position Override Slider -->
+                    <div class="space-y-1 pt-2 border-t border-f1-border/40">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-300 font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-flag-checkered text-red-500"></i> Starting Grid Position:
+                            </span>
+                            <span class="font-mono font-bold text-cyan-400 text-sm" id="lbl-scenario-grid">P1</span>
+                        </div>
+                        <input type="range" id="slider-grid" min="1" max="20" value="1" oninput="onScenarioSliderMoved()" class="w-full h-1.5 bg-f1-panel rounded-lg appearance-none cursor-pointer accent-cyan-400">
+                        <div class="flex justify-between text-[10px] text-gray-500 font-mono">
+                            <span>P1 (Pole)</span>
+                            <span>P10 (Midfield)</span>
+                            <span>P20 (Backmarker)</span>
+                        </div>
+                    </div>
+
+                    <!-- Control 2: Outqualifies Teammate Toggle -->
+                    <div class="space-y-1 pt-2 border-t border-f1-border/40">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-300 font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-users text-amber-400"></i> Teammate Qualifying Battle:
+                            </span>
+                            <span class="font-mono text-xs text-amber-400" id="lbl-scenario-teammate">Ahead of Teammate</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="btn-teammate-ahead" onclick="setTeammateBattle(1)" class="px-2.5 py-1.5 rounded text-xs font-mono font-bold bg-cyan-900/60 text-cyan-300 border border-cyan-700 transition">
+                                <i class="fa-solid fa-check"></i> Outqualifies Teammate
+                            </button>
+                            <button id="btn-teammate-behind" onclick="setTeammateBattle(0)" class="px-2.5 py-1.5 rounded text-xs font-mono text-gray-400 bg-f1-panel border border-f1-border transition">
+                                <i class="fa-solid fa-xmark"></i> Behind Teammate
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Control 3: Driver Form Delta Slider -->
+                    <div class="space-y-1 pt-2 border-t border-f1-border/40">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-300 font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-chart-line text-green-400"></i> Driver Recent Form Delta (Last 5 Races):
+                            </span>
+                            <span class="font-mono font-bold text-green-400" id="lbl-scenario-driver-form">0.0 Pos</span>
+                        </div>
+                        <input type="range" id="slider-driver-form" min="-5" max="5" step="0.5" value="0" oninput="onScenarioSliderMoved()" class="w-full h-1.5 bg-f1-panel rounded-lg appearance-none cursor-pointer accent-green-400">
+                        <div class="flex justify-between text-[10px] text-gray-500 font-mono">
+                            <span>-5 Pos (Decline)</span>
+                            <span>Baseline (0.0)</span>
+                            <span>+5 Pos (Surge)</span>
+                        </div>
+                    </div>
+
+                    <!-- Control 4: Constructor Form Delta Slider -->
+                    <div class="space-y-1 pt-2 border-t border-f1-border/40">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-300 font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-screwdriver-wrench text-amber-400"></i> Constructor Pace Form Delta:
+                            </span>
+                            <span class="font-mono font-bold text-amber-400" id="lbl-scenario-constructor-form">0.0 Pos</span>
+                        </div>
+                        <input type="range" id="slider-constructor-form" min="-5" max="5" step="0.5" value="0" oninput="onScenarioSliderMoved()" class="w-full h-1.5 bg-f1-panel rounded-lg appearance-none cursor-pointer accent-amber-400">
+                    </div>
+
+                    <!-- Control 5: Circuit Mastery Delta -->
+                    <div class="space-y-1 pt-2 border-t border-f1-border/40">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-gray-300 font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-road text-purple-400"></i> Circuit Track History Performance Delta:
+                            </span>
+                            <span class="font-mono font-bold text-purple-400" id="lbl-scenario-circuit-form">0.0 Pos</span>
+                        </div>
+                        <input type="range" id="slider-circuit-form" min="-5" max="5" step="0.5" value="0" oninput="onScenarioSliderMoved()" class="w-full h-1.5 bg-f1-panel rounded-lg appearance-none cursor-pointer accent-purple-400">
+                    </div>
+
+                </div>
+
+                <!-- RIGHT: SIDE-BY-SIDE IMPACT + LIVE SIMULATED RE-RANKED GRID (7 COLS) -->
+                <div class="lg:col-span-7 space-y-4">
+                    
+                    <!-- Hero Comparison Card -->
+                    <div class="glass-panel carbon-border-gold rounded-xl p-4 sm:p-5 shadow-lg space-y-4">
+                        <div class="flex items-center justify-between border-b border-f1-border pb-3">
+                            <div>
+                                <span class="text-xs uppercase font-condensed tracking-wider font-bold text-amber-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-scale-balanced text-amber-400"></i> Baseline vs. Hypothetical Scenario Comparison
+                                </span>
+                                <h3 class="text-lg font-racing font-bold text-white mt-0.5" id="sim-driver-title">
+                                    George Russell (Mercedes)
+                                </h3>
+                            </div>
+                            <span class="text-xs font-mono bg-cyan-950 text-cyan-300 px-3 py-1 rounded border border-cyan-800 font-bold" id="sim-delta-badge">
+                                +0.0% Win Delta
+                            </span>
+                        </div>
+
+                        <!-- 4 Metric Cards Comparison Grid with Spotlight on Active Target -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                            
+                            <!-- Metric 1: Win Probability -->
+                            <div id="card-metric-winner" onclick="setPredictionTarget('winner')" class="bg-f1-panel rounded-lg p-2.5 border border-f1-border space-y-1 cursor-pointer transition hover:border-cyan-400">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] text-f1-textMuted uppercase font-mono">Win Prob (P1)</span>
+                                    <span id="badge-target-winner" class="text-[9px] font-mono bg-cyan-950 text-cyan-300 px-1 rounded hidden font-bold">TARGET</span>
+                                </div>
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-sm font-bold text-white" id="val-base-win">42.2%</span>
+                                    <span class="text-xs text-gray-400">&rarr;</span>
+                                    <span class="text-sm font-bold text-cyan-400" id="val-scen-win">42.2%</span>
+                                </div>
+                                <div class="text-[10px] font-mono font-bold" id="delta-win">
+                                    <span class="text-gray-400">+0.0%</span>
+                                </div>
+                            </div>
+
+                            <!-- Metric 2: Podium Probability -->
+                            <div id="card-metric-podium" onclick="setPredictionTarget('podium')" class="bg-f1-panel rounded-lg p-2.5 border border-f1-border space-y-1 cursor-pointer transition hover:border-cyan-400">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] text-f1-textMuted uppercase font-mono">Podium (Top 3)</span>
+                                    <span id="badge-target-podium" class="text-[9px] font-mono bg-cyan-950 text-cyan-300 px-1 rounded hidden font-bold">TARGET</span>
+                                </div>
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-sm font-bold text-white" id="val-base-pod">67.6%</span>
+                                    <span class="text-xs text-gray-400">&rarr;</span>
+                                    <span class="text-sm font-bold text-cyan-400" id="val-scen-pod">67.6%</span>
+                                </div>
+                                <div class="text-[10px] font-mono font-bold" id="delta-pod">
+                                    <span class="text-gray-400">+0.0%</span>
+                                </div>
+                            </div>
+
+                            <!-- Metric 3: Points Probability -->
+                            <div id="card-metric-points" onclick="setPredictionTarget('points')" class="bg-f1-panel rounded-lg p-2.5 border border-f1-border space-y-1 cursor-pointer transition hover:border-cyan-400">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] text-f1-textMuted uppercase font-mono">Points (Top 10)</span>
+                                    <span id="badge-target-points" class="text-[9px] font-mono bg-cyan-950 text-cyan-300 px-1 rounded hidden font-bold">TARGET</span>
+                                </div>
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-sm font-bold text-white" id="val-base-pts">86.8%</span>
+                                    <span class="text-xs text-gray-400">&rarr;</span>
+                                    <span class="text-sm font-bold text-cyan-400" id="val-scen-pts">86.8%</span>
+                                </div>
+                                <div class="text-[10px] font-mono font-bold" id="delta-pts">
+                                    <span class="text-gray-400">+0.0%</span>
+                                </div>
+                            </div>
+
+                            <!-- Metric 4: Predicted Finish Position -->
+                            <div id="card-metric-position" onclick="setPredictionTarget('position')" class="bg-f1-panel rounded-lg p-2.5 border border-f1-border space-y-1 cursor-pointer transition hover:border-cyan-400">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] text-f1-textMuted uppercase font-mono">Predicted Position</span>
+                                    <span id="badge-target-position" class="text-[9px] font-mono bg-cyan-950 text-cyan-300 px-1 rounded hidden font-bold">TARGET</span>
+                                </div>
+                                <div class="flex items-baseline justify-between">
+                                    <span class="text-sm font-bold text-white" id="val-base-pos">P4.0</span>
+                                    <span class="text-xs text-gray-400">&rarr;</span>
+                                    <span class="text-sm font-bold text-cyan-400" id="val-scen-pos">P4.0</span>
+                                </div>
+                                <div class="text-[10px] font-mono font-bold" id="delta-pos">
+                                    <span class="text-gray-400">0.0 Pos</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Changes & Evidence Explanation -->
+                        <div class="bg-f1-panel/70 rounded-lg p-2.5 space-y-1.5 border border-f1-border/60">
+                            <span class="text-xs font-mono text-cyan-300 font-bold flex items-center gap-1.5">
+                                <i class="fa-solid fa-list-check"></i> Applied Modifications:
+                            </span>
+                            <div id="sim-changes-list" class="flex flex-wrap gap-1.5 text-xs">
+                                <span class="bg-f1-card px-2 py-0.5 rounded text-gray-400 border border-f1-border font-mono text-[11px]">No modifications applied (Identical to baseline)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LIVE SIMULATED RE-RANKED GRID LEADERBOARD (DYNAMIC OUTCOME) -->
+                    <div class="glass-panel carbon-border-cyan rounded-xl p-4 shadow-lg space-y-2.5">
+                        <div class="flex items-center justify-between border-b border-f1-border pb-2">
+                            <div>
+                                <h4 class="text-xs uppercase font-condensed tracking-wider font-bold text-cyan-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-ranking-star text-cyan-400"></i> Counterfactual Simulated Leaderboard (Top 10 Grid Re-Ranking)
+                                </h4>
+                                <p class="text-[11px] text-f1-textMuted font-mono" id="sim-table-subhead">
+                                    Calibrated to Target: Race Winner &bull; Shows how hypothesis re-orders the Grand Prix outcome
+                                </p>
+                            </div>
+                            <span class="text-[10px] font-mono bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-800 font-bold">
+                                Real-Time Inference
+                            </span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs font-mono">
+                                <thead>
+                                    <tr class="text-f1-textMuted text-[10px] uppercase border-b border-f1-border">
+                                        <th class="py-1.5 px-2">Rank</th>
+                                        <th class="py-1.5 px-2">Driver</th>
+                                        <th class="py-1.5 px-2">Team</th>
+                                        <th class="py-1.5 px-2">Grid</th>
+                                        <th class="py-1.5 px-2" id="th-sim-metric-val">Simulated Metric</th>
+                                        <th class="py-1.5 px-2 text-right">Rank Delta</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sim-reranked-tbody" class="divide-y divide-f1-border/40">
+                                    <!-- Populated dynamically on every slider movement -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ECharts Visual Comparison Chart -->
+                    <div class="glass-panel rounded-xl p-4 shadow-lg space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs uppercase font-condensed tracking-wider font-bold text-white flex items-center gap-1.5">
+                                <i class="fa-solid fa-chart-bar text-cyan-400"></i> Probability Conversion Delta (Baseline vs Scenario)
+                            </span>
+                            <span class="text-[10px] font-mono text-f1-textMuted">Trained on 1994–2024 Ergast Data</span>
+                        </div>
+                        <div id="chart-scenario-comparison" style="height: 200px; width: 100%;"></div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 2: FULL GRID PREDICTIONS TABLE -->
+        <!-- ========================================================================= -->
+        <section id="tab-race-predictions" class="tab-content hidden space-y-5">
+            
+            <div class="glass-panel carbon-border-red rounded-xl p-5 shadow-lg space-y-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-f1-border pb-3">
+                    <div>
+                        <h3 class="text-base font-bold text-white flex items-center gap-2" id="grid-table-title">
+                            Full Starting Grid Outcome Predictions
+                        </h3>
+                        <p class="text-xs text-f1-textMuted font-mono" id="grid-table-subtitle">
+                            Model: XGBoost Classifier &bull; Pre-Race Information Cutoff &bull; Click any driver to run scenario
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-mono text-green-400 bg-green-950/60 border border-green-800 px-2 py-1 rounded">
+                            20 Drivers Ranked
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Probability Bar Chart -->
+                <div id="chart-grid-probabilities" style="height: 250px; width: 100%;"></div>
+
+                <!-- Grid Table -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-f1-border text-f1-textMuted font-mono text-[11px] uppercase">
+                                <th class="py-2.5 px-3">Pred Rank</th>
+                                <th class="py-2.5 px-3">Driver</th>
+                                <th class="py-2.5 px-3">Constructor</th>
+                                <th class="py-2.5 px-3">Grid Pos</th>
+                                <th class="py-2.5 px-3" id="th-metric-header">Metric Value</th>
+                                <th class="py-2.5 px-3">Actual Finish</th>
+                                <th class="py-2.5 px-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="racelab-grid-tbody" class="divide-y divide-f1-border/40 font-mono">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 3: DRIVER & CONSTRUCTOR COMPARISON -->
+        <!-- ========================================================================= -->
+        <section id="tab-compare" class="tab-content hidden space-y-5">
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+                <!-- Driver Comparison Card -->
+                <div class="glass-panel carbon-border-cyan rounded-xl p-5 space-y-4 shadow-lg">
+                    <div class="flex items-center justify-between border-b border-f1-border pb-3">
+                        <span class="text-xs uppercase font-condensed tracking-wider font-bold text-cyan-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-group text-cyan-400"></i> Head-to-Head Driver Intelligence
+                        </span>
+                        <span class="text-[10px] font-mono text-f1-textMuted">Dynamically Populated from Grid</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-mono text-f1-textMuted mb-1">Driver 1</label>
+                            <select id="cmp-driver-1" onchange="runDriverComparison()" class="w-full bg-f1-panel border border-f1-border text-white text-xs rounded-lg px-2.5 py-2 font-mono cursor-pointer">
+                                <!-- Populated dynamically from current grid -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-mono text-f1-textMuted mb-1">Driver 2</label>
+                            <select id="cmp-driver-2" onchange="runDriverComparison()" class="w-full bg-f1-panel border border-f1-border text-white text-xs rounded-lg px-2.5 py-2 font-mono cursor-pointer">
+                                <!-- Populated dynamically from current grid -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="driver-compare-matrix" class="space-y-2 pt-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Constructor Comparison Card -->
+                <div class="glass-panel carbon-border-red rounded-xl p-5 space-y-4 shadow-lg">
+                    <div class="flex items-center justify-between border-b border-f1-border pb-3">
+                        <span class="text-xs uppercase font-condensed tracking-wider font-bold text-f1-red flex items-center gap-1.5">
+                            <i class="fa-solid fa-screwdriver-wrench text-red-500"></i> Head-to-Head Constructor Intelligence
+                        </span>
+                        <span class="text-[10px] font-mono text-f1-textMuted">Team-Level Performance</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-mono text-f1-textMuted mb-1">Constructor 1</label>
+                            <select id="cmp-team-1" onchange="runConstructorComparison()" class="w-full bg-f1-panel border border-f1-border text-white text-xs rounded-lg px-2.5 py-2 font-mono cursor-pointer">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-mono text-f1-textMuted mb-1">Constructor 2</label>
+                            <select id="cmp-team-2" onchange="runConstructorComparison()" class="w-full bg-f1-panel border border-f1-border text-white text-xs rounded-lg px-2.5 py-2 font-mono cursor-pointer">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="constructor-compare-matrix" class="space-y-2 pt-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Historical Evidence at Circuit Card -->
+            <div class="glass-panel carbon-border-gold rounded-xl p-5 space-y-4 shadow-lg">
+                <div class="flex items-center justify-between border-b border-f1-border pb-3">
+                    <span class="text-xs uppercase font-condensed tracking-wider font-bold text-amber-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-clock-rotate-left text-amber-400"></i> Historical Evidence &amp; Circuit Records (1994–2024)
+                    </span>
+                    <span class="text-[11px] font-mono text-white font-bold" id="evidence-circuit-name">
+                        Silverstone Circuit
+                    </span>
+                </div>
+
+                <p class="text-xs text-f1-textMuted">
+                    Past Grand Prix winners, starting grid conversion, and winning constructors at this venue.
+                </p>
+
+                <div class="overflow-y-auto max-h-80">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead>
+                            <tr class="text-f1-textMuted text-[10px] uppercase border-b border-f1-border">
+                                <th class="py-1.5 px-2">Year</th>
+                                <th class="py-1.5 px-2">Grand Prix Event</th>
+                                <th class="py-1.5 px-2">Winner</th>
+                                <th class="py-1.5 px-2">Winning Constructor</th>
+                                <th class="py-1.5 px-2 text-right">Grid Pos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="evidence-tbody" class="divide-y divide-f1-border/40">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 4: 2026 SEASON FORECAST (REMAINING RACES) -->
+        <!-- ========================================================================= -->
+        <section id="tab-2026-forecast" class="tab-content hidden space-y-5">
+
+            <div class="glass-panel carbon-border-cyan rounded-xl p-5 shadow-lg space-y-4">
+                <div class="flex items-center justify-between border-b border-f1-border pb-3">
+                    <div>
+                        <span class="text-xs uppercase font-condensed tracking-wider font-bold text-cyan-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-calendar-check text-cyan-400"></i> 2026 Formula 1 Season Forecasting Engine
+                        </span>
+                        <h3 class="text-base font-bold text-white mt-1">
+                            Current Date: October 13, 2026 &bull; Remaining Championship Rounds
+                        </h3>
+                    </div>
+                    <span class="text-xs font-mono bg-cyan-950 text-cyan-300 px-3 py-1 rounded border border-cyan-800">
+                        Rounds 19–24 Upcoming
+                    </span>
+                </div>
+
+                <div class="bg-f1-panel/80 rounded-lg p-3 text-xs text-gray-300 space-y-1 border border-f1-border">
+                    <p class="font-bold text-white flex items-center gap-1.5">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Forecasting Strategy &amp; Explicit Assumptions:
+                    </p>
+                    <ul class="list-disc pl-5 space-y-0.5 text-f1-textMuted font-mono text-[11px]">
+                        <li>Rounds 1 to 18 of the 2026 championship have been concluded prior to October 13, 2026.</li>
+                        <li>For the 6 remaining upcoming Grand Prix events (USA, Mexico, Brazil, Las Vegas, Qatar, Abu Dhabi), official qualifying has not occurred.</li>
+                        <li>Pre-weekend provisional starting grids are derived from current 2026 championship standings and team rolling performance.</li>
+                        <li>You can click any race below to immediately load it into the Scenario Studio and test counterfactual starting grids.</li>
+                    </ul>
+                </div>
+
+                <!-- 2026 Remaining Calendar Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    
+                    <!-- Round 19: US GP -->
+                    <div class="bg-f1-panel rounded-lg p-4 border border-f1-border hover:border-cyan-500 transition space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-[10px] font-mono bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded">Round 19</span>
+                            <span class="font-mono text-f1-textMuted">Oct 25, 2026</span>
+                        </div>
+                        <h4 class="font-bold text-white text-sm">United States Grand Prix</h4>
+                        <p class="text-xs text-f1-textMuted">Circuit of the Americas &bull; Austin, USA</p>
+                        <div class="text-xs font-mono pt-2 border-t border-f1-border/60 flex justify-between">
+                            <span class="text-gray-400">Favored P1:</span>
+                            <span class="text-cyan-300 font-bold">Max Verstappen (42.5%)</span>
+                        </div>
+                        <button onclick="selectUpcomingRace(202619)" class="w-full mt-2 py-1.5 bg-cyan-900/60 hover:bg-cyan-800 text-cyan-200 text-xs font-mono rounded transition active:scale-95">
+                            Load into Scenario Studio &rarr;
+                        </button>
+                    </div>
+
+                    <!-- Round 20: Mexico GP -->
+                    <div class="bg-f1-panel rounded-lg p-4 border border-f1-border hover:border-cyan-500 transition space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-[10px] font-mono bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded">Round 20</span>
+                            <span class="font-mono text-f1-textMuted">Nov 01, 2026</span>
+                        </div>
+                        <h4 class="font-bold text-white text-sm">Mexico City Grand Prix</h4>
+                        <p class="text-xs text-f1-textMuted">Autódromo Hermanos Rodríguez &bull; Mexico</p>
+                        <div class="text-xs font-mono pt-2 border-t border-f1-border/60 flex justify-between">
+                            <span class="text-gray-400">Favored P1:</span>
+                            <span class="text-cyan-300 font-bold">Lando Norris (34.8%)</span>
+                        </div>
+                        <button onclick="selectUpcomingRace(202620)" class="w-full mt-2 py-1.5 bg-cyan-900/60 hover:bg-cyan-800 text-cyan-200 text-xs font-mono rounded transition active:scale-95">
+                            Load into Scenario Studio &rarr;
+                        </button>
+                    </div>
+
+                    <!-- Round 21: Brazil GP -->
+                    <div class="bg-f1-panel rounded-lg p-4 border border-f1-border hover:border-cyan-500 transition space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-[10px] font-mono bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded">Round 21</span>
+                            <span class="font-mono text-f1-textMuted">Nov 08, 2026</span>
+                        </div>
+                        <h4 class="font-bold text-white text-sm">São Paulo Grand Prix</h4>
+                        <p class="text-xs text-f1-textMuted">Interlagos Circuit &bull; São Paulo, Brazil</p>
+                        <div class="text-xs font-mono pt-2 border-t border-f1-border/60 flex justify-between">
+                            <span class="text-gray-400">Favored P1:</span>
+                            <span class="text-cyan-300 font-bold">Charles Leclerc (31.2%)</span>
+                        </div>
+                        <button onclick="selectUpcomingRace(202621)" class="w-full mt-2 py-1.5 bg-cyan-900/60 hover:bg-cyan-800 text-cyan-200 text-xs font-mono rounded transition active:scale-95">
+                            Load into Scenario Studio &rarr;
+                        </button>
+                    </div>
+
+                    <!-- Round 22: Las Vegas GP -->
+                    <div class="bg-f1-panel rounded-lg p-4 border border-f1-border hover:border-cyan-500 transition space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-[10px] font-mono bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded">Round 22</span>
+                            <span class="font-mono text-f1-textMuted">Nov 22, 2026</span>
+                        </div>
+                        <h4 class="font-bold text-white text-sm">Las Vegas Grand Prix</h4>
+                        <p class="text-xs text-f1-textMuted">Las Vegas Strip Circuit &bull; USA</p>
+                        <div class="text-xs font-mono pt-2 border-t border-f1-border/60 flex justify-between">
+                            <span class="text-gray-400">Favored P1:</span>
+                            <span class="text-cyan-300 font-bold">Max Verstappen (38.4%)</span>
+                        </div>
+                        <button onclick="selectUpcomingRace(202622)" class="w-full mt-2 py-1.5 bg-cyan-900/60 hover:bg-cyan-800 text-cyan-200 text-xs font-mono rounded transition active:scale-95">
+                            Load into Scenario Studio &rarr;
+                        </button>
+                    </div>
+
+                    <!-- Round 23: Qatar GP -->
+                    <div class="bg-f1-panel rounded-lg p-4 border border-f1-border hover:border-cyan-500 transition space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-[10px] font-mono bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded">Round 23</span>
+                            <span class="font-mono text-f1-textMuted">Nov 29, 2026</span>
+                        </div>
+                        <h4 class="font-bold text-white text-sm">Qatar Grand Prix</h4>
+                        <p class="text-xs text-f1-textMuted">Lusail International Circuit &bull; Qatar</p>
+                        <div class="text-xs font-mono pt-2 border-t border-f1-border/60 flex justify-between">
+                            <span class="text-gray-400">Favored P1:</span>
+                            <span class="text-cyan-300 font-bold">Lando Norris (36.1%)</span>
+                        </div>
+                        <button onclick="selectUpcomingRace(202623)" class="w-full mt-2 py-1.5 bg-cyan-900/60 hover:bg-cyan-800 text-cyan-200 text-xs font-mono rounded transition active:scale-95">
+                            Load into Scenario Studio &rarr;
+                        </button>
+                    </div>
+
+                    <!-- Round 24: Abu Dhabi GP -->
+                    <div class="bg-f1-panel rounded-lg p-4 border border-f1-border hover:border-cyan-500 transition space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-[10px] font-mono bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded">Round 24</span>
+                            <span class="font-mono text-f1-textMuted">Dec 06, 2026</span>
+                        </div>
+                        <h4 class="font-bold text-white text-sm">Abu Dhabi Grand Prix (Finale)</h4>
+                        <p class="text-xs text-f1-textMuted">Yas Marina Circuit &bull; Abu Dhabi, UAE</p>
+                        <div class="text-xs font-mono pt-2 border-t border-f1-border/60 flex justify-between">
+                            <span class="text-gray-400">Favored P1:</span>
+                            <span class="text-cyan-300 font-bold">Max Verstappen (41.0%)</span>
+                        </div>
+                        <button onclick="selectUpcomingRace(202624)" class="w-full mt-2 py-1.5 bg-cyan-900/60 hover:bg-cyan-800 text-cyan-200 text-xs font-mono rounded transition active:scale-95">
+                            Load into Scenario Studio &rarr;
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 5: MODEL EVALUATION & VALIDATION REPORT -->
+        <!-- ========================================================================= -->
+        <section id="tab-evaluation" class="tab-content hidden space-y-5">
+
+            <div class="glass-panel carbon-border-gold rounded-xl p-5 shadow-lg space-y-4">
+                <div class="flex items-center justify-between border-b border-f1-border pb-3">
+                    <div>
+                        <span class="text-xs uppercase font-condensed tracking-wider font-bold text-amber-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-square-poll-vertical text-amber-400"></i> Chronological Validation Benchmarks (1994–2024 Ergast Universe)
+                        </span>
+                        <h3 class="text-base font-bold text-white mt-1">
+                            Trained: 1994–2021 (10,999 records) &bull; Tested Out-of-Time: 2022–2024 (1,359 records / 68 GPs)
+                        </h3>
+                    </div>
+                </div>
+
+                <!-- Metrics Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-f1-panel p-4 rounded-lg border border-f1-border space-y-1">
+                        <span class="text-[11px] font-mono text-f1-textMuted uppercase">Winner ROC-AUC</span>
+                        <div class="text-2xl font-bold font-racing text-green-400">0.9605</div>
+                        <p class="text-[11px] text-f1-textMuted font-mono">XGBoost Classifier vs 0.9198 baseline</p>
+                    </div>
+                    <div class="bg-f1-panel p-4 rounded-lg border border-f1-border space-y-1">
+                        <span class="text-[11px] font-mono text-f1-textMuted uppercase">Top-1 Winner Hit Rate</span>
+                        <div class="text-2xl font-bold font-racing text-amber-400">57.35%</div>
+                        <p class="text-[11px] text-f1-textMuted font-mono">39/68 correct race winners predicted</p>
+                    </div>
+                    <div class="bg-f1-panel p-4 rounded-lg border border-f1-border space-y-1">
+                        <span class="text-[11px] font-mono text-f1-textMuted uppercase">Podium Accuracy</span>
+                        <div class="text-2xl font-bold font-racing text-cyan-400">90.4%</div>
+                        <p class="text-[11px] text-f1-textMuted font-mono">F1-Score: 0.6544 | ROC-AUC: 0.9379</p>
+                    </div>
+                    <div class="bg-f1-panel p-4 rounded-lg border border-f1-border space-y-1">
+                        <span class="text-[11px] font-mono text-f1-textMuted uppercase">Position Regressor MAE</span>
+                        <div class="text-2xl font-bold font-racing text-purple-400">&plusmn;3.30 Pos</div>
+                        <p class="text-[11px] text-f1-textMuted font-mono">Random Forest Regressor (R²: 0.4548)</p>
+                    </div>
+                </div>
+
+                <!-- Feature Importance Table -->
+                <div class="pt-4 border-t border-f1-border space-y-2">
+                    <h4 class="text-xs uppercase font-mono font-bold text-white">Top Predictive Feature Importances (XGBoost Winner Model)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono">
+                        <div class="bg-f1-panel p-2 rounded flex justify-between">
+                            <span class="text-gray-300">1. Starting Grid Position</span>
+                            <span class="text-cyan-400 font-bold">61.17%</span>
+                        </div>
+                        <div class="bg-f1-panel p-2 rounded flex justify-between">
+                            <span class="text-gray-300">2. Career Win Rate (Prior to Race)</span>
+                            <span class="text-cyan-400 font-bold">6.35%</span>
+                        </div>
+                        <div class="bg-f1-panel p-2 rounded flex justify-between">
+                            <span class="text-gray-300">3. Driver Rolling Finish Avg (Last 5)</span>
+                            <span class="text-cyan-400 font-bold">4.21%</span>
+                        </div>
+                        <div class="bg-f1-panel p-2 rounded flex justify-between">
+                            <span class="text-gray-300">4. Driver Rolling Points Avg (Last 5)</span>
+                            <span class="text-cyan-400 font-bold">2.61%</span>
+                        </div>
+                        <div class="bg-f1-panel p-2 rounded flex justify-between">
+                            <span class="text-gray-300">5. Career Starts</span>
+                            <span class="text-cyan-400 font-bold">2.61%</span>
+                        </div>
+                        <div class="bg-f1-panel p-2 rounded flex justify-between">
+                            <span class="text-gray-300">6. Ahead of Teammate in Quali (Battle Lead)</span>
+                            <span class="text-cyan-400 font-bold">2.59%</span>
+                        </div>
+                        <div class="bg-f1-panel p-2 rounded flex justify-between">
+                            <span class="text-gray-300">7. Constructor Rolling Points Avg (Last 10)</span>
+                            <span class="text-cyan-400 font-bold">2.55%</span>
+                        </div>
+                        <div class="bg-f1-panel p-2 rounded flex justify-between">
+                            <span class="text-gray-300">8. Circuit Podium Historical Rate</span>
+                            <span class="text-cyan-400 font-bold">2.47%</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ========================================================================= -->
+    <!-- TREESHAP PREDICTION EXPLANATION MODAL -->
+    <!-- ========================================================================= -->
+    <div id="modal-explain" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
+        <div class="glass-panel carbon-border-cyan rounded-xl max-w-2xl w-full p-5 space-y-4 shadow-2xl relative">
+            <button onclick="closeExplainModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="border-b border-f1-border pb-3">
+                <span class="text-xs uppercase font-mono text-cyan-400 font-bold flex items-center gap-1.5">
+                    <i class="fa-solid fa-brain text-cyan-400"></i> XGBoost TreeSHAP Feature Attribution &bull; Mathematical Explanation
+                </span>
+                <h3 class="text-base font-bold text-white mt-1" id="modal-driver-title">
+                    George Russell (Mercedes) &bull; Predicted Win Prob: 42.2%
+                </h3>
+            </div>
+
+            <!-- ECharts SHAP waterfall/bar chart -->
+            <div id="chart-shap-attributions" style="height: 280px; width: 100%;"></div>
+
+            <!-- Narrative Insights -->
+            <div class="bg-f1-panel rounded-lg p-3 text-xs font-mono space-y-1.5 border border-f1-border">
+                <div class="flex items-start gap-2">
+                    <span class="text-green-400 font-bold">Top Advantages:</span>
+                    <span class="text-gray-300" id="shap-pos-narrative">-</span>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="text-red-400 font-bold">Top Constraints:</span>
+                    <span class="text-gray-300" id="shap-neg-narrative">-</span>
+                </div>
+                <div class="pt-1 text-[11px] text-f1-textMuted border-t border-f1-border/40">
+                    Model Reliability: Evaluated on out-of-time 2022–2024 test data with 0.9605 ROC-AUC.
+                </div>
+            </div>
+
+            <div class="text-right pt-2">
+                <button onclick="closeExplainModal()" class="px-4 py-1.5 bg-f1-panel hover:bg-f1-border text-white text-xs font-mono rounded border border-f1-border">
+                    Close Explanation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-f1-card border-t border-f1-border py-4 text-center text-xs text-f1-textMuted font-mono">
+        ApexIQ Formula 1 Predictive Intelligence Platform &bull; Data Engine: 1994–2024 Ergast Dataset &bull; Zero Data Leakage Guaranteed
+    </footer>
+
+    <!-- ========================================================================= -->
+    <!-- JAVASCRIPT CONTROLLER & REAL PREDICTION LOGIC -->
+    <!-- ========================================================================= -->
+    <script>
+        let seasonsRacesData = null;
+        let currentRaceGrid = [];
+        let scenarioComparisonChart = null;
+        let gridProbabilitiesChart = null;
+        let shapChart = null;
+        let teammateState = 1; // 1 = Ahead, 0 = Behind
+        let selectedConstructor = "ALL";
+        let currentActiveTarget = "winner"; // 'winner' | 'podium' | 'points' | 'position' | 'dnf'
+
+        // Toast Feedback helper
+        function showToast(message) {
+            const toast = document.getElementById('toast-banner');
+            document.getElementById('toast-text').innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 1600);
+        }
+
+        // Tab Switcher
+        function switchLabTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(tabId);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('button[id^="btn-tab-"]').forEach(btn => btn.classList.remove('active-tab-btn'));
+            const btn = document.getElementById('btn-' + tabId);
+            if (btn) btn.classList.add('active-tab-btn');
+
+            if (tabId === 'tab-race-predictions' && gridProbabilitiesChart) {
+                setTimeout(() => gridProbabilitiesChart.resize(), 100);
+            }
+            if (tabId === 'tab-scenario-studio' && scenarioComparisonChart) {
+                setTimeout(() => scenarioComparisonChart.resize(), 100);
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            updateTargetChipsUI('winner');
+            await loadSeasonsAndRaces();
+            await loadConstructorsList();
+        });
+
+        // 1. Load Seasons & Races from backend
+        async function loadSeasonsAndRaces() {
+            try {
+                const res = await fetch('/api/racelab/seasons-races');
+                if (!res.ok) throw new Error("Failed to load seasons");
+                seasonsRacesData = await res.json();
+
+                const selSeason = document.getElementById('sel-season');
+                selSeason.innerHTML = '';
+                seasonsRacesData.seasons.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s;
+                    opt.innerText = s === 2026 ? "2026 Season (Forecasting Era)" : `${s} Season`;
+                    if (s === 2024) opt.selected = true; // Default to 2024
+                    selSeason.appendChild(opt);
+                });
+
+                populateRacesForSeason(2024);
+
+            } catch (err) {
+                console.error("Error loading seasons/races:", err);
+            }
+        }
+
+        function onSeasonChanged() {
+            const season = parseInt(document.getElementById('sel-season').value);
+            populateRacesForSeason(season);
+            showToast(`Loaded ${season} Championship Season`);
+        }
+
+        function populateRacesForSeason(season) {
+            const filteredRaces = seasonsRacesData.races.filter(r => r.season === season);
+            const selRace = document.getElementById('sel-race');
+            selRace.innerHTML = '';
+
+            filteredRaces.forEach((r, idx) => {
+                const opt = document.createElement('option');
+                opt.value = r.race_id;
+                opt.innerText = `R${r.round}: ${r.race_name} (${r.circuit_name})`;
+                if (season === 2024 && r.round === 12) opt.selected = true; // British GP default
+                else if (idx === 0) opt.selected = true;
+                selRace.appendChild(opt);
+            });
+
+            onRaceChanged();
+        }
+
+        async function onRaceChanged() {
+            const raceId = parseInt(document.getElementById('sel-race').value);
+            const res = await fetch(`/api/racelab/race-grid?race_id=${raceId}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            currentRaceGrid = data.entries;
+
+            // Update Circuit Badge
+            if (currentRaceGrid.length > 0) {
+                const first = currentRaceGrid[0];
+                document.getElementById('active-circuit-badge').innerText = `${first.circuit_name} (${first.circuit_country || 'World'})`;
+                document.getElementById('grid-table-title').innerText = `${first.season} ${first.race_name} — Full Starting Grid Outcome Predictions`;
+            }
+
+            // Populate Constructor filter
+            populateConstructorFilter();
+
+            // Populate driver selector and Ribbon
+            populateDriverSelector();
+            renderDriverRibbon();
+
+            // Populate comparison dropdowns in Tab 3 dynamically
+            populateComparisonDropdowns();
+
+            // Run predictions & simulation
+            await executeRunPrediction(false);
+            await executeSimulateScenario(false);
+
+            // Load Historical Evidence
+            if (currentRaceGrid.length > 0) {
+                loadHistoricalEvidence(currentRaceGrid[0].circuit_id);
+            }
+        }
+
+        function populateConstructorFilter() {
+            const selCons = document.getElementById('sel-constructor');
+            selCons.innerHTML = '<option value="ALL">All Constructors</option>';
+            
+            const teams = [...new Set(currentRaceGrid.map(d => d.constructor_name))].sort();
+            teams.forEach(team => {
+                const opt = document.createElement('option');
+                opt.value = team;
+                opt.innerText = team;
+                selCons.appendChild(opt);
+            });
+            selectedConstructor = "ALL";
+            updateTeamSnapshotCard();
+        }
+
+        function onConstructorChanged() {
+            selectedConstructor = document.getElementById('sel-constructor').value;
+            populateDriverSelector();
+            renderDriverRibbon();
+            updateTeamSnapshotCard();
+            showToast(`Filtered Grid: ${selectedConstructor}`);
+        }
+
+        function updateTeamSnapshotCard() {
+            const snapCard = document.getElementById('team-snapshot-card');
+            if (selectedConstructor === "ALL") {
+                snapCard.classList.add('hidden');
+                return;
+            }
+
+            const teamDrivers = currentRaceGrid.filter(d => d.constructor_name === selectedConstructor);
+            if (teamDrivers.length === 0) {
+                snapCard.classList.add('hidden');
+                return;
+            }
+
+            snapCard.classList.remove('hidden');
+            document.getElementById('team-snap-name').innerText = `${selectedConstructor}:`;
+            
+            const driverList = teamDrivers.map(d => `Car: ${d.driver_name} (Grid P${d.grid_position})`).join(' • ');
+            document.getElementById('team-snap-drivers').innerText = driverList;
+        }
+
+        function populateDriverSelector() {
+            const selDriver = document.getElementById('sel-driver');
+            selDriver.innerHTML = '';
+
+            let filtered = currentRaceGrid;
+            if (selectedConstructor !== "ALL") {
+                filtered = currentRaceGrid.filter(d => d.constructor_name === selectedConstructor);
+            }
+
+            filtered.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.driver_id;
+                opt.innerText = `${d.driver_name} (${d.driver_code}) — P${d.grid_position}`;
+                selDriver.appendChild(opt);
+            });
+
+            if (filtered.length > 0) {
+                selDriver.value = filtered[0].driver_id;
+                onDriverChanged();
+            }
+        }
+
+        // Render Interactive Driver Ribbon (Click Any Driver)
+        function renderDriverRibbon() {
+            const container = document.getElementById('driver-ribbon-container');
+            container.innerHTML = '';
+
+            let filtered = currentRaceGrid;
+            if (selectedConstructor !== "ALL") {
+                filtered = currentRaceGrid.filter(d => d.constructor_name === selectedConstructor);
+            }
+
+            document.getElementById('ribbon-count-label').innerText = `${filtered.length} Cars Available`;
+            const currentActiveDriverId = parseInt(document.getElementById('sel-driver').value) || (filtered[0] ? filtered[0].driver_id : null);
+
+            filtered.forEach(d => {
+                const btn = document.createElement('button');
+                const isActive = d.driver_id === currentActiveDriverId;
+                btn.id = `ribbon-driver-${d.driver_id}`;
+                btn.className = `flex-shrink-0 px-3 py-1.5 rounded-lg border text-left font-mono transition flex items-center gap-2 ${
+                    isActive 
+                    ? 'driver-pill-active border-red-500 bg-red-950/40 text-white' 
+                    : 'bg-f1-panel border-f1-border hover:border-cyan-500 text-gray-300 hover:text-white'
+                }`;
+
+                btn.onclick = () => selectDriverFromRibbon(d.driver_id);
+
+                btn.innerHTML = `
+                    <div class="w-6 h-6 rounded bg-f1-card flex items-center justify-center font-bold text-[11px] text-cyan-400 border border-f1-border">
+                        ${d.driver_code}
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-bold text-white flex items-center gap-1">
+                            <span>${d.driver_name.split(' ').pop()}</span>
+                            <span class="text-[10px] text-cyan-400">P${d.grid_position}</span>
+                        </div>
+                        <div class="text-[10px] text-gray-400 truncate max-w-[90px]">${d.constructor_name}</div>
+                    </div>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function selectDriverFromRibbon(driverId) {
+            document.getElementById('sel-driver').value = driverId;
+            onDriverChanged();
+            showToast(`Selected Driver: ${currentRaceGrid.find(d => d.driver_id === driverId)?.driver_name}`);
+        }
+
+        function onDriverChanged() {
+            const driverId = parseInt(document.getElementById('sel-driver').value);
+            const driver = currentRaceGrid.find(d => d.driver_id === driverId);
+            if (!driver) return;
+
+            // Update Ribbon active styling
+            document.querySelectorAll('#driver-ribbon-container button').forEach(b => b.classList.remove('driver-pill-active', 'border-red-500', 'bg-red-950/40'));
+            const activeRibbonBtn = document.getElementById(`ribbon-driver-${driverId}`);
+            if (activeRibbonBtn) activeRibbonBtn.classList.add('driver-pill-active', 'border-red-500', 'bg-red-950/40');
+
+            document.getElementById('driver-badge-selected').innerText = `${driver.driver_code} (P${driver.grid_position})`;
+            document.getElementById('slider-grid').value = driver.grid_position;
+            document.getElementById('lbl-scenario-grid').innerText = `P${driver.grid_position}`;
+
+            document.getElementById('slider-driver-form').value = 0;
+            document.getElementById('lbl-scenario-driver-form').innerText = "0.0 Pos";
+
+            document.getElementById('slider-constructor-form').value = 0;
+            document.getElementById('lbl-scenario-constructor-form').innerText = "0.0 Pos";
+
+            document.getElementById('slider-circuit-form').value = 0;
+            document.getElementById('lbl-scenario-circuit-form').innerText = "0.0 Pos";
+
+            teammateState = driver.ahead_of_teammate_grid !== undefined ? driver.ahead_of_teammate_grid : 1;
+            updateTeammateButtonUI();
+
+            executeSimulateScenario(false);
+        }
+
+        // Set Prediction Target (Winner, Podium, Points, Position, DNF)
+        function setPredictionTarget(targetKey) {
+            currentActiveTarget = targetKey;
+            updateTargetChipsUI(targetKey);
+
+            // Re-run simulation and full grid prediction
+            executeSimulateScenario(true);
+            executeRunPrediction(false);
+
+            const labels = {
+                winner: 'Race Winner (P1)',
+                podium: 'Podium Finish (Top 3)',
+                points: 'Points Finish (Top 10)',
+                position: 'Finishing Position',
+                dnf: 'Retirement Risk'
+            };
+            showToast(`Now Predicting: ${labels[targetKey]}`);
+        }
+
+        function updateTargetChipsUI(targetKey) {
+            // Update Chips
+            const chips = ['winner', 'podium', 'points', 'position', 'dnf'];
+            chips.forEach(c => {
+                const btn = document.getElementById(`chip-target-${c}`);
+                if (btn) {
+                    if (c === targetKey) {
+                        btn.className = 'p-2 rounded-lg border border-cyan-400 bg-cyan-400 text-black font-bold transition flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-900/40';
+                    } else {
+                        btn.className = 'p-2 rounded-lg border border-f1-border bg-f1-panel hover:border-cyan-400 text-gray-300 transition flex items-center justify-center gap-1.5 font-bold';
+                    }
+                }
+            });
+
+            // Update 4 Metric Cards Highlight
+            ['winner', 'podium', 'points', 'position'].forEach(c => {
+                const card = document.getElementById(`card-metric-${c}`);
+                const badge = document.getElementById(`badge-target-${c}`);
+                if (card) {
+                    if (c === targetKey) {
+                        card.className = 'bg-cyan-950/40 rounded-lg p-2.5 border-2 border-cyan-400 space-y-1 cursor-pointer transition shadow-lg shadow-cyan-950/60 active-target-card';
+                        if (badge) badge.classList.remove('hidden');
+                    } else {
+                        card.className = 'bg-f1-panel rounded-lg p-2.5 border border-f1-border space-y-1 cursor-pointer transition hover:border-cyan-400';
+                        if (badge) badge.classList.add('hidden');
+                    }
+                }
+            });
+
+            // Update subheads
+            const targetNames = {
+                winner: 'Race Winner (P1)',
+                podium: 'Podium Finish (Top 3)',
+                points: 'Points Finish (Top 10)',
+                position: 'Race Finishing Position',
+                dnf: 'Retirement Risk (DNF)'
+            };
+            document.getElementById('sim-table-subhead').innerText = `Calibrated to Target: ${targetNames[targetKey]} • Shows how hypothesis re-orders the Grand Prix outcome`;
+        }
+
+        // Quick Scenario Presets
+        function applyScenarioPreset(preset) {
+            const driverId = parseInt(document.getElementById('sel-driver').value);
+            const driver = currentRaceGrid.find(d => d.driver_id === driverId);
+            if (!driver) return;
+
+            if (preset === 'pole') {
+                document.getElementById('slider-grid').value = 1;
+                teammateState = 1;
+                showToast("Preset Applied: Pole Position Start (P1)");
+            } else if (preset === 'row2') {
+                document.getElementById('slider-grid').value = 3;
+                showToast("Preset Applied: Row 2 Start (P3)");
+            } else if (preset === 'midfield') {
+                document.getElementById('slider-grid').value = 8;
+                showToast("Preset Applied: Midfield Start (P8)");
+            } else if (preset === 'penalty') {
+                document.getElementById('slider-grid').value = 18;
+                teammateState = 0;
+                showToast("Preset Applied: Grid Penalty (P18)");
+            } else if (preset === 'upgrade') {
+                document.getElementById('slider-driver-form').value = 3.0;
+                document.getElementById('slider-constructor-form').value = 2.5;
+                showToast("Preset Applied: Engine & Aero Upgrade (+3 Pos)");
+            } else if (preset === 'wet') {
+                document.getElementById('slider-driver-form').value = 2.5;
+                document.getElementById('slider-circuit-form').value = 3.0;
+                teammateState = 1;
+                showToast("Preset Applied: Wet Weather Setup (+2.5 Pos)");
+            } else if (preset === 'slump') {
+                document.getElementById('slider-driver-form').value = -3.0;
+                document.getElementById('slider-constructor-form').value = -2.0;
+                showToast("Preset Applied: Driver Slump (-3 Pos)");
+            } else if (preset === 'lead') {
+                teammateState = 1;
+                showToast("Preset Applied: Outqualify Teammate (P1 Lead)");
+            }
+
+            onScenarioSliderMoved();
+        }
+
+        function setTeammateBattle(val) {
+            teammateState = val;
+            updateTeammateButtonUI();
+            executeSimulateScenario(true);
+            showToast(`Teammate Battle: ${val === 1 ? 'Quali Lead' : 'Behind Teammate'}`);
+        }
+
+        function updateTeammateButtonUI() {
+            const btnAhead = document.getElementById('btn-teammate-ahead');
+            const btnBehind = document.getElementById('btn-teammate-behind');
+            const lbl = document.getElementById('lbl-scenario-teammate');
+
+            if (teammateState === 1) {
+                btnAhead.className = 'px-2.5 py-1.5 rounded text-xs font-mono font-bold bg-cyan-900/60 text-cyan-300 border border-cyan-700 transition';
+                btnBehind.className = 'px-2.5 py-1.5 rounded text-xs font-mono text-gray-400 bg-f1-panel border border-f1-border transition';
+                lbl.innerText = 'Ahead of Teammate (Lead)';
+            } else {
+                btnBehind.className = 'px-2.5 py-1.5 rounded text-xs font-mono font-bold bg-amber-900/60 text-amber-300 border border-amber-700 transition';
+                btnAhead.className = 'px-2.5 py-1.5 rounded text-xs font-mono text-gray-400 bg-f1-panel border border-f1-border transition';
+                lbl.innerText = 'Behind Teammate';
+            }
+        }
+
+        function onScenarioSliderMoved() {
+            const gridVal = document.getElementById('slider-grid').value;
+            document.getElementById('lbl-scenario-grid').innerText = `P${gridVal}`;
+
+            const dForm = parseFloat(document.getElementById('slider-driver-form').value);
+            document.getElementById('lbl-scenario-driver-form').innerText = `${dForm > 0 ? '+' : ''}${dForm.toFixed(1)} Pos`;
+
+            const cForm = parseFloat(document.getElementById('slider-constructor-form').value);
+            document.getElementById('lbl-scenario-constructor-form').innerText = `${cForm > 0 ? '+' : ''}${cForm.toFixed(1)} Pos`;
+
+            const cirForm = parseFloat(document.getElementById('slider-circuit-form').value);
+            document.getElementById('lbl-scenario-circuit-form').innerText = `${cirForm > 0 ? '+' : ''}${cirForm.toFixed(1)} Pos`;
+
+            executeSimulateScenario(false);
+        }
+
+        function resetScenarioControls() {
+            onDriverChanged();
+            showToast("Scenario Reset to Pre-Race Baseline");
+        }
+
+        // 2. Real Prediction Execution (Across All 20 Drivers)
+        async function executeRunPrediction(notify = false) {
+            const raceId = parseInt(document.getElementById('sel-race').value);
+            const modelName = "XGBoost Classifier";
+            const target = currentActiveTarget;
+
+            try {
+                const res = await fetch(`/api/racelab/predict?race_id=${raceId}&model_name=${encodeURIComponent(modelName)}&target=${target}`);
+                if (!res.ok) throw new Error("Prediction API error");
+                const data = await res.json();
+
+                renderPredictionsTable(data.predictions, target);
+                renderGridProbabilitiesChart(data.predictions, target);
+
+                if (notify) showToast(`Prediction Computed via ${modelName}`);
+
+            } catch (err) {
+                console.error("Failed to run prediction:", err);
+            }
+        }
+
+        function renderPredictionsTable(predictions, target) {
+            const tbody = document.getElementById('racelab-grid-tbody');
+            tbody.innerHTML = '';
+
+            const metricLabels = {
+                winner: 'Win Prob (%)',
+                podium: 'Podium Prob (%)',
+                points: 'Points Prob (%)',
+                position: 'Predicted P',
+                dnf: 'Retirement Risk (%)'
+            };
+            document.getElementById('th-metric-header').innerText = metricLabels[target] || 'Metric Value';
+
+            predictions.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.className = `hover:bg-f1-hover/40 transition cursor-pointer ${d.predicted_rank === 1 ? 'bg-f1-panel/40 font-bold' : ''}`;
+                tr.onclick = () => {
+                    selectDriverFromRibbon(d.driver_id);
+                    switchLabTab('tab-scenario-studio');
+                };
+
+                let hitBadge = '<span class="text-gray-500">-</span>';
+                if (d.actual_finish !== null) {
+                    if (d.is_actual_winner && d.predicted_rank === 1) {
+                        hitBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-950 text-green-400 border border-green-800">ACTUAL WINNER 🏆</span>';
+                    } else if (d.is_actual_winner) {
+                        hitBadge = '<span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-400">Actual Winner (P1)</span>';
+                    } else if (d.actual_finish <= 3) {
+                        hitBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] bg-cyan-950 text-cyan-400">Podium (P${d.actual_finish})</span>`;
+                    } else {
+                        hitBadge = `<span class="text-gray-400">P${d.actual_finish}</span>`;
+                    }
+                }
+
+                const formattedMetric = typeof d.metric_value === 'number' ? d.metric_value.toFixed(1) : d.metric_value;
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 ${d.predicted_rank === 1 ? 'text-amber-400 font-bold text-sm' : 'text-gray-300'}">#${d.predicted_rank}</td>
+                    <td class="py-2.5 px-3 text-white font-bold">${d.driver_name} <span class="text-f1-textMuted text-[10px]">(${d.driver_code})</span></td>
+                    <td class="py-2.5 px-3 text-gray-300">${d.constructor_name}</td>
+                    <td class="py-2.5 px-3 text-cyan-400 font-bold">P${d.grid_position}</td>
+                    <td class="py-2.5 px-3 font-bold ${d.predicted_rank === 1 ? 'text-amber-400 text-sm' : 'text-white'}">${formattedMetric}${target === 'position' ? '' : '%'}</td>
+                    <td class="py-2.5 px-3">${d.actual_finish !== null ? 'P' + d.actual_finish : 'Upcoming'}</td>
+                    <td class="py-2.5 px-3 text-right">
+                        <button class="px-2 py-1 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800 rounded text-[10px] font-mono">
+                            Simulate &rarr;
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderGridProbabilitiesChart(predictions, target) {
+            const dom = document.getElementById('chart-grid-probabilities');
+            if (!gridProbabilitiesChart) gridProbabilitiesChart = echarts.init(dom);
+
+            const top10 = predictions.slice(0, 10);
+            const drivers = top10.map(d => d.driver_code);
+            const values = top10.map(d => parseFloat(Number(d.metric_value).toFixed(1)));
+
+            gridProbabilitiesChart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                grid: { top: '10%', left: '3%', right: '3%', bottom: '5%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: drivers,
+                    axisLabel: { color: '#F3F4F6', fontFamily: 'JetBrains Mono' }
+                },
+                yAxis: {
+                    type: 'value',
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
+                    axisLabel: { color: '#8E95A5', fontFamily: 'JetBrains Mono' }
+                },
+                series: [{
+                    name: target,
+                    type: 'bar',
+                    data: values,
+                    itemStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: '#E10600' },
+                            { offset: 1, color: '#9A0000' }
+                        ]),
+                        borderRadius: [4, 4, 0, 0]
+                    },
+                    label: { show: true, position: 'top', color: '#FFF', fontFamily: 'JetBrains Mono', fontSize: 10 }
+                }]
+            });
+        }
+
+        // 3. Real Scenario Simulation Execution (With Live Re-Ranked Grid & Target Awareness)
+        let simDebounce = null;
+        function executeSimulateScenario(notify = false) {
+            clearTimeout(simDebounce);
+            simDebounce = setTimeout(async () => {
+                const raceId = parseInt(document.getElementById('sel-race').value);
+                const driverId = parseInt(document.getElementById('sel-driver').value);
+                const gridVal = parseInt(document.getElementById('slider-grid').value);
+                const dForm = parseFloat(document.getElementById('slider-driver-form').value);
+                const cForm = parseFloat(document.getElementById('slider-constructor-form').value);
+                const cirForm = parseFloat(document.getElementById('slider-circuit-form').value);
+                const target = currentActiveTarget;
+
+                try {
+                    const url = `/api/racelab/simulate?race_id=${raceId}&driver_id=${driverId}&hypothetical_grid=${gridVal}&ahead_of_teammate=${teammateState}&driver_form_delta=${dForm}&constructor_form_delta=${cForm}&circuit_form_delta=${cirForm}&target=${target}`;
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error("Simulation failed");
+                    const sim = await res.json();
+
+                    // Update UI Cards
+                    document.getElementById('sim-driver-title').innerText = `${sim.driver_info.driver_name} (${sim.driver_info.constructor_name})`;
+
+                    // Update Active Target Delta Badge
+                    if (sim.active_target_meta) {
+                        document.getElementById('sim-delta-badge').innerText = sim.active_target_meta.delta_badge;
+                    }
+
+                    // 4 Metric cards
+                    document.getElementById('val-base-win').innerText = `${sim.baseline.win_prob_pct}%`;
+                    document.getElementById('val-scen-win').innerText = `${sim.scenario.win_prob_pct}%`;
+                    document.getElementById('delta-win').innerHTML = `<span class="${sim.deltas.win_prob_delta >= 0 ? 'text-green-400' : 'text-red-400'}">${sim.deltas.win_prob_delta >= 0 ? '+' : ''}${sim.deltas.win_prob_delta}%</span>`;
+
+                    document.getElementById('val-base-pod').innerText = `${sim.baseline.podium_prob_pct}%`;
+                    document.getElementById('val-scen-pod').innerText = `${sim.scenario.podium_prob_pct}%`;
+                    document.getElementById('delta-pod').innerHTML = `<span class="${sim.deltas.podium_prob_delta >= 0 ? 'text-green-400' : 'text-red-400'}">${sim.deltas.podium_prob_delta >= 0 ? '+' : ''}${sim.deltas.podium_prob_delta}%</span>`;
+
+                    document.getElementById('val-base-pts').innerText = `${sim.baseline.points_prob_pct}%`;
+                    document.getElementById('val-scen-pts').innerText = `${sim.scenario.points_prob_pct}%`;
+                    document.getElementById('delta-pts').innerHTML = `<span class="${sim.deltas.points_prob_delta >= 0 ? 'text-green-400' : 'text-red-400'}">${sim.deltas.points_prob_delta >= 0 ? '+' : ''}${sim.deltas.points_prob_delta}%</span>`;
+
+                    document.getElementById('val-base-pos').innerText = `P${sim.baseline.predicted_finish_pos}`;
+                    document.getElementById('val-scen-pos').innerText = `P${sim.scenario.predicted_finish_pos}`;
+                    document.getElementById('delta-pos').innerHTML = `<span class="${sim.deltas.position_delta >= 0 ? 'text-green-400' : 'text-red-400'}">${sim.deltas.position_delta >= 0 ? '+' : ''}${sim.deltas.position_delta} Pos</span>`;
+
+                    // Update Prominent Mission Control Verdict Banner
+                    if (sim.active_target_meta) {
+                        const meta = sim.active_target_meta;
+                        const lbl = meta.metric_label || meta.label || 'Target Metric';
+                        document.getElementById('verdict-target-tag').innerText = `TARGET: ${lbl.toUpperCase()}`;
+                        document.getElementById('verdict-subject-line').innerText = `Predicting for: ${sim.driver_info.driver_name} (${sim.driver_info.constructor_name}) at selected Grand Prix`;
+                        document.getElementById('verdict-headline-text').innerText = meta.verdict_headline;
+                        document.getElementById('verdict-metric-title').innerText = lbl;
+                        document.getElementById('verdict-big-metric').innerText = `${meta.scenario_val}${meta.unit || ''}`;
+                        document.getElementById('verdict-sub-text').innerText = `Starting Grid: P${gridVal} • Baseline: ${meta.baseline_val}${meta.unit || ''} ➔ Scenario: ${meta.scenario_val}${meta.unit || ''} (${meta.delta_badge})`;
+                    }
+
+                    // Changes List
+                    const chList = document.getElementById('sim-changes-list');
+                    if (sim.changes_made && sim.changes_made.length > 0) {
+                        chList.innerHTML = sim.changes_made.map(c => `<span class="bg-f1-card px-2 py-0.5 rounded text-cyan-300 border border-cyan-800 font-mono text-[11px]">${c}</span>`).join('');
+                    } else {
+                        chList.innerHTML = `<span class="bg-f1-card px-2 py-0.5 rounded text-gray-400 border border-f1-border font-mono text-[11px]">No modifications applied (Identical to baseline)</span>`;
+                    }
+
+                    // Render ECharts Bar Chart
+                    renderScenarioComparisonChart(sim.baseline, sim.scenario);
+
+                    // Render LIVE RE-RANKED GRID TABLE
+                    if (sim.simulated_grid) {
+                        renderSimulatedGrid(sim.simulated_grid);
+                    }
+
+                    if (notify) showToast("Scenario Calculated & Leaderboard Re-ranked");
+
+                } catch (e) {
+                    console.error("Simulation error:", e);
+                }
+            }, 60);
+        }
+
+        // Render the 20-Car Live Re-ranked Grid
+        function renderSimulatedGrid(grid) {
+            const tbody = document.getElementById('sim-reranked-tbody');
+            tbody.innerHTML = '';
+
+            const metricLabels = {
+                winner: 'Win Prob (%)',
+                podium: 'Podium Prob (%)',
+                points: 'Points Prob (%)',
+                position: 'Predicted P',
+                dnf: 'Retirement Risk (%)'
+            };
+            document.getElementById('th-sim-metric-val').innerText = metricLabels[currentActiveTarget] || 'Metric Val';
+
+            const top10 = grid.slice(0, 10);
+            top10.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = `hover:bg-f1-hover/40 transition cursor-pointer ${row.is_target_driver ? 'bg-cyan-950/40 border-l-2 border-cyan-400 font-bold' : ''}`;
+                tr.onclick = () => selectDriverFromRibbon(row.driver_id);
+
+                let rankDeltaBadge = '<span class="text-gray-500 font-bold">━ 0</span>';
+                if (row.rank_delta > 0) {
+                    rankDeltaBadge = `<span class="text-green-400 font-bold">▲ +${row.rank_delta}</span>`;
+                } else if (row.rank_delta < 0) {
+                    rankDeltaBadge = `<span class="text-red-400 font-bold">▼ ${row.rank_delta}</span>`;
+                }
+
+                // Hot streak flame indicator for top 3 in form
+                const hotStreak = row.scenario_rank <= 2 ? '🔥' : '';
+
+                const formattedVal = currentActiveTarget === 'position' ? `P${row.scen_metric_val}` : `${row.scen_metric_val}%`;
+
+                tr.innerHTML = `
+                    <td class="py-1.5 px-2 font-bold ${row.scenario_rank === 1 ? 'text-amber-400' : 'text-white'}">#${row.scenario_rank}</td>
+                    <td class="py-1.5 px-2 text-white font-bold flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full ${row.is_target_driver ? 'bg-cyan-400 animate-pulse' : 'bg-gray-600'}"></span>
+                        ${row.driver_name} <span class="text-gray-400 text-[10px]">(${row.driver_code})</span> ${hotStreak}
+                    </td>
+                    <td class="py-1.5 px-2 text-gray-300 text-[11px]">${row.constructor_name}</td>
+                    <td class="py-1.5 px-2 text-cyan-400">P${row.grid_position}</td>
+                    <td class="py-1.5 px-2 font-bold ${row.scenario_rank === 1 ? 'text-amber-400' : 'text-white'}">${formattedVal}</td>
+                    <td class="py-1.5 px-2 text-right">${rankDeltaBadge}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderScenarioComparisonChart(baseline, scenario) {
+            const dom = document.getElementById('chart-scenario-comparison');
+            if (!scenarioComparisonChart) scenarioComparisonChart = echarts.init(dom);
+
+            scenarioComparisonChart.setOption({
+                backgroundColor: 'transparent',
+                tooltip: { trigger: 'axis' },
+                legend: { textStyle: { color: '#F3F4F6' }, top: 0 },
+                grid: { top: '15%', left: '3%', right: '3%', bottom: '5%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: ['Win Prob (%)', 'Podium Prob (%)', 'Points Prob (%)', 'DNF Risk (%)'],
+                    axisLabel: { color: '#F3F4F6', fontFamily: 'JetBrains Mono', fontSize: 11 }
+                },
+                yAxis: {
+                    type: 'value',
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
+                    axisLabel: { formatter: '{value}%', color: '#8E95A5', fontFamily: 'JetBrains Mono' }
+                },
+                series: [
+                    {
+                        name: 'Baseline (Actual Pre-Race Data)',
+                        type: 'bar',
+                        data: [baseline.win_prob_pct, baseline.podium_prob_pct, baseline.points_prob_pct, baseline.dnf_prob_pct],
+                        itemStyle: { color: '#64748B', borderRadius: [4, 4, 0, 0] }
+                    },
+                    {
+                        name: 'Hypothetical Scenario Simulation',
+                        type: 'bar',
+                        data: [scenario.win_prob_pct, scenario.podium_prob_pct, scenario.points_prob_pct, scenario.dnf_prob_pct],
+                        itemStyle: { color: '#06B6D4', borderRadius: [4, 4, 0, 0] }
+                    }
+                ]
+            });
+        }
+
+        // 4. TreeSHAP Explainability Modal
+        async function openExplainModal() {
+            const raceId = parseInt(document.getElementById('sel-race').value);
+            const driverId = parseInt(document.getElementById('sel-driver').value);
+
+            try {
+                const res = await fetch(`/api/racelab/explain?race_id=${raceId}&driver_id=${driverId}`);
+                if (!res.ok) throw new Error("Explain API failed");
+                const data = await res.json();
+
+                document.getElementById('modal-driver-title').innerText = `${data.driver_name} (${data.constructor_name}) • P${data.grid_position} • Predicted Win Prob: ${data.predicted_win_prob_pct}%`;
+                document.getElementById('shap-pos-narrative').innerText = data.narrative.key_advantages;
+                document.getElementById('shap-neg-narrative').innerText = data.narrative.key_limitations;
+
+                document.getElementById('modal-explain').classList.remove('hidden');
+
+                // Render ECharts Horizontal Bar Chart
+                const dom = document.getElementById('chart-shap-attributions');
+                if (!shapChart) shapChart = echarts.init(dom);
+
+                const top8 = data.attributions.slice(0, 8).reverse();
+                const labels = top8.map(a => a.label);
+                const values = top8.map(a => a.shap_value);
+
+                shapChart.setOption({
+                    backgroundColor: 'transparent',
+                    tooltip: { 
+                        trigger: 'axis',
+                        formatter: function(params) {
+                            const p = params[0];
+                            return `<b>${p.name}</b><br/>SHAP Contribution: <b>${p.value > 0 ? '+' : ''}${p.value}</b> log-odds`;
+                        }
+                    },
+                    grid: { top: '5%', left: '3%', right: '8%', bottom: '5%', containLabel: true },
+                    xAxis: {
+                        type: 'value',
+                        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } },
+                        axisLabel: { color: '#8E95A5', fontFamily: 'JetBrains Mono' }
+                    },
+                    yAxis: {
+                        type: 'category',
+                        data: labels,
+                        axisLabel: { color: '#F3F4F6', fontFamily: 'JetBrains Mono', fontSize: 11 }
+                    },
+                    series: [{
+                        type: 'bar',
+                        data: values,
+                        itemStyle: {
+                            color: function(param) {
+                                return param.value >= 0 ? '#22C55E' : '#EF4444';
+                            },
+                            borderRadius: [0, 4, 4, 0]
+                        },
+                        label: {
+                            show: true,
+                            position: 'right',
+                            formatter: function(p) { return (p.value >= 0 ? '+' : '') + p.value; },
+                            color: '#F3F4F6',
+                            fontFamily: 'JetBrains Mono',
+                            fontSize: 10
+                        }
+                    }]
+                });
+
+                setTimeout(() => shapChart.resize(), 100);
+
+            } catch (err) {
+                console.error("Failed to load explanation:", err);
+            }
+        }
+
+        function closeExplainModal() {
+            document.getElementById('modal-explain').classList.add('hidden');
+        }
+
+        // 5. Driver & Constructor Comparisons
+        function populateComparisonDropdowns() {
+            const selD1 = document.getElementById('cmp-driver-1');
+            const selD2 = document.getElementById('cmp-driver-2');
+            selD1.innerHTML = '';
+            selD2.innerHTML = '';
+
+            currentRaceGrid.forEach((d, idx) => {
+                const opt1 = document.createElement('option');
+                opt1.value = d.driver_id;
+                opt1.innerText = `${d.driver_name} (${d.driver_code}) - ${d.constructor_name}`;
+                if (idx === 0) opt1.selected = true;
+                selD1.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = d.driver_id;
+                opt2.innerText = `${d.driver_name} (${d.driver_code}) - ${d.constructor_name}`;
+                if (idx === 1) opt2.selected = true;
+                selD2.appendChild(opt2);
+            });
+
+            runDriverComparison();
+        }
+
+        async function loadConstructorsList() {
+            try {
+                const res = await fetch('/api/racelab/constructors');
+                if (!res.ok) return;
+                const data = await res.json();
+
+                const c1 = document.getElementById('cmp-team-1');
+                const c2 = document.getElementById('cmp-team-2');
+                c1.innerHTML = '';
+                c2.innerHTML = '';
+
+                data.constructors.forEach((team, idx) => {
+                    const opt1 = document.createElement('option');
+                    opt1.value = team.constructor_id;
+                    opt1.innerText = team.constructor_name;
+                    if (team.constructor_name === 'Red Bull') opt1.selected = true;
+                    c1.appendChild(opt1);
+
+                    const opt2 = document.createElement('option');
+                    opt2.value = team.constructor_id;
+                    opt2.innerText = team.constructor_name;
+                    if (team.constructor_name === 'McLaren') opt2.selected = true;
+                    c2.appendChild(opt2);
+                });
+
+                runConstructorComparison();
+
+            } catch (err) {
+                console.error("Failed to load constructors:", err);
+            }
+        }
+
+        async function runDriverComparison() {
+            const d1 = document.getElementById('cmp-driver-1').value;
+            const d2 = document.getElementById('cmp-driver-2').value;
+            if (!d1 || !d2) return;
+
+            try {
+                const res = await fetch(`/api/racelab/compare-drivers?driver_id_1=${d1}&driver_id_2=${d2}`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                const matrix = document.getElementById('driver-compare-matrix');
+                matrix.innerHTML = `
+                    <div class="grid grid-cols-3 text-center text-xs font-mono py-1.5 border-b border-f1-border text-f1-textMuted font-bold">
+                        <div>${data.driver_1.name} (${data.driver_1.code})</div>
+                        <div>METRIC</div>
+                        <div>${data.driver_2.name} (${data.driver_2.code})</div>
+                    </div>
+                    <div class="grid grid-cols-3 text-center text-xs font-mono py-1.5 border-b border-f1-border/40">
+                        <div class="text-white font-bold">${data.driver_1.career_starts}</div>
+                        <div class="text-gray-400">Career Starts</div>
+                        <div class="text-white font-bold">${data.driver_2.career_starts}</div>
+                    </div>
+                    <div class="grid grid-cols-3 text-center text-xs font-mono py-1.5 border-b border-f1-border/40">
+                        <div class="text-amber-400 font-bold">${data.driver_1.career_wins}</div>
+                        <div class="text-gray-400">Career Wins</div>
+                        <div class="text-amber-400 font-bold">${data.driver_2.career_wins}</div>
+                    </div>
+                    <div class="grid grid-cols-3 text-center text-xs font-mono py-1.5 border-b border-f1-border/40">
+                        <div class="text-cyan-400 font-bold">${data.driver_1.career_podiums}</div>
+                        <div class="text-gray-400">Career Podiums</div>
+                        <div class="text-cyan-400 font-bold">${data.driver_2.career_podiums}</div>
+                    </div>
+                    <div class="grid grid-cols-3 text-center text-xs font-mono py-1.5 border-b border-f1-border/40">
+                        <div class="text-white font-bold">P${data.driver_1.avg_finish}</div>
+                        <div class="text-gray-400">Career Average Finish</div>
+                        <div class="text-white font-bold">P${data.driver_2.avg_finish}</div>
+                    </div>
+                    <div class="grid grid-cols-3 text-center text-xs font-mono py-1.5">
+                        <div class="text-gray-300">${data.driver_1.dnf_rate_pct}%</div>
+                        <div class="text-gray-400">Career DNF Rate</div>
+                        <div class="text-gray-300">${data.driver_2.dnf_rate_pct}%</div>
+                    </div>
+                `;
+
+            } catch (err) {
+                console.error("Failed to compare drivers:", err);
+            }
+        }
+
+        async function runConstructorComparison() {
+            const c1 = document.getElementById('cmp-team-1').value;
+            const c2 = document.getElementById('cmp-team-2').value;
+            if (!c1 || !c2) return;
+
+            try {
+                const res = await fetch(`/api/racelab/compare-constructors?constructor_id_1=${c1}&constructor_id_2=${c2}`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                const matrix = document.getElementById('constructor-compare-matrix');
+                matrix.innerHTML = `
+                    <div class="grid grid-cols-3 text-center text-xs font-mono py-1.5 border-b border-f1-border text-f1-textMuted font-bold">
+                        <div>${data.constructor_1.name}</div>
+                        <div>TEAM METRIC</div>
+                        <div>${data.constructor_2.name}</div>
+                    </div>
+                    <div class="grid grid-cols-3 text-center text-xs font-mono py-1.5 border-b border-f1-border/40">
+                        <div class="text-white font-bold">${data.constructor_1.total_entries}</div>
+                        <div class="text-gray-400">Race Entries</div>
+                        <div class="text-white font-bold">${data.constructor_2.total_entries}</div>
+                    </div>
+                    <div class="grid grid-cols-3 text-center text-xs font-mono py-1.5 border-b border-f1-border/40">
+                        <div class="text-amber-400 font-bold">${data.constructor_1.wins} (${data.constructor_1.win_rate_pct}%)</div>
+                        <div class="text-gray-400">Grand Prix Wins</div>
+                        <div class="text-amber-400 font-bold">${data.constructor_2.wins} (${data.constructor_2.win_rate_pct}%)</div>
+                    </div>
+                    <div class="grid grid-cols-3 text-center text-xs font-mono py-1.5 border-b border-f1-border/40">
+                        <div class="text-cyan-400 font-bold">${data.constructor_1.podiums}</div>
+                        <div class="text-gray-400">Podium Finishes</div>
+                        <div class="text-cyan-400 font-bold">${data.constructor_2.podiums}</div>
+                    </div>
+                    <div class="grid grid-cols-3 text-center text-xs font-mono py-1.5 border-b border-f1-border/40">
+                        <div class="text-white font-bold">P${data.constructor_1.avg_finish}</div>
+                        <div class="text-gray-400">All-Time Avg Finish</div>
+                        <div class="text-white font-bold">P${data.constructor_2.avg_finish}</div>
+                    </div>
+                    <div class="grid grid-cols-3 text-center text-xs font-mono py-1.5">
+                        <div class="text-gray-300">${data.constructor_1.dnf_rate_pct}%</div>
+                        <div class="text-gray-400">DNF Failure Rate</div>
+                        <div class="text-gray-300">${data.constructor_2.dnf_rate_pct}%</div>
+                    </div>
+                `;
+
+            } catch (err) {
+                console.error("Failed to compare constructors:", err);
+            }
+        }
+
+        // 6. Historical Evidence Loader
+        async function loadHistoricalEvidence(circuitId) {
+            try {
+                const res = await fetch(`/api/racelab/historical-evidence?circuit_id=${circuitId}`);
+                if (!res.ok) return;
+                const data = await res.json();
+
+                document.getElementById('evidence-circuit-name').innerText = `${data.circuit_name} (${data.total_historical_races} Races Track Record)`;
+                const tbody = document.getElementById('evidence-tbody');
+                tbody.innerHTML = '';
+
+                data.history.forEach(h => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-f1-hover/40 transition';
+                    tr.innerHTML = `
+                        <td class="py-1.5 px-2 text-cyan-400 font-bold">${h.season}</td>
+                        <td class="py-1.5 px-2 text-white">${h.race_name}</td>
+                        <td class="py-1.5 px-2 text-amber-400 font-bold">${h.winner}</td>
+                        <td class="py-1.5 px-2 text-gray-300">${h.team}</td>
+                        <td class="py-1.5 px-2 text-right text-gray-400 font-bold">P${h.winner_grid}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (e) {
+                console.error("Failed to load historical evidence:", e);
+            }
+        }
+
+        // Quick Loader for 2026 Upcoming Race
+        function selectUpcomingRace(raceId) {
+            document.getElementById('sel-season').value = 2026;
+            populateRacesForSeason(2026);
+            document.getElementById('sel-race').value = raceId;
+            onRaceChanged();
+            switchLabTab('tab-scenario-studio');
+            showToast(`Loaded 2026 Round into Scenario Studio`);
+        }
+    </script>
+</body>
+</html>

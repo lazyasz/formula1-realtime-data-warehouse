@@ -1,0 +1,83 @@
+{
+  "apriori_time_sec": 0.7006,
+  "fpgrowth_time_sec": 0.5305,
+  "speedup_factor": 1.32,
+  "min_support": 0.015,
+  "min_confidence": 0.2,
+  "min_lift": 1.2,
+  "total_itemsets": 7940,
+  "total_rules": 141763,
+  "winner_rules_count": 673,
+  "top_rules": [
+    {
+      "antecedents_str": "CREW=Elite_PitCrew, GRID=Pole_P1, RESULT=Podium",
+      "consequents_str": "QUALI=Front_Row, RESULT=Winner, TEAM_TIER=Top3",
+      "support": 0.015722543352601155,
+      "confidence": 0.5762711864406779,
+      "lift": 19.471663135593218
+    },
+    {
+      "antecedents_str": "CREW=Elite_PitCrew, GRID=Pole_P1, RESULT=Podium",
+      "consequents_str": "QUALI=Front_Row, RELIABILITY=High, RESULT=Winner",
+      "support": 0.017456647398843932,
+      "confidence": 0.6398305084745763,
+      "lift": 19.217131591337104
+    },
+    {
+      "antecedents_str": "CREW=Elite_PitCrew, GRID=Pole_P1, RELIABILITY=High, RESULT=Podium",
+      "consequents_str": "QUALI=Front_Row, RESULT=Winner",
+      "support": 0.017456647398843932,
+      "confidence": 0.6926605504587157,
+      "lift": 19.081254017413663
+    },
+    {
+      "antecedents_str": "CREW=Elite_PitCrew, GRID=Pole_P1, RESULT=Podium, TEAM_TIER=Top3",
+      "consequents_str": "QUALI=Front_Row, RESULT=Winner",
+      "support": 0.015722543352601155,
+      "confidence": 0.6834170854271356,
+      "lift": 18.82661716224434
+    },
+    {
+      "antecedents_str": "CREW=Elite_PitCrew, GRID=Pole_P1, RESULT=Podium",
+      "consequents_str": "QUALI=Front_Row, RESULT=Winner",
+      "support": 0.01861271676300578,
+      "confidence": 0.6822033898305085,
+      "lift": 18.793182554248084
+    },
+    {
+      "antecedents_str": "GRID=Pole_P1, LAP_RECORD_DELTA=Over_2.5s, RESULT=Podium",
+      "consequents_str": "QUALI=Front_Row, RESULT=Winner",
+      "support": 0.015722543352601155,
+      "confidence": 0.6732673267326733,
+      "lift": 18.547013937062495
+    },
+    {
+      "antecedents_str": "GRID=Pole_P1, RESULT=Podium, TEAM_TIER=Top3",
+      "consequents_str": "CREW=Elite_PitCrew, QUALI=Front_Row, RESULT=Winner",
+      "support": 0.015722543352601155,
+      "confidence": 0.5074626865671642,
+      "lift": 18.44349680170576
+    },
+    {
+      "antecedents_str": "GRID=Pole_P1, RESULT=Podium",
+      "consequents_str": "QUALI=Front_Row, RELIABILITY=High, RESULT=Winner, TEAM_TIER=Top3",
+      "support": 0.01861271676300578,
+      "confidence": 0.49085365853658536,
+      "lift": 18.301224768713205
+    },
+    {
+      "antecedents_str": "GRID=Pole_P1, RESULT=Podium",
+      "consequents_str": "CREW=Elite_PitCrew, QUALI=Front_Row, RESULT=Winner, TEAM_TIER=Top3",
+      "support": 0.015722543352601155,
+      "confidence": 0.4146341463414634,
+      "lift": 18.29890492782479
+    },
+    {
+      "antecedents_str": "GRID=Pole_P1, RELIABILITY=High, RESULT=Podium",
+      "consequents_str": "CREW=Elite_PitCrew, QUALI=Front_Row, RESULT=Winner",
+      "support": 0.017456647398843932,
+      "confidence": 0.5,
+      "lift": 18.172268907563026
+    }
+  ]
+}

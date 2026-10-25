@@ -1,0 +1,36 @@
+constructor_id,constructor_ref,constructor_name,constructor_nationality
+1,mclaren,McLaren,British
+2,bmw_sauber,BMW Sauber,German
+3,williams,Williams,British
+4,renault,Renault,French
+5,toro_rosso,Toro Rosso,Italian
+6,ferrari,Ferrari,Italian
+7,toyota,Toyota,Japanese
+8,super_aguri,Super Aguri,Japanese
+9,red_bull,Red Bull,Austrian
+10,force_india,Force India,Indian
+11,honda,Honda,Japanese
+12,spyker,Spyker,Dutch
+13,mf1,MF1,Russian
+14,spyker_mf1,Spyker MF1,Dutch
+15,sauber,Sauber,Swiss
+16,bar,BAR,British
+17,jordan,Jordan,Irish
+18,minardi,Minardi,Italian
+19,jaguar,Jaguar,British
+23,brawn,Brawn,British
+131,mercedes,Mercedes,German
+205,lotus_racing,Lotus,Malaysian
+164,hrt,HRT,Spanish
+166,virgin,Virgin,British
+208,lotus_f1,Lotus F1,British
+206,marussia,Marussia,Russian
+207,caterham,Caterham,Malaysian
+209,manor,Manor Marussia,British
+210,haas,Haas F1 Team,American
+51,alfa,Alfa Romeo,Swiss
+211,racing_point,Racing Point,British
+213,alphatauri,AlphaTauri,Italian
+117,aston_martin,Aston Martin,British
+214,alpine,Alpine F1 Team,French
+215,rb,RB F1 Team,Italian
